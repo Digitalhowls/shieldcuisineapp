@@ -215,17 +215,18 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
             <h3 className="px-4 mt-6 text-xs font-semibold text-neutral-400 uppercase tracking-wider mb-2">Configuración</h3>
             
             {configModules.map((module) => (
-              <div 
+              <Link 
                 key={module.path} 
-                className={cn(
+                href={module.path}
+              >
+                <div className={cn(
                   "flex items-center pl-4 pr-4 py-3 text-neutral-600 hover:bg-neutral-50 cursor-pointer",
                   module.isActive && "sidebar-item active"
-                )}
-                onClick={() => window.location.href = module.path}
-              >
-                <i className={cn(module.icon, "w-5 mr-3", module.isActive ? "text-primary" : "text-neutral-500")}></i>
-                <span>{module.label}</span>
-              </div>
+                )}>
+                  <i className={cn(module.icon, "w-5 mr-3", module.isActive ? "text-primary" : "text-neutral-500")}></i>
+                  <span>{module.label}</span>
+                </div>
+              </Link>
             ))}
           </nav>
           

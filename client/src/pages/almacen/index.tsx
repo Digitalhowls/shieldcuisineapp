@@ -2,10 +2,10 @@ import { Switch, Route, useLocation } from "wouter";
 import { useState } from "react";
 import Sidebar from "@/components/sidebar";
 import TopBar from "@/components/topbar";
-import Dashboard from "./dashboard";
-import Inventory from "./inventory";
-import Movements from "./movements";
-import Suppliers from "./suppliers";
+import Dashboard from "@/pages/almacen/dashboard";
+import Inventory from "@/pages/almacen/inventory";
+import Movements from "@/pages/almacen/movements";
+import Suppliers from "@/pages/almacen/suppliers";
 import NotFound from "@/pages/not-found";
 
 export default function AlmacenModule() {

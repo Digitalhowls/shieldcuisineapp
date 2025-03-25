@@ -52,18 +52,19 @@ export default function TopBar({ title, onMenuToggle, tabs = [] }: TopBarProps) 
       {tabs.length > 0 && (
         <div className="px-4 py-2 bg-white border-b border-neutral-100 flex items-center overflow-x-auto">
           {tabs.map((tab) => (
-            <div 
+            <Link 
               key={tab.id} 
-              className={cn(
+              href={tab.path}
+            >
+              <div className={cn(
                 "mr-4 py-2 text-sm cursor-pointer",
                 location === tab.path
                   ? "border-b-2 border-primary text-primary font-medium"
                   : "text-neutral-500 hover:text-neutral-700"
-              )}
-              onClick={() => window.location.href = tab.path}
-            >
-              {tab.label}
-            </div>
+              )}>
+                {tab.label}
+              </div>
+            </Link>
           ))}
         </div>
       )}
