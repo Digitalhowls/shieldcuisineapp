@@ -6,7 +6,7 @@ import { Request, Response, Express, NextFunction } from 'express';
 import { bankingService, PSD2Config, ConsentRequest } from '../services/banking';
 import { bankConnections, bankAccounts, bankTransactions, bankCategoriesRules } from '@shared/schema';
 import { db } from '../db';
-import { eq, desc, and, isNull, inArray } from 'drizzle-orm';
+import { eq, desc, and, isNull, or } from 'drizzle-orm';
 import { verifyAuth } from './auth-middleware';
 
 // Middleware para verificar que el usuario tiene rol adecuado para acciones bancarias
@@ -101,7 +101,7 @@ export function registerBankingRoutes(app: Express) {
       
       res.status(200).json(connections);
     } catch (error) {
-      res.status(500).json({ error: `Error al obtener conexiones bancarias: ${error.message}` });
+      res.status(500).json({ error: `Error al obtener conexiones bancarias: ${(error as Error).message}` });
     }
   });
 
@@ -124,7 +124,7 @@ export function registerBankingRoutes(app: Express) {
       
       res.status(200).json(updatedConnection);
     } catch (error) {
-      res.status(500).json({ error: `Error al actualizar estado: ${error.message}` });
+      res.status(500).json({ error: `Error al actualizar estado: ${(error as Error).message}` });
     }
   });
 
@@ -154,7 +154,7 @@ export function registerBankingRoutes(app: Express) {
       
       res.status(200).json(accounts);
     } catch (error) {
-      res.status(500).json({ error: `Error al obtener cuentas bancarias: ${error.message}` });
+      res.status(500).json({ error: `Error al obtener cuentas bancarias: ${(error as Error).message}` });
     }
   });
 
@@ -177,7 +177,7 @@ export function registerBankingRoutes(app: Express) {
       
       res.status(200).json(account);
     } catch (error) {
-      res.status(500).json({ error: `Error al obtener saldos: ${error.message}` });
+      res.status(500).json({ error: `Error al obtener saldos: ${(error as Error).message}` });
     }
   });
 
@@ -215,7 +215,7 @@ export function registerBankingRoutes(app: Express) {
       
       res.status(200).json(transactions);
     } catch (error) {
-      res.status(500).json({ error: `Error al obtener transacciones: ${error.message}` });
+      res.status(500).json({ error: `Error al obtener transacciones: ${(error as Error).message}` });
     }
   });
 
@@ -251,7 +251,7 @@ export function registerBankingRoutes(app: Express) {
         data: paymentResult
       });
     } catch (error) {
-      res.status(500).json({ error: `Error al iniciar pago: ${error.message}` });
+      res.status(500).json({ error: `Error al iniciar pago: ${(error as Error).message}` });
     }
   });
 
@@ -274,7 +274,7 @@ export function registerBankingRoutes(app: Express) {
       
       res.status(200).json(rules);
     } catch (error) {
-      res.status(500).json({ error: `Error al obtener reglas de categorización: ${error.message}` });
+      res.status(500).json({ error: `Error al obtener reglas de categorización: ${(error as Error).message}` });
     }
   });
 
@@ -306,7 +306,7 @@ export function registerBankingRoutes(app: Express) {
       
       res.status(201).json(rule);
     } catch (error) {
-      res.status(500).json({ error: `Error al crear regla de categorización: ${error.message}` });
+      res.status(500).json({ error: `Error al crear regla de categorización: ${(error as Error).message}` });
     }
   });
 
@@ -341,7 +341,7 @@ export function registerBankingRoutes(app: Express) {
       
       // Obtener las últimas transacciones
       const accountIds = accounts.map(a => a.id);
-      let recentTransactions = [];
+      let recentTransactions: typeof bankTransactions.$inferSelect[] = [];
       
       if (accountIds.length > 0) {
         // Construir una consulta con OR para cada ID de cuenta
@@ -358,7 +358,7 @@ export function registerBankingRoutes(app: Express) {
       }
       
       // Agrupar transacciones por categoría para el gráfico
-      const categoryGroups = {};
+      const categoryGroups: Record<string, number> = {};
       
       recentTransactions.forEach(tx => {
         const category = tx.category || 'Sin categorizar';
@@ -385,7 +385,7 @@ export function registerBankingRoutes(app: Express) {
         categoryData
       });
     } catch (error) {
-      res.status(500).json({ error: `Error al obtener dashboard bancario: ${error.message}` });
+      res.status(500).json({ error: `Error al obtener dashboard bancario: ${(error as Error).message}` });
     }
   });
 
@@ -411,7 +411,7 @@ export function registerBankingRoutes(app: Express) {
       
       res.status(200).json(updatedTransaction);
     } catch (error) {
-      res.status(500).json({ error: `Error al vincular transacción: ${error.message}` });
+      res.status(500).json({ error: `Error al vincular transacción: ${(error as Error).message}` });
     }
   });
 
@@ -437,7 +437,7 @@ export function registerBankingRoutes(app: Express) {
       
       res.status(200).json(updatedTransaction);
     } catch (error) {
-      res.status(500).json({ error: `Error al categorizar transacción: ${error.message}` });
+      res.status(500).json({ error: `Error al categorizar transacción: ${(error as Error).message}` });
     }
   });
 }
