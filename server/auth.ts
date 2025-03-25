@@ -5,6 +5,7 @@ import session from "express-session";
 import { hash, verify } from "@node-rs/bcrypt";
 import { storage } from "./storage";
 import { User as SelectUser } from "@shared/schema";
+import createMemoryStore from "memorystore";
 
 declare global {
   namespace Express {
@@ -26,11 +27,17 @@ export function setupAuth(app: Express) {
   
   console.log("Configuring session store...");
   
+  // Use MemoryStore directly for simplicity
+  const MemoryStore = createMemoryStore(session);
+  const memoryStore = new MemoryStore({
+    checkPeriod: 86400000 // Prune expired entries every 24h
+  });
+  
   const sessionSettings: session.SessionOptions = {
     secret: sessionSecret,
     resave: false,
     saveUninitialized: false,
-    store: storage.sessionStore,
+    store: memoryStore,
     cookie: {
       maxAge: 1000 * 60 * 60 * 24 * 7, // 1 week
       httpOnly: true,
