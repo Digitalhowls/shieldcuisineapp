@@ -1,5 +1,5 @@
 import { Route, Switch } from "wouter";
-import { Suspense, lazy } from "react";
+import { Suspense } from "react";
 import Dashboard from "./dashboard";
 import Cuentas from "./cuentas";
 import CuentaDetalle from "./cuenta-detalle";

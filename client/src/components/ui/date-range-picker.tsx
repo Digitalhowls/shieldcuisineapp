@@ -81,3 +81,6 @@ export function DatePickerWithRange({
     </div>
   )
 }
+
+// Alias para compatibilidad con componentes existentes
+export const DateRangePicker = DatePickerWithRange;

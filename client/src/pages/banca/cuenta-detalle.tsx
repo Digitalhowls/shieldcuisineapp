@@ -1,27 +1,29 @@
-import React, { useState } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
+import React, { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useLocation, useParams } from "wouter";
-import { 
-  PiggyBank,
-  CreditCard,
-  ChevronLeft,
-  RefreshCw,
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
   BanknoteIcon,
+  CreditCard,
+  PiggyBank,
   Download,
+  ChevronLeft,
   Filter,
-  Calendar,
   Search,
-  ArrowUpRight,
-  ArrowDownRight,
-  Landmark,
-  CalendarRange,
+  Calendar,
   Copy,
-  LineChart,
-  Clock,
-  Share,
-  Pencil,
-  MoreHorizontal
+  Landmark,
+  ArrowDownRight,
+  ArrowUpRight,
+  MoreHorizontal,
+  RefreshCw
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -98,16 +100,13 @@ interface Transaction {
   notes?: string;
 }
 
-type DateRange = {
-  from: Date;
-  to?: Date;
-}
+
 
 // Vista de detalle de cuenta bancaria
 export default function CuentaDetalle() {
   const [_, navigate] = useLocation();
   const params = useParams();
-  const accountId = parseInt(params.id);
+  const accountId = parseInt(params.id || "0");
   const { toast } = useToast();
   
   const [searchQuery, setSearchQuery] = useState("");
@@ -548,333 +547,311 @@ export default function CuentaDetalle() {
                 </div>
               </div>
               
-              <div className="flex flex-col md:flex-row justify-between gap-4">
-                {accountData.holderName && (
-                  <div>
-                    <div className="text-sm font-medium text-muted-foreground">Titular</div>
-                    <div>{accountData.holderName}</div>
-                  </div>
-                )}
-                {accountData.openDate && (
-                  <div>
-                    <div className="text-sm font-medium text-muted-foreground">Fecha de apertura</div>
-                    <div>{formatDate(accountData.openDate, false)}</div>
-                  </div>
-                )}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-4">
                 <div>
-                  <div className="text-sm font-medium text-muted-foreground">Última actualización</div>
-                  <div>{formatDate(accountData.lastUpdated)}</div>
+                  <div className="text-sm font-medium text-muted-foreground">Saldo actual</div>
+                  <div className={`text-2xl font-bold ${accountData.balance < 0 ? 'text-red-600' : ''}`}>
+                    {formatCurrency(accountData.balance, accountData.currency)}
+                  </div>
+                  <div className="text-xs text-muted-foreground">
+                    Actualizado: {formatDate(accountData.lastUpdated)}
+                  </div>
+                </div>
+                <div>
+                  <div className="text-sm font-medium text-muted-foreground">Disponible</div>
+                  <div className="text-2xl font-bold">
+                    {formatCurrency(accountData.availableBalance, accountData.currency)}
+                  </div>
+                  {accountData.type === "credit" && (
+                    <div className="text-xs text-muted-foreground">
+                      Límite: {formatCurrency(accountData.availableBalance + Math.abs(accountData.balance), accountData.currency)}
+                    </div>
+                  )}
                 </div>
               </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        <div>
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-lg">Saldo</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className={`text-3xl font-bold ${accountData.balance < 0 ? 'text-destructive' : ''}`}>
-                {formatCurrency(accountData.balance, accountData.currency)}
-              </div>
               
-              {accountData.type === "credit" && (
-                <div className="mt-4">
-                  <div className="flex justify-between text-sm mb-1">
-                    <span>Límite disponible</span>
-                    <span>{formatCurrency(accountData.availableBalance, accountData.currency)}</span>
-                  </div>
-                  <Progress 
-                    value={Math.min(100, (accountData.availableBalance / 5000) * 100)} 
-                    className="h-2" 
-                  />
+              {accountData.holderName && (
+                <div className="mb-4">
+                  <div className="text-sm font-medium text-muted-foreground">Titular</div>
+                  <div>{accountData.holderName}</div>
                 </div>
               )}
               
-              <div className="flex justify-between mt-4">
-                <Button variant="outline" onClick={() => navigate("/banca/transferencia")}>
-                  <Share className="h-4 w-4 mr-2" />
-                  Transferir
-                </Button>
-                <Button variant="outline" onClick={() => navigate(`/banca/cuenta/${accountId}/editar`)}>
-                  <Pencil className="h-4 w-4 mr-2" />
-                  Editar
-                </Button>
-              </div>
+              {accountData.openDate && (
+                <div>
+                  <div className="text-sm font-medium text-muted-foreground">Fecha de apertura</div>
+                  <div>{formatDate(accountData.openDate, false)}</div>
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>
-      </div>
-
-      {/* Resumen del período seleccionado */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-lg flex items-center">
-              <CalendarRange className="h-5 w-5 mr-2 text-primary" />
-              Período seleccionado
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex justify-between items-center">
-              <DatePickerWithRange 
-                date={dateRange} 
-                setDate={setDateRange} 
-              />
-              <div className="flex gap-2">
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  onClick={() => setDateRange({
-                    from: subDays(new Date(), 7),
-                    to: new Date()
-                  })}
-                >
-                  7D
-                </Button>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  onClick={() => setDateRange({
-                    from: subDays(new Date(), 30),
-                    to: new Date()
-                  })}
-                >
-                  1M
-                </Button>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  onClick={() => setDateRange({
-                    from: subDays(new Date(), 90),
-                    to: new Date()
-                  })}
-                >
-                  3M
-                </Button>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-lg flex items-center">
-              <ArrowUpRight className="h-5 w-5 mr-2 text-success" />
-              Ingresos
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-success">
-              {formatCurrency(periodIncome, accountData.currency)}
-            </div>
-            <p className="text-sm text-muted-foreground">
-              {filteredTransactions.filter(tx => tx.amount > 0).length} transacciones
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-lg flex items-center">
-              <ArrowDownRight className="h-5 w-5 mr-2 text-destructive" />
-              Gastos
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-destructive">
-              {formatCurrency(periodExpense, accountData.currency)}
-            </div>
-            <p className="text-sm text-muted-foreground">
-              {filteredTransactions.filter(tx => tx.amount < 0).length} transacciones
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Filtros de transacciones */}
-      <div className="flex flex-col md:flex-row gap-4 mb-6">
-        <div className="relative flex-grow">
-          <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input 
-            placeholder="Buscar en transacciones..." 
-            className="pl-8" 
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
-        </div>
         
-        <div className="flex flex-wrap gap-2">
-          <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-            <SelectTrigger className="w-[180px]">
-              <Filter className="h-4 w-4 mr-2" />
-              <SelectValue placeholder="Categoría" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="">Todas las categorías</SelectItem>
-              {uniqueCategories.map(category => (
-                <SelectItem key={category} value={category as string}>{category}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          <Select value={typeFilter} onValueChange={setTypeFilter}>
-            <SelectTrigger className="w-[180px]">
-              <Clock className="h-4 w-4 mr-2" />
-              <SelectValue placeholder="Tipo" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="">Todos los tipos</SelectItem>
-              <SelectItem value="payment">Pagos</SelectItem>
-              <SelectItem value="charge">Cargos</SelectItem>
-              <SelectItem value="transfer">Transferencias</SelectItem>
-              <SelectItem value="deposit">Depósitos</SelectItem>
-              <SelectItem value="withdrawal">Retiradas</SelectItem>
-              <SelectItem value="fee">Comisiones</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
-
-      {/* Transacciones */}
-      <Tabs defaultValue="list" className="mb-8">
-        <TabsList className="mb-4">
-          <TabsTrigger value="list">Lista</TabsTrigger>
-          <TabsTrigger value="chart">Gráfico</TabsTrigger>
-        </TabsList>
-        
-        <TabsContent value="list">
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-lg">Movimientos</CardTitle>
-              <CardDescription>
-                Mostrando {filteredTransactions.length} transacciones
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="p-0">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-[160px]">Fecha</TableHead>
-                    <TableHead>Descripción</TableHead>
-                    <TableHead>Categoría</TableHead>
-                    <TableHead>Tipo</TableHead>
-                    <TableHead className="text-right">Importe</TableHead>
-                    <TableHead className="text-right">Saldo</TableHead>
-                    <TableHead></TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredTransactions.map(transaction => (
-                    <TableRow key={transaction.id} className="group">
-                      <TableCell className="text-xs">
-                        <div>{formatDate(transaction.date, false)}</div>
-                        <div className="text-muted-foreground">Valor: {formatDate(transaction.valueDate, false)}</div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="font-medium">{transaction.description}</div>
-                        {transaction.counterparty && (
-                          <div className="text-xs text-muted-foreground">{transaction.counterparty}</div>
-                        )}
-                        {transaction.reference && (
-                          <div className="text-xs font-mono text-muted-foreground">Ref: {transaction.reference}</div>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        {transaction.category ? (
-                          <Badge variant="outline">{transaction.category}</Badge>
-                        ) : (
-                          <Badge variant="outline" className="text-muted-foreground bg-muted">Sin categoría</Badge>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="secondary">{getTransactionTypeName(transaction.type)}</Badge>
-                      </TableCell>
-                      <TableCell className={`text-right font-medium ${transaction.amount < 0 ? 'text-destructive' : 'text-success'}`}>
-                        {transaction.amount < 0 ? '-' : '+'}{formatCurrency(Math.abs(transaction.amount), accountData.currency)}
-                      </TableCell>
-                      <TableCell className="text-right font-medium">
-                        {transaction.balance !== undefined && 
-                          formatCurrency(transaction.balance, accountData.currency)
-                        }
-                      </TableCell>
-                      <TableCell>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button 
-                              variant="ghost" 
-                              size="icon"
-                              className="opacity-0 group-hover:opacity-100"
-                            >
-                              <MoreHorizontal className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuLabel>Opciones</DropdownMenuLabel>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem>
-                              Categorizar
-                            </DropdownMenuItem>
-                            <DropdownMenuItem>
-                              Añadir notas
-                            </DropdownMenuItem>
-                            <DropdownMenuItem>
-                              Exportar detalle
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </CardContent>
-            <CardFooter className="flex justify-between py-4">
-              <div className="text-sm text-muted-foreground">
-                Balance inicial: {
-                  filteredTransactions.length > 0 && filteredTransactions[filteredTransactions.length - 1].balance !== undefined ? 
-                  formatCurrency(
-                    (filteredTransactions[filteredTransactions.length - 1].balance || 0) - 
-                    (filteredTransactions[filteredTransactions.length - 1].amount || 0), 
-                    accountData.currency
-                  ) : 
-                  "N/A"
-                }
-              </div>
-              <div className="text-sm">
-                Balance final: {
-                  filteredTransactions.length > 0 && filteredTransactions[0].balance !== undefined ? 
-                  formatCurrency(filteredTransactions[0].balance || 0, accountData.currency) : 
-                  "N/A"
-                }
-              </div>
-            </CardFooter>
-          </Card>
-        </TabsContent>
-        
-        <TabsContent value="chart">
+        <div>
           <Card>
             <CardHeader>
-              <CardTitle className="text-lg flex items-center">
-                <LineChart className="h-5 w-5 mr-2 text-primary" />
-                Evolución del saldo
-              </CardTitle>
+              <CardTitle>Resumen del Período</CardTitle>
               <CardDescription>
-                Gráfico de movimientos en el período seleccionado
+                {format(dateRange.from, "d MMM", { locale: es })} - {dateRange.to ? format(dateRange.to, "d MMM", { locale: es }) : "Hoy"}
               </CardDescription>
             </CardHeader>
-            <CardContent className="h-80 flex items-center justify-center">
-              <div className="text-center text-muted-foreground">
-                <LineChart className="h-16 w-16 mx-auto mb-4 text-muted" />
-                <p>La visualización gráfica estará disponible próximamente</p>
-                <p className="text-sm">Utilice la vista de lista para ver el detalle de transacciones</p>
+            <CardContent>
+              <div className="space-y-4">
+                <div>
+                  <div className="flex justify-between mb-1">
+                    <span className="text-sm font-medium text-muted-foreground">Ingresos</span>
+                    <span className="text-sm font-medium text-green-600">{formatCurrency(periodIncome)}</span>
+                  </div>
+                  <Progress value={periodIncome > 0 ? (periodIncome / (periodIncome + periodExpense)) * 100 : 0} className="h-2 bg-slate-200" />
+                </div>
+                
+                <div>
+                  <div className="flex justify-between mb-1">
+                    <span className="text-sm font-medium text-muted-foreground">Gastos</span>
+                    <span className="text-sm font-medium text-red-600">{formatCurrency(periodExpense)}</span>
+                  </div>
+                  <Progress value={periodExpense > 0 ? (periodExpense / (periodIncome + periodExpense)) * 100 : 0} className="h-2 bg-slate-200" />
+                </div>
+                
+                <div className="pt-2 border-t">
+                  <div className="flex justify-between">
+                    <span className="font-medium">Balance</span>
+                    <span className={`font-medium ${periodIncome - periodExpense < 0 ? 'text-red-600' : 'text-green-600'}`}>
+                      {formatCurrency(periodIncome - periodExpense)}
+                    </span>
+                  </div>
+                  <div className="flex items-center text-xs text-muted-foreground mt-1">
+                    {periodIncome - periodExpense >= 0 ? (
+                      <>
+                        <ArrowUpRight className="h-3 w-3 mr-1 text-green-600" />
+                        <span>Saldo positivo en el período</span>
+                      </>
+                    ) : (
+                      <>
+                        <ArrowDownRight className="h-3 w-3 mr-1 text-red-600" />
+                        <span>Saldo negativo en el período</span>
+                      </>
+                    )}
+                  </div>
+                </div>
               </div>
             </CardContent>
+            <CardFooter>
+              <DatePickerWithRange
+                className="w-full"
+                date={dateRange}
+                setDate={setDateRange}
+              />
+            </CardFooter>
           </Card>
-        </TabsContent>
-      </Tabs>
+        </div>
+      </div>
+
+      {/* Lista de Transacciones */}
+      <Card>
+        <CardHeader>
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <div>
+              <CardTitle>Movimientos</CardTitle>
+              <CardDescription>
+                {filteredTransactions.length} transacciones encontradas
+              </CardDescription>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="relative">
+                <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Buscar transacciones..."
+                  className="pl-8 w-[250px]"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
+              </div>
+              
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="sm">
+                    <Filter className="h-4 w-4 mr-2" />
+                    Filtrar
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56">
+                  <DropdownMenuLabel>Filtros</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  
+                  <div className="p-2">
+                    <div className="mb-2 text-sm font-medium">Categoría</div>
+                    <Select
+                      value={categoryFilter}
+                      onValueChange={setCategoryFilter}
+                    >
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Todas las categorías" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="">Todas las categorías</SelectItem>
+                        {uniqueCategories.map((category) => (
+                          <SelectItem key={category} value={category!}>{category}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  <div className="p-2">
+                    <div className="mb-2 text-sm font-medium">Tipo</div>
+                    <Select
+                      value={typeFilter}
+                      onValueChange={setTypeFilter}
+                    >
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Todos los tipos" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="">Todos los tipos</SelectItem>
+                        {bankTransactionTypeEnum.enumValues.map((type) => (
+                          <SelectItem key={type} value={type}>{getTransactionTypeName(type)}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    onClick={() => {
+                      setCategoryFilter("");
+                      setTypeFilter("");
+                      setSearchQuery("");
+                      setDateRange({
+                        from: subMonths(new Date(), 1),
+                        to: new Date()
+                      });
+                    }}
+                  >
+                    Limpiar filtros
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Fecha</TableHead>
+                <TableHead>Descripción</TableHead>
+                <TableHead>Referencia</TableHead>
+                <TableHead>Categoría</TableHead>
+                <TableHead className="text-right">Importe</TableHead>
+                <TableHead className="text-right">Saldo</TableHead>
+                <TableHead></TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filteredTransactions.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={7} className="text-center py-4 text-muted-foreground">
+                    No se encontraron transacciones con los filtros actuales
+                  </TableCell>
+                </TableRow>
+              ) : (
+                filteredTransactions.map((transaction) => (
+                  <TableRow key={transaction.id}>
+                    <TableCell className="whitespace-nowrap">
+                      <div className="font-medium">{formatDate(transaction.date, false)}</div>
+                      <div className="text-xs text-muted-foreground">Val: {formatDate(transaction.valueDate, false)}</div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="font-medium">{transaction.description}</div>
+                      {transaction.counterparty && (
+                        <div className="text-xs text-muted-foreground">{transaction.counterparty}</div>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {transaction.reference && (
+                        <div className="text-xs font-mono">{transaction.reference}</div>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {transaction.category ? (
+                        <Badge variant="outline">{transaction.category}</Badge>
+                      ) : (
+                        <Badge variant="outline" className="text-muted-foreground">Sin categoría</Badge>
+                      )}
+                    </TableCell>
+                    <TableCell className={`text-right font-medium ${transaction.amount < 0 ? 'text-red-600' : 'text-green-600'}`}>
+                      {formatCurrency(transaction.amount, accountData.currency)}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      {transaction.balance !== undefined ? (
+                        <div className={`font-medium ${transaction.balance < 0 ? 'text-red-600' : ''}`}>
+                          {formatCurrency(transaction.balance, accountData.currency)}
+                        </div>
+                      ) : (
+                        <div className="text-muted-foreground">-</div>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="sm">
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuLabel>Acciones</DropdownMenuLabel>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem onClick={() => {
+                            // Mostrar detalles
+                            toast({
+                              title: "Detalles",
+                              description: "Mostrando detalles de la transacción"
+                            });
+                          }}>
+                            Ver detalles
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => {
+                            // Categorizar
+                            toast({
+                              title: "Categorizar",
+                              description: "Categorizando transacción"
+                            });
+                          }}>
+                            Categorizar
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => {
+                            // Añadir nota
+                            toast({
+                              title: "Añadir nota",
+                              description: "Añadiendo nota a la transacción"
+                            });
+                          }}>
+                            Añadir nota
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </CardContent>
+        <CardFooter className="flex justify-between">
+          <div className="text-sm text-muted-foreground">
+            Mostrando {filteredTransactions.length} de {transactionData.length} transacciones
+          </div>
+          <Button variant="outline" size="sm" onClick={() => {
+            // Cargar más
+            toast({
+              title: "Cargar más",
+              description: "Cargando más transacciones"
+            });
+          }}>
+            Cargar más
+          </Button>
+        </CardFooter>
+      </Card>
     </div>
   );
 }
