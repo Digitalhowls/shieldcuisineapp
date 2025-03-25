@@ -1,244 +1,150 @@
 import { useState } from "react";
-import { 
-  Card, 
-  CardContent, 
-  CardHeader, 
-  CardTitle, 
-  CardDescription 
-} from "@/components/ui/card";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { 
-  Table, 
-  TableBody, 
-  TableCell, 
-  TableHead, 
-  TableHeader, 
-  TableRow 
-} from "@/components/ui/table";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { 
-  Search, 
-  Filter, 
-  ChevronDown, 
-  Plus, 
-  ArrowUpRight, 
-  ArrowDownLeft, 
-  MoveHorizontal, 
-  Eye 
-} from "lucide-react";
-
-// Dummy movements data for UI display
-const movementsData = [
-  { 
-    id: 1, 
-    date: "2025-03-25T10:30:00", 
-    type: "entrada", 
-    product: "Harina de Trigo", 
-    quantity: 25, 
-    unit: "kg", 
-    origin: "Harinas García S.L.", 
-    destination: "Almacén Central", 
-    user: "Carlos Sánchez",
-    document: "ALB-2025-0125" 
-  },
-  { 
-    id: 2, 
-    date: "2025-03-25T09:15:00", 
-    type: "traslado", 
-    product: "Queso Manchego", 
-    quantity: 5, 
-    unit: "kg", 
-    origin: "Almacén Central", 
-    destination: "Cocina", 
-    user: "María Rodriguez",
-    document: "MOV-2025-0087" 
-  },
-  { 
-    id: 3, 
-    date: "2025-03-25T08:45:00", 
-    type: "salida", 
-    product: "Tomates", 
-    quantity: 2, 
-    unit: "kg", 
-    origin: "Almacén Central", 
-    destination: "Cocina", 
-    user: "Juan Pérez",
-    document: "MOV-2025-0086" 
-  },
-  { 
-    id: 4, 
-    date: "2025-03-24T16:20:00", 
-    type: "entrada", 
-    product: "Leche Entera", 
-    quantity: 48, 
-    unit: "L", 
-    origin: "Lácteos del Norte S.A.", 
-    destination: "Cámara Refrigeración", 
-    user: "Carlos Sánchez",
-    document: "ALB-2025-0124" 
-  },
-  { 
-    id: 5, 
-    date: "2025-03-24T14:10:00", 
-    type: "salida", 
-    product: "Carne Picada", 
-    quantity: 3, 
-    unit: "kg", 
-    origin: "Cámara Congelación", 
-    destination: "Cocina", 
-    user: "María Rodriguez",
-    document: "MOV-2025-0085" 
-  },
-  { 
-    id: 6, 
-    date: "2025-03-24T11:30:00", 
-    type: "traslado", 
-    product: "Aceite de Oliva", 
-    quantity: 5, 
-    unit: "L", 
-    origin: "Almacén Principal", 
-    destination: "Almacén Secundario", 
-    user: "Juan Pérez",
-    document: "MOV-2025-0084" 
-  },
-];
 
 export default function Movements() {
+  const [filterType, setFilterType] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
   
-  // Filter movement items based on search query
-  const filteredItems = movementsData.filter(
-    item => item.product.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            item.document.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            item.user.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  // Mock data
+  const movements = [
+    { id: 1, type: "entrada", date: "2025-03-20", time: "09:30", product: "Pollo entero", quantity: 15, unit: "kg", source: "Proveedor: Carnes del Norte", user: "Ana García" },
+    { id: 2, type: "salida", date: "2025-03-21", time: "14:15", product: "Patatas", quantity: 8, unit: "kg", source: "Cocina", user: "Carlos López" },
+    { id: 3, type: "ajuste", date: "2025-03-22", time: "16:45", product: "Aceite de oliva", quantity: 2, unit: "L", source: "Inventario: Corrección", user: "María Sánchez" },
+    { id: 4, type: "entrada", date: "2025-03-23", time: "10:00", product: "Tomate", quantity: 12, unit: "kg", source: "Proveedor: Huerta Fresca", user: "Ana García" },
+    { id: 5, type: "salida", date: "2025-03-24", time: "11:30", product: "Queso manchego", quantity: 2.5, unit: "kg", source: "Cocina", user: "Carlos López" },
+    { id: 6, type: "entrada", date: "2025-03-24", time: "15:45", product: "Vino tinto", quantity: 12, unit: "bot.", source: "Proveedor: Bodegas Rioja", user: "Ana García" },
+  ];
   
-  // Format date to display
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleString('es-ES', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-  };
+  const filteredMovements = movements.filter(movement => {
+    // Filter by type
+    if (filterType !== "all" && movement.type !== filterType) {
+      return false;
+    }
+    
+    // Filter by search query
+    if (searchQuery && !movement.product.toLowerCase().includes(searchQuery.toLowerCase()) &&
+        !movement.source.toLowerCase().includes(searchQuery.toLowerCase())) {
+      return false;
+    }
+    
+    return true;
+  });
   
-  // Get movement type badge
-  const getMovementTypeBadge = (type: string) => {
+  const getTypeData = (type: string) => {
     switch(type) {
       case "entrada":
-        return (
-          <Badge variant="outline" className="bg-success bg-opacity-10 text-success border-success flex items-center">
-            <ArrowDownLeft className="h-3 w-3 mr-1" />
-            Entrada
-          </Badge>
-        );
+        return { label: "Entrada", variant: "success", icon: "fas fa-arrow-right" };
       case "salida":
-        return (
-          <Badge variant="outline" className="bg-error bg-opacity-10 text-error border-error flex items-center">
-            <ArrowUpRight className="h-3 w-3 mr-1" />
-            Salida
-          </Badge>
-        );
-      case "traslado":
-        return (
-          <Badge variant="outline" className="bg-info bg-opacity-10 text-info border-info flex items-center">
-            <MoveHorizontal className="h-3 w-3 mr-1" />
-            Traslado
-          </Badge>
-        );
+        return { label: "Salida", variant: "warning", icon: "fas fa-arrow-left" };
+      case "ajuste":
+        return { label: "Ajuste", variant: "outline", icon: "fas fa-exchange-alt" };
       default:
-        return <Badge>{type}</Badge>;
+        return { label: type, variant: "outline", icon: "fas fa-question" };
     }
   };
-
+  
   return (
     <main className="flex-1 overflow-y-auto bg-neutral-50 p-4">
       <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
-          <div>
-            <h2 className="text-2xl font-bold text-neutral-800">Movimientos</h2>
-            <p className="text-neutral-500">Registro de entradas, salidas y traslados</p>
-          </div>
-          <div className="mt-4 md:mt-0 space-x-2">
-            <Button variant="outline">
-              Imprimir
-            </Button>
+        {/* Header with Filters and Actions */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6">
+          <h2 className="text-xl font-bold text-neutral-800 mb-4 sm:mb-0">Movimientos de Inventario</h2>
+          <div className="flex flex-col sm:flex-row gap-4">
+            <div className="flex flex-col sm:flex-row gap-2">
+              <Select value={filterType} onValueChange={setFilterType}>
+                <SelectTrigger className="w-[180px]">
+                  <SelectValue placeholder="Filtrar por tipo" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos los tipos</SelectItem>
+                  <SelectItem value="entrada">Entradas</SelectItem>
+                  <SelectItem value="salida">Salidas</SelectItem>
+                  <SelectItem value="ajuste">Ajustes</SelectItem>
+                </SelectContent>
+              </Select>
+              
+              <Input
+                type="text"
+                placeholder="Buscar..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full sm:w-64"
+              />
+            </div>
+            
             <Button>
-              <Plus className="h-4 w-4 mr-2" />
+              <i className="fas fa-plus mr-2"></i>
               Nuevo Movimiento
             </Button>
           </div>
         </div>
         
-        {/* Filters and Search */}
-        <Card className="mb-6">
-          <CardContent className="p-4">
-            <div className="flex flex-col md:flex-row gap-4">
-              <div className="relative flex-1">
-                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-neutral-400" />
-                <Input
-                  placeholder="Buscar movimientos..."
-                  className="pl-8"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                />
-              </div>
-              <Button variant="outline" className="flex">
-                <Filter className="h-4 w-4 mr-2" />
-                Filtros
-                <ChevronDown className="h-4 w-4 ml-2" />
-              </Button>
-              <Button variant="outline">
-                Exportar
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-        
         {/* Movements Table */}
         <Card>
-          <CardHeader className="pb-2">
-            <CardTitle>Historial de Movimientos</CardTitle>
-            <CardDescription>Total: {filteredItems.length} movimientos</CardDescription>
-          </CardHeader>
-          <CardContent>
+          <CardContent className="p-0">
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Fecha/Hora</TableHead>
+                  <TableHead>Fecha</TableHead>
                   <TableHead>Tipo</TableHead>
                   <TableHead>Producto</TableHead>
-                  <TableHead>Cantidad</TableHead>
-                  <TableHead>Origen</TableHead>
-                  <TableHead>Destino</TableHead>
-                  <TableHead>Documento</TableHead>
+                  <TableHead className="text-right">Cantidad</TableHead>
+                  <TableHead>Origen/Destino</TableHead>
                   <TableHead>Usuario</TableHead>
                   <TableHead className="text-right">Acciones</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredItems.map((item) => (
-                  <TableRow key={item.id}>
-                    <TableCell>{formatDate(item.date)}</TableCell>
-                    <TableCell>{getMovementTypeBadge(item.type)}</TableCell>
-                    <TableCell className="font-medium">{item.product}</TableCell>
-                    <TableCell>{item.quantity} {item.unit}</TableCell>
-                    <TableCell>{item.origin}</TableCell>
-                    <TableCell>{item.destination}</TableCell>
-                    <TableCell>{item.document}</TableCell>
-                    <TableCell>{item.user}</TableCell>
-                    <TableCell className="text-right">
-                      <Button variant="ghost" size="icon">
-                        <Eye className="h-4 w-4" />
-                      </Button>
+                {filteredMovements.map(movement => {
+                  const typeData = getTypeData(movement.type);
+                  const formattedDate = new Date(movement.date + "T" + movement.time).toLocaleString('es-ES', {
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                  });
+                  
+                  return (
+                    <TableRow key={movement.id}>
+                      <TableCell>{formattedDate}</TableCell>
+                      <TableCell>
+                        <Badge variant={typeData.variant as any} className="flex items-center w-fit gap-1">
+                          <i className={typeData.icon}></i>
+                          {typeData.label}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="font-medium">{movement.product}</TableCell>
+                      <TableCell className="text-right">
+                        {movement.quantity} {movement.unit}
+                      </TableCell>
+                      <TableCell>{movement.source}</TableCell>
+                      <TableCell>{movement.user}</TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex justify-end gap-2">
+                          <Button variant="ghost" size="sm">
+                            <i className="fas fa-eye"></i>
+                          </Button>
+                          <Button variant="ghost" size="sm">
+                            <i className="fas fa-print"></i>
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+                {filteredMovements.length === 0 && (
+                  <TableRow>
+                    <TableCell colSpan={7} className="text-center py-8 text-neutral-500">
+                      No se encontraron movimientos que coincidan con los filtros.
                     </TableCell>
                   </TableRow>
-                ))}
+                )}
               </TableBody>
             </Table>
           </CardContent>
