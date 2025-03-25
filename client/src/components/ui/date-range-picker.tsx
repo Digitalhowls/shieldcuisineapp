@@ -3,6 +3,7 @@
 import * as React from "react"
 import { addDays, format } from "date-fns"
 import { es } from "date-fns/locale"
+import type { Locale } from "date-fns"
 import { Calendar as CalendarIcon } from "lucide-react"
 import { DateRange as DayPickerDateRange } from "react-day-picker"
 
@@ -82,5 +83,69 @@ export function DatePickerWithRange({
   )
 }
 
-// Alias para compatibilidad con componentes existentes
-export const DateRangePicker = DatePickerWithRange;
+// Componente DateRangePicker con interfaz específica para compatibilidad
+interface DateRangePickerProps {
+  value: DateRange;
+  onChange: (date: DateRange) => void;
+  locale?: Locale;
+  placeholder?: string;
+  align?: "start" | "center" | "end";
+  className?: string;
+}
+
+export function DateRangePicker({
+  value,
+  onChange,
+  locale = es,
+  placeholder = "Seleccionar fechas",
+  align = "start",
+  className,
+}: DateRangePickerProps) {
+  return (
+    <div className={cn("grid gap-2", className)}>
+      <Popover>
+        <PopoverTrigger asChild>
+          <Button
+            variant={"outline"}
+            className={cn(
+              "w-full justify-start text-left font-normal",
+              !value && "text-muted-foreground"
+            )}
+          >
+            <CalendarIcon className="mr-2 h-4 w-4" />
+            {value?.from ? (
+              value.to ? (
+                <>
+                  {format(value.from, "d LLL, y", { locale })} -{" "}
+                  {format(value.to, "d LLL, y", { locale })}
+                </>
+              ) : (
+                format(value.from, "d LLL, y", { locale })
+              )
+            ) : (
+              <span>{placeholder}</span>
+            )}
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="w-auto p-0" align={align}>
+          <Calendar
+            initialFocus
+            mode="range"
+            defaultMonth={value?.from}
+            selected={value as DayPickerDateRange}
+            onSelect={(selected: DayPickerDateRange | undefined) => {
+              if (selected?.from) {
+                onChange({
+                  from: selected.from,
+                  to: selected.to
+                });
+              }
+            }}
+            numberOfMonths={2}
+            locale={locale}
+          />
+        </PopoverContent>
+      </Popover>
+    </div>
+  );
+}
