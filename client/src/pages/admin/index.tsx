@@ -82,7 +82,7 @@ export default function AdminModule() {
           <ul className="space-y-1 px-2">
             <li>
               <Link href="/admin">
-                <a className={`flex items-center px-3 py-2 rounded-md transition-colors ${
+                <div className={`flex items-center px-3 py-2 rounded-md transition-colors ${
                   isActive("/admin") && !isActive("/admin/clientes") && !isActive("/admin/modulos") 
                   && !isActive("/admin/facturacion") && !isActive("/admin/configuracion")
                     ? "bg-primary/10 text-primary"
@@ -90,55 +90,55 @@ export default function AdminModule() {
                 }`}>
                   <LayoutDashboard className="h-5 w-5" />
                   {isSidebarOpen && <span className="ml-3">Dashboard</span>}
-                </a>
+                </div>
               </Link>
             </li>
             <li>
               <Link href="/admin/clientes">
-                <a className={`flex items-center px-3 py-2 rounded-md transition-colors ${
+                <div className={`flex items-center px-3 py-2 rounded-md transition-colors ${
                   isActive("/admin/clientes")
                     ? "bg-primary/10 text-primary"
                     : "hover:bg-neutral-100"
                 }`}>
                   <Building2 className="h-5 w-5" />
                   {isSidebarOpen && <span className="ml-3">Empresas</span>}
-                </a>
+                </div>
               </Link>
             </li>
             <li>
               <Link href="/admin/modulos">
-                <a className={`flex items-center px-3 py-2 rounded-md transition-colors ${
+                <div className={`flex items-center px-3 py-2 rounded-md transition-colors ${
                   isActive("/admin/modulos")
                     ? "bg-primary/10 text-primary"
                     : "hover:bg-neutral-100"
                 }`}>
                   <Package className="h-5 w-5" />
                   {isSidebarOpen && <span className="ml-3">Módulos</span>}
-                </a>
+                </div>
               </Link>
             </li>
             <li>
               <Link href="/admin/facturacion">
-                <a className={`flex items-center px-3 py-2 rounded-md transition-colors ${
+                <div className={`flex items-center px-3 py-2 rounded-md transition-colors ${
                   isActive("/admin/facturacion")
                     ? "bg-primary/10 text-primary"
                     : "hover:bg-neutral-100"
                 }`}>
                   <FileBarChart className="h-5 w-5" />
                   {isSidebarOpen && <span className="ml-3">Facturación</span>}
-                </a>
+                </div>
               </Link>
             </li>
             <li>
               <Link href="/admin/configuracion">
-                <a className={`flex items-center px-3 py-2 rounded-md transition-colors ${
+                <div className={`flex items-center px-3 py-2 rounded-md transition-colors ${
                   isActive("/admin/configuracion")
                     ? "bg-primary/10 text-primary"
                     : "hover:bg-neutral-100"
                 }`}>
                   <Settings className="h-5 w-5" />
                   {isSidebarOpen && <span className="ml-3">Configuración</span>}
-                </a>
+                </div>
               </Link>
             </li>
           </ul>

@@ -138,10 +138,10 @@ function CompanyPortal({
             </Alert>
             <div className="text-center mt-8">
               <Button asChild>
-                <a href="/transparencia">
+                <div onClick={() => window.location.href = "/transparencia"} className="cursor-pointer">
                   <MailOpen className="mr-2 h-4 w-4" />
                   Volver al selector de portales
-                </a>
+                </div>
               </Button>
             </div>
           </main>
