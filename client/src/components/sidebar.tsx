@@ -17,6 +17,9 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
   // Sample navigation items (would normally come from a context/state)
   const [selectedLocation, setSelectedLocation] = useState("Restaurante El Jardín - Sede Central");
   
+  // Verificar si el usuario es administrador
+  const isAdmin = user?.role === "admin";
+  
   const mainModules: NavigationItem[] = [
     {
       path: "/appcc",
@@ -115,6 +118,13 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
   ];
   
   const configModules: NavigationItem[] = [
+    // Módulo de administración (solo para admin)
+    ...(isAdmin ? [{
+      path: "/admin",
+      label: "Administración",
+      icon: "fas fa-building",
+      isActive: location.startsWith("/admin")
+    }] : []),
     {
       path: "/settings",
       label: "Ajustes",

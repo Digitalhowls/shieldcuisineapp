@@ -307,7 +307,7 @@ export default function Detalles() {
               Desactivar
             </Button>
           ) : (
-            <Button variant="success">
+            <Button className="bg-green-600 hover:bg-green-700 text-white">
               <CheckCircle2 className="mr-2 h-4 w-4" />
               Activar
             </Button>
