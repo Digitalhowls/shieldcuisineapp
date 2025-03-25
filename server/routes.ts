@@ -194,6 +194,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Registrar rutas para la plataforma e-learning
   registerELearningRoutes(app);
+  
+  // Registrar rutas para el sistema de notificaciones
+  registerNotificationRoutes(app);
 
   const httpServer = createServer(app);
   return httpServer;
