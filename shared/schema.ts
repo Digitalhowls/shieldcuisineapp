@@ -467,3 +467,185 @@ export type InsertBankTransaction = z.infer<typeof insertBankTransactionSchema>;
 export type BankTransaction = typeof bankTransactions.$inferSelect;
 export type InsertBankCategoryRule = z.infer<typeof insertBankCategoryRuleSchema>;
 export type BankCategoryRule = typeof bankCategoriesRules.$inferSelect;
+
+// E-Learning Platform Tables
+export const courseTypes = pgEnum('course_type', ['food_safety', 'haccp', 'allergens', 'hygiene', 'management', 'customer_service']);
+
+export const courses = pgTable("courses", {
+  id: serial("id").primaryKey(),
+  companyId: integer("company_id").references(() => companies.id, { onDelete: 'cascade' }),
+  title: text("title").notNull(),
+  description: text("description"),
+  type: courseTypes("type").notNull(),
+  level: integer("level").default(1),
+  duration: integer("duration"), // in minutes
+  thumbnail: text("thumbnail"),
+  active: boolean("active").default(true),
+  requiredScore: integer("required_score").default(70),
+  published: boolean("published").default(false),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const lessons = pgTable("lessons", {
+  id: serial("id").primaryKey(),
+  courseId: integer("course_id").references(() => courses.id, { onDelete: 'cascade' }).notNull(),
+  title: text("title").notNull(),
+  content: text("content").notNull(),
+  videoUrl: text("video_url"),
+  order: integer("order").notNull(),
+  duration: integer("duration"), // in minutes
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const quizzes = pgTable("quizzes", {
+  id: serial("id").primaryKey(),
+  courseId: integer("course_id").references(() => courses.id, { onDelete: 'cascade' }).notNull(),
+  lessonId: integer("lesson_id").references(() => lessons.id, { onDelete: 'set null' }),
+  title: text("title").notNull(),
+  description: text("description"),
+  passingScore: integer("passing_score").default(70),
+  timeLimit: integer("time_limit"), // in minutes
+  randomizeQuestions: boolean("randomize_questions").default(false),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const questions = pgTable("questions", {
+  id: serial("id").primaryKey(),
+  quizId: integer("quiz_id").references(() => quizzes.id, { onDelete: 'cascade' }).notNull(),
+  text: text("text").notNull(),
+  type: text("type").notNull(), // multiple_choice, true_false, matching
+  points: integer("points").default(1),
+  order: integer("order"),
+  imageUrl: text("image_url"),
+  explanation: text("explanation"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const options = pgTable("options", {
+  id: serial("id").primaryKey(),
+  questionId: integer("question_id").references(() => questions.id, { onDelete: 'cascade' }).notNull(),
+  text: text("text").notNull(),
+  isCorrect: boolean("is_correct").default(false),
+  order: integer("order"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const userCourses = pgTable("user_courses", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id, { onDelete: 'cascade' }).notNull(),
+  courseId: integer("course_id").references(() => courses.id, { onDelete: 'cascade' }).notNull(),
+  startedAt: timestamp("started_at").defaultNow(),
+  completedAt: timestamp("completed_at"),
+  progress: integer("progress").default(0),
+  certificate: text("certificate"),
+  expiresAt: timestamp("expires_at"),
+  currentLessonId: integer("current_lesson_id").references(() => lessons.id),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const quizAttempts = pgTable("quiz_attempts", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id, { onDelete: 'cascade' }).notNull(),
+  quizId: integer("quiz_id").references(() => quizzes.id, { onDelete: 'cascade' }).notNull(),
+  userCourseId: integer("user_course_id").references(() => userCourses.id, { onDelete: 'cascade' }),
+  startedAt: timestamp("started_at").defaultNow(),
+  completedAt: timestamp("completed_at"),
+  score: integer("score"),
+  passed: boolean("passed").default(false),
+  timeSpent: integer("time_spent"), // in seconds
+  createdAt: timestamp("created_at").defaultNow()
+});
+
+export const userAnswers = pgTable("user_answers", {
+  id: serial("id").primaryKey(),
+  quizAttemptId: integer("quiz_attempt_id").references(() => quizAttempts.id, { onDelete: 'cascade' }).notNull(),
+  questionId: integer("question_id").references(() => questions.id, { onDelete: 'cascade' }).notNull(),
+  optionId: integer("option_id").references(() => options.id, { onDelete: 'cascade' }),
+  text: text("text"), // For open answers
+  isCorrect: boolean("is_correct").default(false),
+  createdAt: timestamp("created_at").defaultNow()
+});
+
+// Relationships for E-Learning
+export const courseRelations = relations(courses, ({ one, many }) => ({
+  company: one(companies, { fields: [courses.companyId], references: [companies.id] }),
+  lessons: many(lessons),
+  quizzes: many(quizzes),
+  userCourses: many(userCourses),
+}));
+
+export const lessonRelations = relations(lessons, ({ one, many }) => ({
+  course: one(courses, { fields: [lessons.courseId], references: [courses.id] }),
+  quizzes: many(quizzes),
+}));
+
+export const quizRelations = relations(quizzes, ({ one, many }) => ({
+  course: one(courses, { fields: [quizzes.courseId], references: [courses.id] }),
+  lesson: one(lessons, { fields: [quizzes.lessonId], references: [lessons.id] }),
+  questions: many(questions),
+  attempts: many(quizAttempts),
+}));
+
+export const questionRelations = relations(questions, ({ one, many }) => ({
+  quiz: one(quizzes, { fields: [questions.quizId], references: [quizzes.id] }),
+  options: many(options),
+  userAnswers: many(userAnswers),
+}));
+
+export const optionRelations = relations(options, ({ one, many }) => ({
+  question: one(questions, { fields: [options.questionId], references: [questions.id] }),
+  userAnswers: many(userAnswers),
+}));
+
+export const userCourseRelations = relations(userCourses, ({ one, many }) => ({
+  user: one(users, { fields: [userCourses.userId], references: [users.id] }),
+  course: one(courses, { fields: [userCourses.courseId], references: [courses.id] }),
+  currentLesson: one(lessons, { fields: [userCourses.currentLessonId], references: [lessons.id] }),
+  quizAttempts: many(quizAttempts),
+}));
+
+export const quizAttemptRelations = relations(quizAttempts, ({ one, many }) => ({
+  user: one(users, { fields: [quizAttempts.userId], references: [users.id] }),
+  quiz: one(quizzes, { fields: [quizAttempts.quizId], references: [quizzes.id] }),
+  userCourse: one(userCourses, { fields: [quizAttempts.userCourseId], references: [userCourses.id] }),
+  userAnswers: many(userAnswers),
+}));
+
+export const userAnswerRelations = relations(userAnswers, ({ one }) => ({
+  quizAttempt: one(quizAttempts, { fields: [userAnswers.quizAttemptId], references: [quizAttempts.id] }),
+  question: one(questions, { fields: [userAnswers.questionId], references: [questions.id] }),
+  option: one(options, { fields: [userAnswers.optionId], references: [options.id] }),
+}));
+
+// Insert schemas for E-Learning
+export const insertCourseSchema = createInsertSchema(courses);
+export const insertLessonSchema = createInsertSchema(lessons);
+export const insertQuizSchema = createInsertSchema(quizzes);
+export const insertQuestionSchema = createInsertSchema(questions);
+export const insertOptionSchema = createInsertSchema(options);
+export const insertUserCourseSchema = createInsertSchema(userCourses);
+export const insertQuizAttemptSchema = createInsertSchema(quizAttempts);
+export const insertUserAnswerSchema = createInsertSchema(userAnswers);
+
+// Types for E-Learning
+export type InsertCourse = z.infer<typeof insertCourseSchema>;
+export type Course = typeof courses.$inferSelect;
+export type InsertLesson = z.infer<typeof insertLessonSchema>;
+export type Lesson = typeof lessons.$inferSelect;
+export type InsertQuiz = z.infer<typeof insertQuizSchema>;
+export type Quiz = typeof quizzes.$inferSelect;
+export type InsertQuestion = z.infer<typeof insertQuestionSchema>;
+export type Question = typeof questions.$inferSelect;
+export type InsertOption = z.infer<typeof insertOptionSchema>;
+export type Option = typeof options.$inferSelect;
+export type InsertUserCourse = z.infer<typeof insertUserCourseSchema>;
+export type UserCourse = typeof userCourses.$inferSelect;
+export type InsertQuizAttempt = z.infer<typeof insertQuizAttemptSchema>;
+export type QuizAttempt = typeof quizAttempts.$inferSelect;
+export type InsertUserAnswer = z.infer<typeof insertUserAnswerSchema>;
+export type UserAnswer = typeof userAnswers.$inferSelect;

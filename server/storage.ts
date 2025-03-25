@@ -18,6 +18,14 @@ import {
   saleItems,
   invoices,
   invoiceItems,
+  courses,
+  lessons,
+  quizzes,
+  questions,
+  options,
+  userCourses,
+  quizAttempts,
+  userAnswers,
   type User,
   type InsertUser,
   type Company,
@@ -28,6 +36,22 @@ import {
   type InsertWarehouse,
   type Product,
   type InsertProduct,
+  type Course,
+  type InsertCourse,
+  type Lesson,
+  type InsertLesson,
+  type Quiz,
+  type InsertQuiz,
+  type Question,
+  type InsertQuestion,
+  type Option,
+  type InsertOption,
+  type UserCourse,
+  type InsertUserCourse,
+  type QuizAttempt,
+  type InsertQuizAttempt,
+  type UserAnswer,
+  type InsertUserAnswer,
   type ControlTemplate,
   type InsertControlTemplate,
   type ControlRecord,
@@ -80,6 +104,40 @@ export interface IStorage {
   createControlRecord(record: InsertControlRecord): Promise<ControlRecord>;
   updateControlRecord(id: number, data: Partial<InsertControlRecord>): Promise<ControlRecord | undefined>;
   
+  // E-Learning Courses
+  getCourses(companyId: number): Promise<Course[]>;
+  getCourse(id: number): Promise<Course | undefined>;
+  createCourse(course: InsertCourse): Promise<Course>;
+  updateCourse(id: number, data: Partial<InsertCourse>): Promise<Course | undefined>;
+  getUserCourses(userId: number): Promise<(UserCourse & { course: Course })[]>;
+  
+  // E-Learning Lessons
+  getLessons(courseId: number): Promise<Lesson[]>;
+  getLesson(id: number): Promise<Lesson | undefined>;
+  createLesson(lesson: InsertLesson): Promise<Lesson>;
+  updateLesson(id: number, data: Partial<InsertLesson>): Promise<Lesson | undefined>;
+  
+  // E-Learning Quizzes
+  getQuizzes(courseId: number): Promise<Quiz[]>;
+  getLessonQuiz(lessonId: number): Promise<Quiz | undefined>;
+  getQuiz(id: number): Promise<Quiz | undefined>;
+  createQuiz(quiz: InsertQuiz): Promise<Quiz>;
+  
+  // E-Learning Questions & Options
+  getQuestions(quizId: number): Promise<Question[]>;
+  createQuestion(question: InsertQuestion): Promise<Question>;
+  getOptions(questionId: number): Promise<Option[]>;
+  createOption(option: InsertOption): Promise<Option>;
+  
+  // E-Learning User Interactions
+  enrollUserInCourse(userCourse: InsertUserCourse): Promise<UserCourse>;
+  getUserCourse(userId: number, courseId: number): Promise<UserCourse | undefined>;
+  updateUserCourseProgress(id: number, data: Partial<InsertUserCourse>): Promise<UserCourse | undefined>;
+  createQuizAttempt(attempt: InsertQuizAttempt): Promise<QuizAttempt>;
+  submitUserAnswer(answer: InsertUserAnswer): Promise<UserAnswer>;
+  getQuizAttempts(userId: number, quizId: number): Promise<QuizAttempt[]>;
+  getQuizResults(attemptId: number): Promise<{ attempt: QuizAttempt; answers: UserAnswer[] }>;
+  
   // Session storage
   sessionStore: any;
 }
@@ -91,6 +149,204 @@ export class DatabaseStorage implements IStorage {
     this.sessionStore = new MemoryStore({
       checkPeriod: 86400000 // Prune expired entries every 24h
     });
+  }
+  
+  // E-Learning Courses
+  async getCourses(companyId: number): Promise<Course[]> {
+    return await db.select().from(courses).where(eq(courses.companyId, companyId));
+  }
+  
+  async getCourse(id: number): Promise<Course | undefined> {
+    const [course] = await db.select().from(courses).where(eq(courses.id, id));
+    return course;
+  }
+  
+  async createCourse(course: InsertCourse): Promise<Course> {
+    const [newCourse] = await db.insert(courses).values(course).returning();
+    return newCourse;
+  }
+  
+  async updateCourse(id: number, data: Partial<InsertCourse>): Promise<Course | undefined> {
+    const [updatedCourse] = await db
+      .update(courses)
+      .set(data)
+      .where(eq(courses.id, id))
+      .returning();
+    return updatedCourse;
+  }
+  
+  async getUserCourses(userId: number): Promise<(UserCourse & { course: Course })[]> {
+    const userCoursesData = await db.select().from(userCourses).where(eq(userCourses.userId, userId));
+    const result = [];
+
+    for (const uc of userCoursesData) {
+      const course = await this.getCourse(uc.courseId);
+      if (course) {
+        result.push({
+          ...uc,
+          course
+        });
+      }
+    }
+    
+    return result;
+  }
+  
+  // E-Learning Lessons
+  async getLessons(courseId: number): Promise<Lesson[]> {
+    return await db.select().from(lessons).where(eq(lessons.courseId, courseId));
+  }
+  
+  async getLesson(id: number): Promise<Lesson | undefined> {
+    const [lesson] = await db.select().from(lessons).where(eq(lessons.id, id));
+    return lesson;
+  }
+  
+  async createLesson(lesson: InsertLesson): Promise<Lesson> {
+    const [newLesson] = await db.insert(lessons).values(lesson).returning();
+    return newLesson;
+  }
+  
+  async updateLesson(id: number, data: Partial<InsertLesson>): Promise<Lesson | undefined> {
+    const [updatedLesson] = await db
+      .update(lessons)
+      .set(data)
+      .where(eq(lessons.id, id))
+      .returning();
+    return updatedLesson;
+  }
+  
+  // E-Learning Quizzes
+  async getQuizzes(courseId: number): Promise<Quiz[]> {
+    return await db.select().from(quizzes).where(eq(quizzes.courseId, courseId));
+  }
+  
+  async getLessonQuiz(lessonId: number): Promise<Quiz | undefined> {
+    const [quiz] = await db.select().from(quizzes).where(eq(quizzes.lessonId, lessonId));
+    return quiz;
+  }
+  
+  async getQuiz(id: number): Promise<Quiz | undefined> {
+    const [quiz] = await db.select().from(quizzes).where(eq(quizzes.id, id));
+    return quiz;
+  }
+  
+  async createQuiz(quiz: InsertQuiz): Promise<Quiz> {
+    const [newQuiz] = await db.insert(quizzes).values(quiz).returning();
+    return newQuiz;
+  }
+  
+  // E-Learning Questions & Options
+  async getQuestions(quizId: number): Promise<Question[]> {
+    return await db.select().from(questions).where(eq(questions.quizId, quizId));
+  }
+  
+  async getQuestion(id: number): Promise<Question | undefined> {
+    const [question] = await db.select().from(questions).where(eq(questions.id, id));
+    return question;
+  }
+  
+  async createQuestion(question: InsertQuestion): Promise<Question> {
+    const [newQuestion] = await db.insert(questions).values(question).returning();
+    return newQuestion;
+  }
+  
+  async getOptions(questionId: number): Promise<Option[]> {
+    return await db.select().from(options).where(eq(options.questionId, questionId));
+  }
+  
+  async getOption(id: number): Promise<Option | undefined> {
+    const [option] = await db.select().from(options).where(eq(options.id, id));
+    return option;
+  }
+  
+  async createOption(option: InsertOption): Promise<Option> {
+    const [newOption] = await db.insert(options).values(option).returning();
+    return newOption;
+  }
+  
+  // E-Learning User Interactions
+  async enrollUserInCourse(userCourse: InsertUserCourse): Promise<UserCourse> {
+    const [newUserCourse] = await db.insert(userCourses).values(userCourse).returning();
+    return newUserCourse;
+  }
+  
+  async getUserCourse(userId: number, courseId: number): Promise<UserCourse | undefined> {
+    const [userCourse] = await db
+      .select()
+      .from(userCourses)
+      .where(eq(userCourses.userId, userId))
+      .where(eq(userCourses.courseId, courseId));
+    return userCourse;
+  }
+  
+  async updateUserCourseProgress(id: number, data: Partial<InsertUserCourse>): Promise<UserCourse | undefined> {
+    const [updatedUserCourse] = await db
+      .update(userCourses)
+      .set(data)
+      .where(eq(userCourses.id, id))
+      .returning();
+    return updatedUserCourse;
+  }
+  
+  async createQuizAttempt(attempt: InsertQuizAttempt): Promise<QuizAttempt> {
+    const [newAttempt] = await db.insert(quizAttempts).values(attempt).returning();
+    return newAttempt;
+  }
+  
+  async getQuizAttempt(id: number): Promise<QuizAttempt | undefined> {
+    const [attempt] = await db.select().from(quizAttempts).where(eq(quizAttempts.id, id));
+    return attempt;
+  }
+  
+  async getQuizAttempts(userId: number, quizId: number): Promise<QuizAttempt[]> {
+    return await db
+      .select()
+      .from(quizAttempts)
+      .where(eq(quizAttempts.userId, userId))
+      .where(eq(quizAttempts.quizId, quizId));
+  }
+  
+  async getUserQuizAttempts(userId: number): Promise<QuizAttempt[]> {
+    return await db
+      .select()
+      .from(quizAttempts)
+      .where(eq(quizAttempts.userId, userId));
+  }
+  
+  async updateQuizAttempt(id: number, data: Partial<InsertQuizAttempt>): Promise<QuizAttempt | undefined> {
+    const [updatedAttempt] = await db
+      .update(quizAttempts)
+      .set(data)
+      .where(eq(quizAttempts.id, id))
+      .returning();
+    return updatedAttempt;
+  }
+  
+  async submitUserAnswer(answer: InsertUserAnswer): Promise<UserAnswer> {
+    const [newAnswer] = await db.insert(userAnswers).values(answer).returning();
+    return newAnswer;
+  }
+  
+  async getUserAnswers(attemptId: number): Promise<UserAnswer[]> {
+    return await db
+      .select()
+      .from(userAnswers)
+      .where(eq(userAnswers.quizAttemptId, attemptId));
+  }
+  
+  async getQuizResults(attemptId: number): Promise<{ attempt: QuizAttempt; answers: UserAnswer[] }> {
+    const attempt = await this.getQuizAttempt(attemptId);
+    if (!attempt) {
+      throw new Error("Quiz attempt not found");
+    }
+    
+    const answers = await this.getUserAnswers(attemptId);
+    
+    return {
+      attempt,
+      answers
+    };
   }
   
   // User management
