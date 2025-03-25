@@ -11,6 +11,14 @@ export const documentTypeEnum = pgEnum('document_type', ['invoice', 'receipt', '
 export const businessTypeEnum = pgEnum('business_type', ['restaurant', 'store', 'production', 'catering', 'wholesale']);
 export const bankAccountTypeEnum = pgEnum('bank_account_type', ['checking', 'savings', 'credit']);
 export const bankTransactionTypeEnum = pgEnum('bank_transaction_type', ['payment', 'charge', 'transfer', 'deposit', 'withdrawal', 'fee']);
+export const notificationTypeEnum = pgEnum('notification_type', [
+  'appcc_control', // Controles APPCC pendientes o completados
+  'inventory', // Notificaciones relacionadas con inventario (stock bajo, etc)
+  'learning', // Notificaciones de formación (nuevos cursos, completados, etc)
+  'banking', // Alertas bancarias (nuevas transacciones, etc)
+  'system', // Notificaciones del sistema
+  'security' // Alertas de seguridad
+]);
 
 // Tables
 export const users = pgTable("users", {
@@ -330,8 +338,38 @@ export const bankCategoriesRules = pgTable("bank_categories_rules", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
+// Tablas para sistema de notificaciones
+export const notifications = pgTable("notifications", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull().references(() => users.id),
+  title: text("title").notNull(),
+  body: text("body").notNull(),
+  type: notificationTypeEnum("type").notNull(),
+  icon: text("icon"), // Nombre del icono (para frontend)
+  url: text("url"), // URL opcional para redireccionar al hacer clic
+  isRead: boolean("is_read").notNull().default(false),
+  metadata: jsonb("metadata"), // Datos adicionales específicos del tipo de notificación
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  expiresAt: timestamp("expires_at"), // Fecha opcional de caducidad
+});
+
+export const notificationPreferences = pgTable("notification_preferences", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull().references(() => users.id),
+  appccNotifications: boolean("appcc_notifications").notNull().default(true),
+  inventoryNotifications: boolean("inventory_notifications").notNull().default(true),
+  learningNotifications: boolean("learning_notifications").notNull().default(true),
+  bankingNotifications: boolean("banking_notifications").notNull().default(true),
+  systemNotifications: boolean("system_notifications").notNull().default(true),
+  securityNotifications: boolean("security_notifications").notNull().default(true),
+  emailNotifications: boolean("email_notifications").notNull().default(true),
+  emailFrequency: text("email_frequency").notNull().default("daily"), // "immediate", "daily", "weekly"
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
 // Relations
-export const userRelations = relations(users, ({ one }) => ({
+export const userRelations = relations(users, ({ one, many }) => ({
   company: one(companies, {
     fields: [users.companyId],
     references: [companies.id],
@@ -340,6 +378,8 @@ export const userRelations = relations(users, ({ one }) => ({
     fields: [users.locationId],
     references: [locations.id],
   }),
+  notifications: many(notifications),
+  notificationPreferences: one(notificationPreferences),
 }));
 
 export const companyRelations = relations(companies, ({ many }) => ({
@@ -421,6 +461,10 @@ export const insertBankConnectionSchema = createInsertSchema(bankConnections).om
 export const insertBankAccountSchema = createInsertSchema(bankAccounts).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertBankTransactionSchema = createInsertSchema(bankTransactions).omit({ id: true, createdAt: true });
 export const insertBankCategoryRuleSchema = createInsertSchema(bankCategoriesRules).omit({ id: true, createdAt: true, updatedAt: true });
+
+// Esquemas para notificaciones
+export const insertNotificationSchema = createInsertSchema(notifications).omit({ id: true, createdAt: true });
+export const insertNotificationPreferencesSchema = createInsertSchema(notificationPreferences).omit({ id: true, createdAt: true, updatedAt: true });
 
 // Type exports
 export type InsertUser = z.infer<typeof insertUserSchema>;
