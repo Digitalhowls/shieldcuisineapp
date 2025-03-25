@@ -1,0 +1,357 @@
+¡
+Este será un documento maestro que define:
+• El proyecto completo con todas sus funciones
+• La lógica esperada del sistema
+• Los flujos de trabajo y reglas de negocio
+• Las tecnologías recomendadas
+• Y lo más importante: una guía para que Replit Agent trabaje de forma autónoma y sin intervención humana
+ 
+🛡️ Prompt Maestro para Replit Agent – Proyecto ShieldCuisine
+ 
+📦 PARTE 1 – DESCRIPCIÓN GENERAL DEL PROYECTO
+
+🧾 Nombre del proyecto:
+
+ShieldCuisine
+
+🎯 Descripción:
+
+Aplicación web para la gestión integral y automatizada de negocios de alimentación (restaurantes, obradores, tiendas, supermercados, catering o industrias). ShieldCuisine digitaliza procesos clave: seguridad alimentaria (APPCC), trazabilidad, almacén, ventas, producción, facturación, personal y formación, integrando todo en un ecosistema modular y conectado.
+
+🤖 Objetivo de ejecución:
+
+Replit Agent debe actuar de manera completamente autónoma, tomando las mejores decisiones técnicas en cada fase del desarrollo. No se requerirá intervención humana en ningún punto del proceso.
+
+💻 Plataforma:
+
+Aplicación web responsiva (PWA), accesible desde ordenadores, tablets y móviles.
+
+🌐 Funcionamiento:
+
+Principalmente online, pero deberá incluir modo offline para áreas críticas como TPV y control diario (con sincronización posterior).
+
+☁️ Hosting:
+
+El agente deberá seleccionar la mejor opción entre Replit, AWS, Railway o Vercel, con preferencia por una solución escalable y segura.
+
+🗂️ Base de datos:
+
+Usar PostgreSQL como motor principal. En casos que lo justifiquen, se puede utilizar MongoDB como base secundaria para documentos dinámicos.
+
+🌍 Idioma:
+• Lenguaje de interacción con Replit Agent: Español
+• Idioma de la interfaz de la app: Español (debe permitir traducción futura)
+ 
+🧩 PARTE 2 – ESTRUCTURA MODULAR Y LÓGICA DEL SISTEMA
+
+🧱 Arquitectura general:
+• Multiempresa: Una cuenta puede tener múltiples empresas registradas (cliente final).
+• Multisede: Cada empresa puede tener múltiples locales, obradores o tiendas.
+• Multi-almacén: Cada local puede tener múltiples almacenes físicos o virtuales.
+• Multimódulo: Activación/desactivación de módulos según tipo de negocio.
+
+⚙️ Cada módulo debe poder funcionar de manera autónoma o interconectada, respetando permisos, contexto de empresa, local y almacén.
+ 
+🔍 PARTE 3 – MÓDULO 1: APPCC Y CUMPLIMIENTO NORMATIVO (Versión avanzada)
+
+🎯 Objetivo:
+
+Digitalizar y automatizar el sistema APPCC adaptado a cada tipo de negocio alimentario. Eliminar el papel, mejorar la trazabilidad y facilitar auditorías.
+
+🧠 Funciones clave:
+1. Constructor de plantillas tipo drag & drop:
+• Permite crear fichas de control personalizadas.
+• Elementos: checkbox, texto, número, imagen, firma, adjunto, selectores.
+• Configuración de periodicidad: diaria, semanal, mensual.
+• Configuración de responsables, ubicación (local y almacén), tipo de aviso.
+2. Tipos de ficha:
+• Checklist: Limpieza, desinfección, control rutinario.
+• Formulario: Registro de entrada de mercancía, partes de apertura/cierre, incidentes.
+3. Vistas:
+• Vista diaria: Acceso desde dispositivos móviles/tablets para usuarios operativos.
+• Vista mensual: Seguimiento de cumplimiento para supervisores.
+4. Firma digital y trazabilidad total:
+• Registro inviolable con firma del usuario.
+• Generación automática de PDF si se requiere.
+5. Alertas automáticas:
+• Por incumplimiento, retraso o anomalías.
+• Integradas con sistema de notificaciones global.
+6. Informes:
+• Informes automáticos (mensuales, por control, por área).
+• Exportables en PDF, CSV o acceso vía API.
+
+🔗 Integración:
+• Módulo 2 (Almacén): puede alimentar datos (temperatura cámaras, recepción).
+• Módulo 7 (Portal de transparencia): publica registros aprobados.
+• Módulo 13 (Avisos): se encarga de las notificaciones y recordatorios.
+ 
+🧩 PARTE 4 – MÓDULO 2: GESTIÓN DE ALMACÉN Y TRAZABILIDAD MULTISEDE
+
+🎯 Objetivo:
+
+Controlar entradas, salidas, traslados, caducidades y trazabilidad total de alimentos e insumos por sede y almacén.
+
+🧠 Funciones clave:
+1. Multi-almacén por local:
+• Posibilidad de definir múltiples almacenes físicos o virtuales.
+• Ej: Almacén de materia prima, de producto terminado, de descartes.
+2. Trazabilidad avanzada:
+• Lote, proveedor, fecha de entrada, caducidad, precio de compra.
+• Historial completo de movimientos por producto.
+3. Movimientos entre almacenes o locales:
+• TPV de traslado interno con validación.
+• Registro de envío, recepción, fecha, responsables.
+4. Escaneo de productos:
+• Código de barras o QR.
+• Asignación automática al producto correspondiente.
+5. Inventario:
+• Auditoría manual o escaneada.
+• Informes de diferencia entre stock teórico y real.
+6. Alertas:
+• Producto cercano a caducidad.
+• Stock bajo mínimo configurable.
+
+🔗 Integración:
+• Módulo 6 (Escandallos): descuenta automáticamente ingredientes.
+• Módulo 3 (TPV): descuenta stock según venta.
+• Módulo 9 (Producción): insumo y producto terminado.
+• Módulo 8 (Proveedores): entrada de mercancía vinculada.
+ 
+🧩 PARTE 5 – MÓDULO 3: SISTEMA TPV (MULTITIPO)
+
+🎯 Objetivo:
+
+Gestionar ventas, entradas, salidas, pedidos internos o albaranes desde terminales especializados según tipo de negocio.
+
+🧠 Tipos de TPV:
+
+🍽️ TPV Restaurante:
+• Gestión de mesas.
+• Pedidos por comensal y por ronda.
+• Envío automático a cocina (categorías).
+• División/fusión de cuentas.
+• Impresión o factura digital.
+
+🛒 TPV Tienda/Supermercado:
+• Escaneo de productos.
+• Venta rápida.
+• Métodos de pago múltiples.
+• Integración con balanzas (si aplica).
+
+🏭 TPV Industria/Obrador:
+1. Recepción de mercancías
+• Escaneo, asignación de lote y almacén.
+• Vinculado al módulo de compras.
+2. Albarán de salida
+• Generación de documento sin ticket.
+• Vinculado a cliente y almacén origen.
+3. Preparación de pedidos internos
+• Movimiento de stock entre sedes.
+• Validación por escaneo y doble control.
+
+🧠 Comportamiento general:
+• Todos los TPVs deben funcionar en modo offline (con sincronización posterior).
+• Interfaz responsiva y adaptada a pantalla táctil.
+• Accesos y permisos por rol, local y tipo de TPV.
+
+🔗 Integración:
+• Módulo 2 (Almacén): entradas, salidas, consumos.
+• Módulo 4 (Facturación): generación automática de facturas.
+• Módulo 9 (Producción): activación de órdenes de producción.
+ 
+ 
+🧩 PARTE 6 – MÓDULO 4: FACTURACIÓN Y FINANZAS
+
+🎯 Objetivo:
+
+Automatizar la generación de facturas, control de impuestos y exportación de datos financieros para contabilidad externa.
+
+🧠 Funciones clave:
+1. Facturación automática:
+• Basada en ventas desde el TPV.
+• Basada en albaranes o pedidos emitidos.
+• Soporta clientes con NIF, CIF, dirección fiscal, etc.
+2. Generación de facturas en PDF:
+• Con logotipo, datos de la empresa y pie personalizado.
+• Opción de envío automático por correo al cliente.
+3. Gestión de impuestos:
+• Configuración de IVA, IRPF u otros según país.
+• División automática de bases y tipos.
+4. Exportación:
+• Informes contables en Excel, CSV y PDF.
+• Por fechas, cliente, sede o tipo de operación.
+5. Facturación programada:
+• Facturas agrupadas por periodo (ej. cliente recurrente semanal/mensual).
+
+🔗 Integraciones:
+• TPV (Módulo 3): Cada ticket puede generar factura.
+• Bancos (Módulo 5): Conciliación de pagos.
+• Cursos (Módulo 12): Facturación de formación o certificaciones.
+ 
+🧩 PARTE 7 – MÓDULO 5: CONEXIÓN BANCARIA Y GESTIÓN DE PAGOS
+
+🎯 Objetivo:
+
+Controlar pagos y cobros sincronizando cuentas bancarias, y automatizar conciliaciones.
+
+🧠 Funciones clave:
+1. Conexión con bancos (PSD2 / Open Banking):
+• Usar APIs como Plaid, Tink, Salt Edge según país.
+• Acceso a movimientos, saldos y detalles de transacciones.
+2. Conciliación automática:
+• Revisión de facturas cobradas.
+• Asociación automática entre movimientos y facturas.
+3. Cobros domiciliados (SEPA):
+• Generación de ficheros XML SEPA.
+• Agrupación por cliente y periodicidad.
+4. Panel financiero:
+• Reportes en tiempo real.
+• Filtros por sede, tipo de operación o estado.
+ 
+🧩 PARTE 8 – MÓDULO 6: ESCANDALLOS Y FICHAS TÉCNICAS
+
+🎯 Objetivo:
+
+Gestionar recetas, ingredientes, costos y etiquetado para productos elaborados.
+
+🧠 Funciones clave:
+1. Creación de fichas técnicas:
+• Ingredientes, cantidades, descripción de elaboración, unidad de medida.
+• Cálculo automático de costes según el precio de compra actualizado.
+2. Etiquetado nutricional y alérgenos:
+• Manual o automático.
+• Etiquetas generadas en PDF con toda la información requerida.
+3. Control de stock desde receta:
+• Al producir un producto, se descuentan automáticamente los ingredientes usados del almacén correspondiente.
+4. Multi-formato:
+• Escandallos para bandejas, unidades, raciones o lotes.
+ 
+🧩 PARTE 9 – MÓDULO 7: PORTAL DE TRANSPARENCIA
+
+🎯 Objetivo:
+
+Permitir a los clientes finales consultar información de seguridad alimentaria, higiene y fichas de producto.
+
+🧠 Funciones clave:
+1. Publicación de registros APPCC:
+• Sólo los aprobados y conformes.
+• Por local o empresa.
+2. Acceso a fichas de productos:
+• Ingredientes, alérgenos, valores nutricionales.
+3. Certificados:
+• Visualización y descarga de documentos legales o sanitarios.
+4. Personalización:
+• Branding del negocio, colores, logo y estilo.
+ 
+🧩 PARTE 10 – MÓDULO 8: PEDIDOS Y PROVEEDORES
+
+🎯 Objetivo:
+
+Optimizar compras, recepción de productos y vinculación con almacenes.
+
+🧠 Funciones clave:
+1. Órdenes de compra:
+• Por proveedor, sede y almacén.
+• Agrupadas por categoría o fecha de entrega.
+2. Seguimiento de estado:
+• Pendiente, Enviado, Parcial, Recibido.
+• Incidencias registradas con evidencia (foto/comentario).
+3. Vinculación con stock:
+• Al recibir el pedido, se ingresa automáticamente al almacén correspondiente.
+• Vinculado a TPV de industria/recepción.
+4. Gestión de proveedores:
+• Datos fiscales, contacto, productos frecuentes, fiabilidad.
+ 
+🧩 PARTE 11 – MÓDULO 9: PRODUCCIÓN Y FABRICACIÓN
+
+🎯 Objetivo:
+
+Planificar y registrar producción de productos elaborados.
+
+🧠 Funciones clave:
+1. Planificación automática:
+• Según stock mínimo, demanda o pedidos abiertos.
+2. Registro de lotes:
+• Generación de lote único, vinculación con escandallo.
+3. Control de mermas:
+• Registro de cantidades no utilizables.
+4. Dashboard de eficiencia:
+• Producción por día, local, producto o usuario.
+• Comparativa teórico vs. real.
+ 
+🧩 PARTE 12 – MÓDULO 10: RRHH Y TURNOS
+
+🎯 Objetivo:
+
+Controlar asistencia, fichajes y turnos del personal.
+
+🧠 Funciones clave:
+1. Fichaje con QR o app:
+• Entrada y salida.
+• Ubicación y hora exacta.
+2. Gestión de turnos:
+• Planificación por rol y sede.
+• Vacaciones y ausencias.
+3. Reportes:
+• Horas trabajadas, incidencias, historial de empleados.
+ 
+🧩 PARTE 13 – MÓDULO 11-12-13: EXTRAS AVANZADOS
+
+🌐 Módulo 11: Integración con WooCommerce
+• Sincronización de productos, precios, stock.
+• Recepción de pedidos vía webhook.
+• Integración con producción y almacén.
+
+🎓 Módulo 12: Formación y cursos online
+• Plataforma e-learning integrada.
+• Cursos de APPCC, higiene, procedimientos internos.
+• Certificación automática y panel de seguimiento.
+
+🔔 Módulo 13: Sistema de avisos y notificaciones
+• Notificaciones push/web/email/WhatsApp.
+• Programación de alertas recurrentes.
+• Vinculación con fichas APPCC, auditorías, pedidos, vencimientos.
+ 
+🛡️ PARTE 14 – ROLES, SEGURIDAD Y PERMISOS
+
+🎯 Objetivo:
+
+Garantizar una gestión segura, multiusuario y jerarquizada por roles y localización.
+
+🧠 Esquema de roles (editable por superadmin):
+• Administrador global
+• Responsable de local
+• Supervisor de área
+• Empleado operativo
+• Usuario externo (cliente del portal)
+
+🔒 Seguridad esperada:
+• Autenticación con contraseña, 2FA y/o login social (Google, Microsoft).
+• Cifrado de datos sensibles.
+• Registro de actividad (logs de acciones).
+ 
+🧩 PARTE 15 – INTERFAZ, EXPERIENCIA Y FUNCIONES TRANSVERSALES
+
+🎨 Interfaz:
+• Basada en React o Next.js
+• Material UI o diseño propio limpio y responsivo.
+• Soporte para modo oscuro.
+• Navegación lateral y búsqueda rápida.
+
+📲 Experiencia:
+• Optimización móvil.
+• Interacción táctil fluida.
+• Formularios con autoguardado.
+• Modo offline para módulos críticos.
+
+🔁 Funciones transversales:
+• Filtro por empresa, local y fecha en todas las vistas.
+• Exportación masiva de datos.
+• Buscador global inteligente.
+• Módulo de configuración con flags por sede/modo de negocio.
+ 
+🔚 CONCLUSIÓN Y ORDEN FINAL
+
+🔧 Replit Agent debe construir ShieldCuisine como un sistema modular, autónomo, escalable, seguro y adaptable, cumpliendo con todos los comportamientos detallados aquí. El desarrollo debe ejecutarse sin intervención humana, aplicando las mejores prácticas y decisiones técnicas donde haya ambigüedad.
+
+
