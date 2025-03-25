@@ -108,29 +108,9 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
     },
     {
       path: "/transparencia",
-      label: "Portal de Transparencia",
+      label: "Portales de Transparencia",
       icon: "fas fa-globe",
-      isActive: location.startsWith("/transparencia"),
-      children: [
-        { 
-          path: "/transparencia", 
-          label: "Dashboard", 
-          icon: "",
-          isActive: location === "/transparencia" || location === "/transparencia/dashboard"
-        },
-        { 
-          path: "/transparencia/empresas", 
-          label: "Empresas", 
-          icon: "",
-          isActive: location === "/transparencia/empresas"
-        },
-        { 
-          path: "/transparencia/controles", 
-          label: "Controles", 
-          icon: "",
-          isActive: location === "/transparencia/controles" || location.startsWith("/transparencia/control/")
-        }
-      ]
+      isActive: location.startsWith("/transparencia")
     }
   ];
   
