@@ -11,6 +11,7 @@ import { registerAIAnalysisRoutes } from "./routes/ai-analysis";
 import { registerWooCommerceRoutes } from "./routes/woocommerce";
 import { registerBankingRoutes } from "./routes/banking";
 import { registerELearningRoutes } from "./routes/e-learning";
+import { registerNotificationRoutes } from "./routes/notifications";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Setup auth routes

@@ -26,6 +26,8 @@ import {
   userCourses,
   quizAttempts,
   userAnswers,
+  notifications,
+  notificationPreferences,
   type User,
   type InsertUser,
   type Company,
@@ -55,7 +57,11 @@ import {
   type ControlTemplate,
   type InsertControlTemplate,
   type ControlRecord,
-  type InsertControlRecord
+  type InsertControlRecord,
+  type Notification,
+  type InsertNotification,
+  type NotificationPreferences,
+  type InsertNotificationPreferences
 } from "@shared/schema";
 import session from "express-session";
 import createMemoryStore from "memorystore";
@@ -137,6 +143,19 @@ export interface IStorage {
   submitUserAnswer(answer: InsertUserAnswer): Promise<UserAnswer>;
   getQuizAttempts(userId: number, quizId: number): Promise<QuizAttempt[]>;
   getQuizResults(attemptId: number): Promise<{ attempt: QuizAttempt; answers: UserAnswer[] }>;
+  
+  // Notifications
+  getUserNotifications(userId: number): Promise<Notification[]>;
+  getUserUnreadNotifications(userId: number): Promise<Notification[]>;
+  createNotification(notification: InsertNotification): Promise<Notification>;
+  markNotificationAsRead(id: number): Promise<Notification | undefined>;
+  markAllNotificationsAsRead(userId: number): Promise<void>;
+  deleteNotification(id: number): Promise<void>;
+  
+  // Notification Preferences
+  getUserNotificationPreferences(userId: number): Promise<NotificationPreferences | undefined>;
+  createNotificationPreferences(preferences: InsertNotificationPreferences): Promise<NotificationPreferences>;
+  updateNotificationPreferences(id: number, data: Partial<InsertNotificationPreferences>): Promise<NotificationPreferences | undefined>;
   
   // Session storage
   sessionStore: any;
@@ -485,6 +504,67 @@ export class DatabaseStorage implements IStorage {
       .where(eq(controlRecords.id, id))
       .returning();
     return updatedRecord;
+  }
+  
+  // Notifications
+  async getUserNotifications(userId: number): Promise<Notification[]> {
+    return await db.select().from(notifications).where(eq(notifications.userId, userId));
+  }
+  
+  async getUserUnreadNotifications(userId: number): Promise<Notification[]> {
+    return await db
+      .select()
+      .from(notifications)
+      .where(eq(notifications.userId, userId))
+      .where(eq(notifications.read, false));
+  }
+  
+  async createNotification(notification: InsertNotification): Promise<Notification> {
+    const [newNotification] = await db.insert(notifications).values(notification).returning();
+    return newNotification;
+  }
+  
+  async markNotificationAsRead(id: number): Promise<Notification | undefined> {
+    const [updatedNotification] = await db
+      .update(notifications)
+      .set({ read: true })
+      .where(eq(notifications.id, id))
+      .returning();
+    return updatedNotification;
+  }
+  
+  async markAllNotificationsAsRead(userId: number): Promise<void> {
+    await db
+      .update(notifications)
+      .set({ read: true })
+      .where(eq(notifications.userId, userId));
+  }
+  
+  async deleteNotification(id: number): Promise<void> {
+    await db.delete(notifications).where(eq(notifications.id, id));
+  }
+  
+  // Notification Preferences
+  async getUserNotificationPreferences(userId: number): Promise<NotificationPreferences | undefined> {
+    const [preferences] = await db
+      .select()
+      .from(notificationPreferences)
+      .where(eq(notificationPreferences.userId, userId));
+    return preferences;
+  }
+  
+  async createNotificationPreferences(preferences: InsertNotificationPreferences): Promise<NotificationPreferences> {
+    const [newPreferences] = await db.insert(notificationPreferences).values(preferences).returning();
+    return newPreferences;
+  }
+  
+  async updateNotificationPreferences(id: number, data: Partial<InsertNotificationPreferences>): Promise<NotificationPreferences | undefined> {
+    const [updatedPreferences] = await db
+      .update(notificationPreferences)
+      .set(data)
+      .where(eq(notificationPreferences.id, id))
+      .returning();
+    return updatedPreferences;
   }
 }
 

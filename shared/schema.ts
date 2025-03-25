@@ -512,6 +512,12 @@ export type BankTransaction = typeof bankTransactions.$inferSelect;
 export type InsertBankCategoryRule = z.infer<typeof insertBankCategoryRuleSchema>;
 export type BankCategoryRule = typeof bankCategoriesRules.$inferSelect;
 
+// Tipos para notificaciones
+export type InsertNotification = z.infer<typeof insertNotificationSchema>;
+export type Notification = typeof notifications.$inferSelect;
+export type InsertNotificationPreferences = z.infer<typeof insertNotificationPreferencesSchema>;
+export type NotificationPreferences = typeof notificationPreferences.$inferSelect;
+
 // E-Learning Platform Tables
 export const courseTypes = pgEnum('course_type', ['food_safety', 'haccp', 'allergens', 'hygiene', 'management', 'customer_service']);
 
@@ -664,6 +670,15 @@ export const userAnswerRelations = relations(userAnswers, ({ one }) => ({
   quizAttempt: one(quizAttempts, { fields: [userAnswers.quizAttemptId], references: [quizAttempts.id] }),
   question: one(questions, { fields: [userAnswers.questionId], references: [questions.id] }),
   option: one(options, { fields: [userAnswers.optionId], references: [options.id] }),
+}));
+
+// Relaciones para notificaciones
+export const notificationRelations = relations(notifications, ({ one }) => ({
+  user: one(users, { fields: [notifications.userId], references: [users.id] }),
+}));
+
+export const notificationPreferencesRelations = relations(notificationPreferences, ({ one }) => ({
+  user: one(users, { fields: [notificationPreferences.userId], references: [users.id] }),
 }));
 
 // Insert schemas for E-Learning
