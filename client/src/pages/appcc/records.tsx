@@ -399,9 +399,11 @@ export default function Records() {
                         <FileText className="h-4 w-4 mr-2" />
                         PDF
                       </Button>
-                      <Button variant="outline" onClick={() => handleViewControl(control.id)}>
-                        <CheckCircle className="h-4 w-4 mr-2" />
-                        Ver Detalle
+                      <Button variant="outline" asChild>
+                        <Link href={`/appcc/control/${control.id}`}>
+                          <CheckCircle className="h-4 w-4 mr-2" />
+                          Ver Detalle
+                        </Link>
                       </Button>
                     </>
                   )}

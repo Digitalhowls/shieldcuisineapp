@@ -7,6 +7,7 @@ import DailyControls from "@/pages/appcc/daily-controls";
 import Records from "@/pages/appcc/records";
 import Templates from "@/pages/appcc/templates";
 import Reports from "@/pages/appcc/reports";
+import ControlDetail from "@/pages/appcc/control-detail";
 import NotFound from "@/pages/not-found";
 
 export default function AppccModule() {
@@ -61,6 +62,9 @@ export default function AppccModule() {
             </Route>
             <Route path="/appcc/reports">
               <Reports />
+            </Route>
+            <Route path="/appcc/control/:id">
+              <ControlDetail />
             </Route>
             <Route>
               <NotFound />
