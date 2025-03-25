@@ -13,6 +13,7 @@ import TransparenciaModule from "./pages/transparencia";
 import ClientePortal from "@/pages/cliente";
 import AdminModule from "@/pages/admin";
 import BancaModule from "./pages/banca";
+import FormacionModule from "./pages/formacion";
 
 function AppRouter() {
   return (
@@ -29,6 +30,8 @@ function AppRouter() {
       <ProtectedRoute path="/admin/:rest*" component={AdminModule} />
       <ProtectedRoute path="/banca" component={BancaModule} />
       <ProtectedRoute path="/banca/:rest*" component={BancaModule} />
+      <ProtectedRoute path="/formacion" component={FormacionModule} />
+      <ProtectedRoute path="/formacion/:rest*" component={FormacionModule} />
       
       {/* Rutas públicas */}
       <Route path="/auth" component={AuthPage} />
