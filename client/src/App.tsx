@@ -10,10 +10,13 @@ import { AuthProvider } from "./hooks/use-auth";
 import AppccModule from "./pages/appcc";
 import AlmacenModule from "./pages/almacen";
 import TransparenciaModule from "./pages/transparencia";
+import ClientePortal from "@/pages/cliente";
+import AdminModule from "@/pages/admin";
 
 function AppRouter() {
   return (
     <Switch>
+      {/* Rutas protegidas (requieren autenticación) */}
       <ProtectedRoute path="/" component={HomePage} />
       <ProtectedRoute path="/appcc" component={AppccModule} />
       <ProtectedRoute path="/appcc/:rest*" component={AppccModule} />
@@ -21,7 +24,17 @@ function AppRouter() {
       <ProtectedRoute path="/almacen/:rest*" component={AlmacenModule} />
       <ProtectedRoute path="/transparencia" component={TransparenciaModule} />
       <ProtectedRoute path="/transparencia/:rest*" component={TransparenciaModule} />
+      <ProtectedRoute path="/admin" component={AdminModule} />
+      <ProtectedRoute path="/admin/:rest*" component={AdminModule} />
+      
+      {/* Rutas públicas */}
       <Route path="/auth" component={AuthPage} />
+      
+      {/* Portal de cliente (acceso por token) */}
+      <Route path="/cliente" component={ClientePortal} />
+      <Route path="/cliente/:rest*" component={ClientePortal} />
+      
+      {/* Fallback */}
       <Route component={NotFound} />
     </Switch>
   );
