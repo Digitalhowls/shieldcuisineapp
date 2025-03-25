@@ -9,6 +9,7 @@ import { ProtectedRoute } from "./lib/protected-route";
 import { AuthProvider } from "./hooks/use-auth";
 import AppccModule from "./pages/appcc";
 import AlmacenModule from "./pages/almacen";
+import TransparenciaModule from "./pages/transparencia";
 
 function AppRouter() {
   return (
@@ -18,6 +19,8 @@ function AppRouter() {
       <ProtectedRoute path="/appcc/:rest*" component={AppccModule} />
       <ProtectedRoute path="/almacen" component={AlmacenModule} />
       <ProtectedRoute path="/almacen/:rest*" component={AlmacenModule} />
+      <ProtectedRoute path="/transparencia" component={TransparenciaModule} />
+      <ProtectedRoute path="/transparencia/:rest*" component={TransparenciaModule} />
       <Route path="/auth" component={AuthPage} />
       <Route component={NotFound} />
     </Switch>
