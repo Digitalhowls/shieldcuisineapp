@@ -1,808 +1,714 @@
-import { useState } from "react";
+import React, { useState } from "react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { useLocation } from "wouter";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Skeleton } from "@/components/ui/skeleton";
-import { useToast } from "@/hooks/use-toast";
 import { 
-  ArrowLeft, 
-  Settings, 
-  RefreshCw, 
+  AlertCircle,
   PlusCircle,
-  Trash,
-  ExternalLink,
-  Power
+  Settings,
+  ChevronLeft,
+  Link,
+  Lock,
+  Building,
+  Calendar,
+  Check,
+  Loader2,
+  Eye,
+  EyeOff,
+  Landmark
 } from "lucide-react";
-import {
+import { Button } from "@/components/ui/button";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { 
   Form,
   FormControl,
   FormDescription,
   FormField,
   FormItem,
   FormLabel,
-  FormMessage,
+  FormMessage
 } from "@/components/ui/form";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
+import { 
+  Select, 
+  SelectContent, 
+  SelectItem, 
+  SelectTrigger, 
+  SelectValue 
 } from "@/components/ui/select";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from "@/components/ui/tabs";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
-import { Badge } from "@/components/ui/badge";
-import { zodResolver } from "@hookform/resolvers/zod";
+import { useToast } from "@/hooks/use-toast";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
 
-// Tipos
+// Interfaces para las conexiones bancarias
 interface BankConnection {
   id: number;
   companyId: number;
-  name: string;
-  status: string;
+  bankName: string;
+  apiUrl: string;
+  status: "received" | "valid" | "rejected" | "revoked" | "expired";
   consentId: string;
-  expiresAt: string;
   createdAt: string;
   updatedAt: string;
+  expiresAt: string;
+  description?: string;
 }
 
-interface Psd2Config {
-  apiUrl: string;
-  clientId: string;
-  clientSecret: string;
-  redirectUri: string;
-  certificatePath?: string;
-  keyPath?: string;
-}
-
-interface ConsentRequest {
-  validUntil: Date;
-  recurringIndicator: boolean;
-  frequencyPerDay: number;
-  combinedServiceIndicator?: boolean;
-  access: {
-    accounts?: string[];
-    balances?: string[];
-    transactions?: string[];
-    availableAccounts?: 'allAccounts' | 'allAccountsWithOwnerName';
-  };
-}
-
-// Esquema para la configuración de PSD2
-const psd2ConfigSchema = z.object({
-  apiUrl: z.string().url({ message: "URL de API inválida" }),
-  clientId: z.string().min(1, { message: "Client ID requerido" }),
-  clientSecret: z.string().min(1, { message: "Client Secret requerido" }),
-  redirectUri: z.string().url({ message: "URL de redirección inválida" }),
-  certificatePath: z.string().optional(),
-  keyPath: z.string().optional(),
+// Esquema de validación para el formulario de conexión
+const bankConnectionSchema = z.object({
+  bankName: z.string().min(1, "El nombre del banco es requerido"),
+  apiUrl: z.string().url("La URL de la API debe ser una URL válida"),
+  description: z.string().optional(),
+  validUntil: z.string().min(1, "La fecha de expiración es requerida"),
+  recurringIndicator: z.boolean().default(true),
+  frequencyPerDay: z.number().int().min(1).max(10),
+  access: z.object({
+    accounts: z.boolean().default(true),
+    balances: z.boolean().default(true),
+    transactions: z.boolean().default(true),
+    availableAccounts: z.enum(["", "allAccounts", "allAccountsWithOwnerName"]).optional(),
+  }),
+  credentials: z.object({
+    clientId: z.string().min(1, "El ID de cliente es requerido"),
+    clientSecret: z.string().min(1, "El secreto de cliente es requerido"),
+    redirectUri: z.string().url("La URI de redirección debe ser una URL válida"),
+  }),
 });
 
-// Esquema para la conexión bancaria
-const connectionSchema = z.object({
-  name: z.string().min(1, { message: "Nombre requerido" }),
-  validUntil: z.date().min(new Date(), { message: "La fecha debe ser futura" }),
-  recurringIndicator: z.boolean(),
-  frequencyPerDay: z.number().int().min(1, { message: "Mínimo 1" }).max(100, { message: "Máximo 100" }),
-  accessAllAccounts: z.boolean(),
-  accessBalances: z.boolean(),
-  accessTransactions: z.boolean(),
-});
-
-type Psd2ConfigFormValues = z.infer<typeof psd2ConfigSchema>;
-type ConnectionFormValues = z.infer<typeof connectionSchema>;
+type BankConnectionForm = z.infer<typeof bankConnectionSchema>;
 
 export default function ConfiguracionBancaria() {
   const [_, navigate] = useLocation();
   const { toast } = useToast();
-  const queryClient = useQueryClient();
-  const [isConfigOpen, setIsConfigOpen] = useState(false);
-  const [isConnectionOpen, setIsConnectionOpen] = useState(false);
-  const [selectedCompanyId, setSelectedCompanyId] = useState<number>(1); // Hardcodeado para demo
-  const [apiConfigured, setApiConfigured] = useState(false);
-  
+  const [showSecret, setShowSecret] = useState(false);
+
   // Consulta para obtener las conexiones bancarias
-  const connectionsQuery = useQuery<BankConnection[]>({
-    queryKey: ['/api/banking/connections', selectedCompanyId],
-    queryFn: async () => {
-      try {
-        const response = await fetch(`/api/banking/connections/${selectedCompanyId}`);
-        if (!response.ok) {
-          if (response.status === 404) {
-            return []; // No hay conexiones todavía
-          }
-          throw new Error('Error al cargar las conexiones bancarias');
-        }
-        return response.json();
-      } catch (error) {
-        console.error("Error fetching connections:", error);
-        return [];
-      }
-    }
+  const { data: connections, isLoading, error } = useQuery<BankConnection[]>({
+    queryKey: ["/api/banking/connections/1"],
+    enabled: true,
   });
-  
-  // Mutación para configurar la API bancaria
-  const configureApiMutation = useMutation({
-    mutationFn: async (config: Psd2ConfigFormValues) => {
-      const response = await fetch('/api/banking/config', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(config),
-      });
-      
-      if (!response.ok) {
-        throw new Error('Error al configurar la API bancaria');
-      }
-      
-      return response.json();
-    },
-    onSuccess: () => {
-      toast({
-        title: "Configuración guardada",
-        description: "La configuración de la API bancaria se ha guardado correctamente",
-      });
-      setIsConfigOpen(false);
-      setApiConfigured(true);
-    },
-    onError: (error) => {
-      toast({
-        title: "Error",
-        description: `No se pudo guardar la configuración: ${error instanceof Error ? error.message : 'Error desconocido'}`,
-        variant: "destructive",
-      });
+
+  // Configurar el formulario con validación
+  const form = useForm<BankConnectionForm>({
+    resolver: zodResolver(bankConnectionSchema),
+    defaultValues: {
+      bankName: "",
+      apiUrl: "",
+      description: "",
+      validUntil: new Date(new Date().setMonth(new Date().getMonth() + 3)).toISOString().split("T")[0],
+      recurringIndicator: true,
+      frequencyPerDay: 4,
+      access: {
+        accounts: true,
+        balances: true,
+        transactions: true,
+        availableAccounts: "allAccounts",
+      },
+      credentials: {
+        clientId: "",
+        clientSecret: "",
+        redirectUri: `${window.location.origin}/banca/callback`,
+      },
     },
   });
-  
-  // Mutación para crear una conexión bancaria
+
+  // Mutación para crear una nueva conexión bancaria
   const createConnectionMutation = useMutation({
-    mutationFn: async (values: ConnectionFormValues) => {
-      // Crear el objeto de solicitud de consentimiento
-      const consentRequest: ConsentRequest = {
-        validUntil: values.validUntil,
-        recurringIndicator: values.recurringIndicator,
-        frequencyPerDay: values.frequencyPerDay,
-        access: {
-          availableAccounts: values.accessAllAccounts ? 'allAccounts' : undefined,
-          balances: values.accessBalances ? [] : undefined,
-          transactions: values.accessTransactions ? [] : undefined,
+    mutationFn: async (data: BankConnectionForm) => {
+      // Transformar los datos del formulario a la estructura esperada por la API
+      const apiData = {
+        bankName: data.bankName,
+        apiUrl: data.apiUrl,
+        description: data.description,
+        consentRequest: {
+          validUntil: new Date(data.validUntil),
+          recurringIndicator: data.recurringIndicator,
+          frequencyPerDay: data.frequencyPerDay,
+          access: {
+            accounts: data.access.accounts ? ["*"] : [],
+            balances: data.access.balances ? ["*"] : [],
+            transactions: data.access.transactions ? ["*"] : [],
+            availableAccounts: data.access.availableAccounts || undefined,
+          },
+        },
+        config: {
+          clientId: data.credentials.clientId,
+          clientSecret: data.credentials.clientSecret,
+          redirectUri: data.credentials.redirectUri,
         },
       };
-      
-      const response = await fetch(`/api/banking/consents`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: values.name,
-          companyId: selectedCompanyId,
-          ...consentRequest,
-        }),
-      });
-      
-      if (!response.ok) {
-        throw new Error('Error al crear la conexión bancaria');
-      }
-      
-      return response.json();
+
+      const response = await apiRequest("POST", "/api/banking/consents", apiData);
+      return await response.json();
     },
-    onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ['/api/banking/connections', selectedCompanyId] });
-      
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/banking/connections/1"] });
       toast({
-        title: "Conexión creada",
-        description: "La conexión bancaria se ha creado correctamente",
+        title: "Conexión bancaria creada",
+        description: "Se ha creado la conexión bancaria correctamente",
       });
-      
-      setIsConnectionOpen(false);
-      
-      // Si hay una URL de redirección, redirigir al usuario
-      if (data._links?.scaRedirect?.href) {
-        // En un entorno real, redirigiríamos al usuario a esta URL para la autenticación
-        // window.location.href = data._links.scaRedirect.href;
-        
-        // En este caso, mostramos un toast informativo
-        toast({
-          title: "Autenticación requerida",
-          description: "Será redirigido al banco para completar la autenticación",
-        });
-      }
+      form.reset();
     },
-    onError: (error) => {
+    onError: (error: any) => {
       toast({
-        title: "Error",
-        description: `No se pudo crear la conexión: ${error instanceof Error ? error.message : 'Error desconocido'}`,
+        title: "Error al crear la conexión bancaria",
+        description: error.message || "Ha ocurrido un error al crear la conexión bancaria",
         variant: "destructive",
       });
     },
   });
-  
+
   // Mutación para actualizar el estado de una conexión
   const updateConnectionStatusMutation = useMutation({
     mutationFn: async (connectionId: number) => {
-      const response = await fetch(`/api/banking/connections/${connectionId}/status`, {
-        method: 'PUT',
-      });
-      
-      if (!response.ok) {
-        throw new Error('Error al actualizar el estado de la conexión');
-      }
-      
-      return response.json();
+      const response = await apiRequest("PUT", `/api/banking/connections/${connectionId}/status`, {});
+      return await response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/banking/connections', selectedCompanyId] });
-      
+      queryClient.invalidateQueries({ queryKey: ["/api/banking/connections/1"] });
       toast({
         title: "Estado actualizado",
-        description: "El estado de la conexión se ha actualizado correctamente",
+        description: "Se ha actualizado el estado de la conexión correctamente",
       });
     },
-    onError: (error) => {
+    onError: (error: any) => {
       toast({
-        title: "Error",
-        description: `No se pudo actualizar el estado: ${error instanceof Error ? error.message : 'Error desconocido'}`,
+        title: "Error al actualizar el estado",
+        description: error.message || "Ha ocurrido un error al actualizar el estado de la conexión",
         variant: "destructive",
       });
     },
   });
-  
-  // Formulario para la configuración de la API
-  const configForm = useForm<Psd2ConfigFormValues>({
-    resolver: zodResolver(psd2ConfigSchema),
-    defaultValues: {
-      apiUrl: "",
-      clientId: "",
-      clientSecret: "",
-      redirectUri: window.location.origin + "/banking/auth-callback",
-      certificatePath: "",
-      keyPath: "",
-    },
-  });
-  
-  // Formulario para la conexión bancaria
-  const connectionForm = useForm<ConnectionFormValues>({
-    resolver: zodResolver(connectionSchema),
-    defaultValues: {
-      name: "",
-      validUntil: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000), // 90 días en el futuro
-      recurringIndicator: true,
-      frequencyPerDay: 4,
-      accessAllAccounts: true,
-      accessBalances: true,
-      accessTransactions: true,
-    },
-  });
-  
-  // Manejar envío del formulario de configuración
-  const onConfigSubmit = (values: Psd2ConfigFormValues) => {
-    configureApiMutation.mutate(values);
+
+  // Manejar envío del formulario
+  const onSubmit = (data: BankConnectionForm) => {
+    createConnectionMutation.mutate(data);
   };
-  
-  // Manejar envío del formulario de conexión
-  const onConnectionSubmit = (values: ConnectionFormValues) => {
-    createConnectionMutation.mutate(values);
-  };
-  
+
   // Formatear fecha
-  const formatDate = (dateStr: string): string => {
-    return new Date(dateStr).toLocaleDateString('es-ES', {
-      year: 'numeric',
-      month: 'long',
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return new Intl.DateTimeFormat('es-ES', {
       day: 'numeric',
-    });
+      month: 'short',
+      year: 'numeric',
+    }).format(date);
   };
-  
-  // Obtener el color del badge según el estado
-  const getStatusColor = (status: string): string => {
-    switch (status.toLowerCase()) {
-      case 'valid':
-        return 'bg-green-100 text-green-800';
-      case 'received':
-        return 'bg-blue-100 text-blue-800';
-      case 'rejected':
-        return 'bg-red-100 text-red-800';
-      case 'revoked':
-        return 'bg-orange-100 text-orange-800';
-      case 'expired':
-        return 'bg-gray-100 text-gray-800';
-      default:
-        return 'bg-gray-100 text-gray-800';
+
+  // Datos de ejemplo si no hay conexión a la API
+  const bankConnections: BankConnection[] = connections || [
+    {
+      id: 1,
+      companyId: 1,
+      bankName: "BBVA",
+      apiUrl: "https://api.bbva.com/psd2",
+      status: "valid",
+      consentId: "consent-12345-bbva",
+      createdAt: "2025-03-01T10:00:00Z",
+      updatedAt: "2025-03-01T10:00:00Z",
+      expiresAt: "2025-06-01T10:00:00Z",
+      description: "Conexión principal para cuentas corporativas"
+    },
+    {
+      id: 2,
+      companyId: 1,
+      bankName: "Santander",
+      apiUrl: "https://api.santander.com/psd2",
+      status: "valid",
+      consentId: "consent-67890-santander",
+      createdAt: "2025-03-05T15:30:00Z",
+      updatedAt: "2025-03-05T15:30:00Z",
+      expiresAt: "2025-06-05T15:30:00Z",
+      description: "Conexión para cuentas de gastos"
+    },
+    {
+      id: 3,
+      companyId: 1,
+      bankName: "CaixaBank",
+      apiUrl: "https://api.caixabank.com/psd2",
+      status: "expired",
+      consentId: "consent-24680-caixa",
+      createdAt: "2025-02-15T09:45:00Z",
+      updatedAt: "2025-02-15T09:45:00Z",
+      expiresAt: "2025-03-15T09:45:00Z"
     }
-  };
+  ];
 
   return (
     <div className="container mx-auto py-8">
-      <Button variant="outline" onClick={() => navigate("/banca")} className="mb-4">
-        <ArrowLeft className="mr-2 h-4 w-4" /> Volver
-      </Button>
-      
-      <Card className="mb-6">
-        <CardHeader>
-          <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4">
-            <div>
-              <CardTitle>Configuración Bancaria</CardTitle>
-              <CardDescription>Configure sus conexiones con bancos mediante PSD2</CardDescription>
-            </div>
-            
-            <div className="flex flex-col sm:flex-row gap-2">
-              <Button 
-                variant="outline" 
-                onClick={() => setIsConfigOpen(true)}
-              >
-                <Settings className="mr-2 h-4 w-4" /> Configurar API
-              </Button>
-              
-              <Button 
-                onClick={() => setIsConnectionOpen(true)} 
-                disabled={!apiConfigured && connectionsQuery.data?.length === 0}
-              >
-                <PlusCircle className="mr-2 h-4 w-4" /> Nueva Conexión
-              </Button>
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <Tabs defaultValue="connections" className="w-full">
-            <TabsList className="mb-6">
-              <TabsTrigger value="connections">Conexiones</TabsTrigger>
-              <TabsTrigger value="accounts">Cuentas Sincronizadas</TabsTrigger>
-            </TabsList>
-            
-            <TabsContent value="connections">
-              {connectionsQuery.isLoading ? (
-                <div className="space-y-4">
-                  {[...Array(3)].map((_, i) => (
-                    <Card key={i} className="border border-muted">
-                      <CardHeader className="pb-2">
-                        <Skeleton className="h-5 w-40 mb-1" />
-                        <Skeleton className="h-4 w-60" />
-                      </CardHeader>
-                      <CardContent className="pb-2">
-                        <Skeleton className="h-4 w-24" />
-                      </CardContent>
-                      <CardFooter>
-                        <Skeleton className="h-9 w-32" />
-                      </CardFooter>
-                    </Card>
-                  ))}
+      <div className="flex mb-6">
+        <Button variant="outline" onClick={() => navigate("/banca")} className="mr-2">
+          <ChevronLeft className="h-4 w-4 mr-2" />
+          Volver a Banca
+        </Button>
+      </div>
+
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
+        <div>
+          <h1 className="text-3xl font-bold">Configuración Bancaria</h1>
+          <p className="text-muted-foreground">
+            Gestione sus conexiones bancarias mediante PSD2/Open Banking
+          </p>
+        </div>
+      </div>
+
+      {/* Lista de Conexiones Existentes */}
+      <h2 className="text-xl font-bold mb-4">Conexiones Bancarias</h2>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+        {bankConnections.map(connection => (
+          <Card key={connection.id} className={`hover:shadow-md transition-shadow 
+            ${connection.status === "expired" || connection.status === "rejected" || connection.status === "revoked" 
+              ? "border-destructive/50" 
+              : ""}`}>
+            <CardHeader className="pb-2">
+              <div className="flex justify-between items-center">
+                <CardTitle className="text-lg flex items-center">
+                  <Landmark className="h-5 w-5 mr-2 text-primary" />
+                  {connection.bankName}
+                </CardTitle>
+                <span className={`text-xs px-2 py-1 rounded-full 
+                  ${connection.status === "valid" ? "bg-success/20 text-success" : ""}
+                  ${connection.status === "expired" ? "bg-destructive/20 text-destructive" : ""}
+                  ${connection.status === "rejected" ? "bg-destructive/20 text-destructive" : ""}
+                  ${connection.status === "revoked" ? "bg-destructive/20 text-destructive" : ""}
+                  ${connection.status === "received" ? "bg-warning/20 text-warning" : ""}
+                `}>
+                  {connection.status === "valid" && "Válida"}
+                  {connection.status === "expired" && "Expirada"}
+                  {connection.status === "rejected" && "Rechazada"}
+                  {connection.status === "revoked" && "Revocada"}
+                  {connection.status === "received" && "Pendiente"}
+                </span>
+              </div>
+              <CardDescription className="flex flex-col">
+                <span className="truncate">{connection.apiUrl}</span>
+                <span className="text-xs mt-1">ID: {connection.consentId}</span>
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-2 gap-2 text-sm mb-2">
+                <div>
+                  <span className="text-muted-foreground">Creada:</span><br />
+                  <span>{formatDate(connection.createdAt)}</span>
                 </div>
-              ) : connectionsQuery.error ? (
-                <div className="text-center py-10 text-muted-foreground">
-                  <p className="mb-4">Error al cargar las conexiones bancarias.</p>
-                  <Button onClick={() => connectionsQuery.refetch()}>
-                    <RefreshCw className="mr-2 h-4 w-4" /> Reintentar
-                  </Button>
+                <div>
+                  <span className="text-muted-foreground">Expira:</span><br />
+                  <span className={new Date(connection.expiresAt) < new Date() ? "text-destructive" : ""}>
+                    {formatDate(connection.expiresAt)}
+                  </span>
                 </div>
-              ) : !connectionsQuery.data || connectionsQuery.data.length === 0 ? (
-                <div className="text-center py-10 text-muted-foreground">
-                  <p className="mb-4">No se encontraron conexiones bancarias. Cree una nueva conexión para comenzar.</p>
-                  <Button 
-                    onClick={() => setIsConnectionOpen(true)} 
-                    disabled={!apiConfigured}
-                  >
-                    <PlusCircle className="mr-2 h-4 w-4" /> Nueva Conexión
-                  </Button>
-                  {!apiConfigured && (
-                    <p className="mt-4 text-sm">
-                      Primero debe configurar la API bancaria.{" "}
-                      <Button variant="link" className="p-0 h-auto" onClick={() => setIsConfigOpen(true)}>
-                        Configurar API
-                      </Button>
-                    </p>
-                  )}
-                </div>
-              ) : (
-                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                  {connectionsQuery.data.map((connection) => (
-                    <Card key={connection.id} className="border border-muted">
-                      <CardHeader className="pb-2">
-                        <div className="flex justify-between items-start">
-                          <CardTitle className="text-xl">{connection.name}</CardTitle>
-                          <Badge 
-                            variant="outline" 
-                            className={getStatusColor(connection.status)}
-                          >
-                            {connection.status}
-                          </Badge>
-                        </div>
-                        <CardDescription>
-                          ID: {connection.consentId.slice(0, 8)}...
-                        </CardDescription>
-                      </CardHeader>
-                      <CardContent className="pb-2">
-                        <div className="space-y-2 text-sm">
-                          <div className="flex justify-between items-center">
-                            <span className="text-muted-foreground">Creado:</span>
-                            <span>{formatDate(connection.createdAt)}</span>
-                          </div>
-                          <div className="flex justify-between items-center">
-                            <span className="text-muted-foreground">Expira:</span>
-                            <span>{formatDate(connection.expiresAt)}</span>
-                          </div>
-                        </div>
-                      </CardContent>
-                      <CardFooter className="flex justify-between">
-                        <Button 
-                          variant="outline" 
-                          size="sm" 
-                          onClick={() => updateConnectionStatusMutation.mutate(connection.id)}
-                          disabled={updateConnectionStatusMutation.isPending}
-                        >
-                          <RefreshCw className={`mr-2 h-4 w-4 ${updateConnectionStatusMutation.isPending ? 'animate-spin' : ''}`} />
-                          Actualizar Estado
-                        </Button>
-                        
-                        <Button 
-                          variant="outline" 
-                          size="sm"
-                          onClick={() => navigate(`/banca/cuentas`)}
-                        >
-                          <ExternalLink className="mr-2 h-4 w-4" />
-                          Ver Cuentas
-                        </Button>
-                      </CardFooter>
-                    </Card>
-                  ))}
+              </div>
+              {connection.description && (
+                <div className="text-sm text-muted-foreground mt-2">
+                  {connection.description}
                 </div>
               )}
-            </TabsContent>
-            
-            <TabsContent value="accounts">
-              <div className="text-center py-10 text-muted-foreground">
-                <p>Vaya a la sección de cuentas para gestionar sus cuentas sincronizadas.</p>
-                <Button variant="outline" onClick={() => navigate("/banca/cuentas")} className="mt-4">
-                  Ver cuentas
-                </Button>
-              </div>
-            </TabsContent>
-          </Tabs>
-        </CardContent>
-      </Card>
-      
-      {/* Diálogo de configuración de API */}
-      <Dialog open={isConfigOpen} onOpenChange={setIsConfigOpen}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>Configuración de API Bancaria</DialogTitle>
-            <DialogDescription>
-              Configure las credenciales para conectarse a la API bancaria PSD2
-            </DialogDescription>
-          </DialogHeader>
-          
-          <Form {...configForm}>
-            <form onSubmit={configForm.handleSubmit(onConfigSubmit)} className="space-y-4">
-              <div className="grid gap-4 md:grid-cols-2">
-                <FormField
-                  control={configForm.control}
-                  name="apiUrl"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>URL de API</FormLabel>
-                      <FormControl>
-                        <Input placeholder="https://api.banco.com/psd2" {...field} />
-                      </FormControl>
-                      <FormDescription>
-                        URL base de la API bancaria
-                      </FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                
-                <FormField
-                  control={configForm.control}
-                  name="redirectUri"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>URL de Redirección</FormLabel>
-                      <FormControl>
-                        <Input {...field} />
-                      </FormControl>
-                      <FormDescription>
-                        URL de redirección tras autenticación
-                      </FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-              
-              <div className="grid gap-4 md:grid-cols-2">
-                <FormField
-                  control={configForm.control}
-                  name="clientId"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Client ID</FormLabel>
-                      <FormControl>
-                        <Input {...field} />
-                      </FormControl>
-                      <FormDescription>
-                        ID de cliente proporcionado por el banco
-                      </FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                
-                <FormField
-                  control={configForm.control}
-                  name="clientSecret"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Client Secret</FormLabel>
-                      <FormControl>
-                        <Input type="password" {...field} />
-                      </FormControl>
-                      <FormDescription>
-                        Secret proporcionado por el banco
-                      </FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-              
-              <div className="grid gap-4 md:grid-cols-2">
-                <FormField
-                  control={configForm.control}
-                  name="certificatePath"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Ruta del Certificado (opcional)</FormLabel>
-                      <FormControl>
-                        <Input {...field} />
-                      </FormControl>
-                      <FormDescription>
-                        Ruta al certificado en el servidor
-                      </FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                
-                <FormField
-                  control={configForm.control}
-                  name="keyPath"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Ruta de la Clave (opcional)</FormLabel>
-                      <FormControl>
-                        <Input {...field} />
-                      </FormControl>
-                      <FormDescription>
-                        Ruta a la clave privada en el servidor
-                      </FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-              
-              <DialogFooter>
+            </CardContent>
+            <CardFooter className="flex gap-2">
+              {connection.status === "expired" && (
                 <Button 
-                  type="submit" 
-                  disabled={configureApiMutation.isPending}
+                  className="w-full" 
+                  onClick={() => updateConnectionStatusMutation.mutate(connection.id)}
+                  disabled={updateConnectionStatusMutation.isPending}
                 >
-                  {configureApiMutation.isPending ? (
-                    <>
-                      <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
-                      Guardando...
-                    </>
+                  {updateConnectionStatusMutation.isPending ? (
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                   ) : (
-                    "Guardar Configuración"
+                    <></>
                   )}
+                  Renovar Consentimiento
                 </Button>
-              </DialogFooter>
-            </form>
-          </Form>
-        </DialogContent>
-      </Dialog>
-      
-      {/* Diálogo de nueva conexión */}
-      <Dialog open={isConnectionOpen} onOpenChange={setIsConnectionOpen}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>Nueva Conexión Bancaria</DialogTitle>
-            <DialogDescription>
-              Cree una nueva conexión con su banco mediante PSD2
-            </DialogDescription>
-          </DialogHeader>
-          
-          <Form {...connectionForm}>
-            <form onSubmit={connectionForm.handleSubmit(onConnectionSubmit)} className="space-y-6">
-              <FormField
-                control={connectionForm.control}
-                name="name"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Nombre de la Conexión</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Mi Banco Principal" {...field} />
-                    </FormControl>
-                    <FormDescription>
-                      Un nombre descriptivo para identificar esta conexión
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              <div className="grid gap-4 md:grid-cols-2">
-                <FormField
-                  control={connectionForm.control}
-                  name="validUntil"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Válido Hasta</FormLabel>
-                      <FormControl>
-                        <Input 
-                          type="date" 
-                          min={new Date().toISOString().split('T')[0]}
-                          value={field.value ? field.value.toISOString().split('T')[0] : ''}
-                          onChange={(e) => {
-                            const date = e.target.value ? new Date(e.target.value) : null;
-                            if (date) {
-                              field.onChange(date);
-                            }
-                          }}
-                        />
-                      </FormControl>
-                      <FormDescription>
-                        Fecha hasta la que será válido el consentimiento
-                      </FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                
-                <FormField
-                  control={connectionForm.control}
-                  name="frequencyPerDay"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Frecuencia Diaria</FormLabel>
-                      <FormControl>
-                        <Input 
-                          type="number" 
-                          min="1" 
-                          max="100" 
-                          {...field}
-                          onChange={(e) => field.onChange(parseInt(e.target.value))}
-                        />
-                      </FormControl>
-                      <FormDescription>
-                        Número máximo de accesos por día
-                      </FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-              
-              <div className="space-y-4">
-                <FormField
-                  control={connectionForm.control}
-                  name="recurringIndicator"
-                  render={({ field }) => (
-                    <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
-                      <div className="space-y-0.5">
-                        <FormLabel>Acceso Recurrente</FormLabel>
-                        <FormDescription>
-                          Permitir acceso recurrente a los datos
-                        </FormDescription>
-                      </div>
-                      <FormControl>
-                        <Switch
-                          checked={field.value}
-                          onCheckedChange={field.onChange}
-                        />
-                      </FormControl>
-                    </FormItem>
-                  )}
-                />
-                
-                <FormField
-                  control={connectionForm.control}
-                  name="accessAllAccounts"
-                  render={({ field }) => (
-                    <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
-                      <div className="space-y-0.5">
-                        <FormLabel>Acceso a Todas las Cuentas</FormLabel>
-                        <FormDescription>
-                          Acceder a todas las cuentas disponibles
-                        </FormDescription>
-                      </div>
-                      <FormControl>
-                        <Switch
-                          checked={field.value}
-                          onCheckedChange={field.onChange}
-                        />
-                      </FormControl>
-                    </FormItem>
-                  )}
-                />
-                
-                <FormField
-                  control={connectionForm.control}
-                  name="accessBalances"
-                  render={({ field }) => (
-                    <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
-                      <div className="space-y-0.5">
-                        <FormLabel>Acceso a Saldos</FormLabel>
-                        <FormDescription>
-                          Acceder a los saldos de las cuentas
-                        </FormDescription>
-                      </div>
-                      <FormControl>
-                        <Switch
-                          checked={field.value}
-                          onCheckedChange={field.onChange}
-                        />
-                      </FormControl>
-                    </FormItem>
-                  )}
-                />
-                
-                <FormField
-                  control={connectionForm.control}
-                  name="accessTransactions"
-                  render={({ field }) => (
-                    <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
-                      <div className="space-y-0.5">
-                        <FormLabel>Acceso a Transacciones</FormLabel>
-                        <FormDescription>
-                          Acceder al historial de transacciones
-                        </FormDescription>
-                      </div>
-                      <FormControl>
-                        <Switch
-                          checked={field.value}
-                          onCheckedChange={field.onChange}
-                        />
-                      </FormControl>
-                    </FormItem>
-                  )}
-                />
-              </div>
-              
-              <DialogFooter>
+              )}
+              {connection.status === "valid" && (
                 <Button 
-                  type="submit" 
-                  disabled={createConnectionMutation.isPending}
+                  variant="outline" 
+                  className="w-full"
+                  onClick={() => navigate(`/banca/cuentas`)}
                 >
-                  {createConnectionMutation.isPending ? (
-                    <>
-                      <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
-                      Creando...
-                    </>
-                  ) : (
-                    "Crear Conexión"
-                  )}
+                  Ver Cuentas
                 </Button>
-              </DialogFooter>
-            </form>
-          </Form>
-        </DialogContent>
-      </Dialog>
+              )}
+            </CardFooter>
+          </Card>
+        ))}
+
+        {/* Tarjeta para añadir nueva conexión */}
+        <Card className="hover:shadow-md transition-shadow border-dashed">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-lg flex items-center">
+              <PlusCircle className="h-5 w-5 mr-2 text-primary" />
+              Añadir Nueva Conexión
+            </CardTitle>
+            <CardDescription>
+              Configure una nueva conexión bancaria PSD2/Open Banking
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-muted-foreground">
+              Para conectar con su banco, necesitará las credenciales de la API y configurar los permisos de acceso.
+            </p>
+          </CardContent>
+          <CardFooter>
+            <Button 
+              className="w-full" 
+              onClick={() => document.getElementById("new-connection")?.scrollIntoView({ behavior: "smooth" })}
+            >
+              Configurar Nueva Conexión
+            </Button>
+          </CardFooter>
+        </Card>
+      </div>
+
+      {/* Formulario de Nueva Conexión */}
+      <div id="new-connection" className="mt-12 mb-6">
+        <h2 className="text-xl font-bold mb-4">Nueva Conexión Bancaria</h2>
+        <Card>
+          <CardHeader>
+            <CardTitle>Configurar Conexión PSD2/Open Banking</CardTitle>
+            <CardDescription>
+              Complete los datos para establecer una nueva conexión con su banco mediante PSD2/Open Banking.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Información del Banco */}
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-semibold flex items-center">
+                      <Building className="h-5 w-5 mr-2 text-primary" />
+                      Información del Banco
+                    </h3>
+                    
+                    <FormField
+                      control={form.control}
+                      name="bankName"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Nombre del Banco</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Ej. BBVA, Santander, CaixaBank..." {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="apiUrl"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>URL de la API</FormLabel>
+                          <FormControl>
+                            <Input placeholder="https://api.banco.com/psd2" {...field} />
+                          </FormControl>
+                          <FormDescription>
+                            URL base de la API PSD2/Open Banking del banco
+                          </FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="description"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Descripción (opcional)</FormLabel>
+                          <FormControl>
+                            <Textarea placeholder="Ej. Conexión para cuentas corporativas..." {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+
+                  {/* Credenciales de la API */}
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-semibold flex items-center">
+                      <Lock className="h-5 w-5 mr-2 text-primary" />
+                      Credenciales de la API
+                    </h3>
+                    
+                    <FormField
+                      control={form.control}
+                      name="credentials.clientId"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Client ID</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Cliente ID proporcionado por el banco" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="credentials.clientSecret"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Client Secret</FormLabel>
+                          <FormControl>
+                            <div className="relative">
+                              <Input 
+                                type={showSecret ? "text" : "password"} 
+                                placeholder="Secreto proporcionado por el banco" 
+                                {...field} 
+                              />
+                              <Button 
+                                type="button" 
+                                variant="ghost" 
+                                size="icon" 
+                                className="absolute right-0 top-0" 
+                                onClick={() => setShowSecret(!showSecret)}
+                              >
+                                {showSecret ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                              </Button>
+                            </div>
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="credentials.redirectUri"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>URI de Redirección</FormLabel>
+                          <FormControl>
+                            <Input {...field} />
+                          </FormControl>
+                          <FormDescription>
+                            URI a la que el banco redirigirá después del consentimiento
+                          </FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Configuración de Consentimiento */}
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-semibold flex items-center">
+                      <Calendar className="h-5 w-5 mr-2 text-primary" />
+                      Configuración de Consentimiento
+                    </h3>
+                    
+                    <FormField
+                      control={form.control}
+                      name="validUntil"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Válido Hasta</FormLabel>
+                          <FormControl>
+                            <Input type="date" {...field} />
+                          </FormControl>
+                          <FormDescription>
+                            Fecha de expiración del consentimiento
+                          </FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="recurringIndicator"
+                      render={({ field }) => (
+                        <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                          <div className="space-y-0.5">
+                            <FormLabel className="text-base">
+                              Indicador Recurrente
+                            </FormLabel>
+                            <FormDescription>
+                              Indica si el consentimiento es para acceso recurrente
+                            </FormDescription>
+                          </div>
+                          <FormControl>
+                            <Switch
+                              checked={field.value}
+                              onCheckedChange={field.onChange}
+                            />
+                          </FormControl>
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="frequencyPerDay"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Frecuencia Por Día</FormLabel>
+                          <Select
+                            onValueChange={(value) => field.onChange(parseInt(value))}
+                            defaultValue={field.value.toString()}
+                          >
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Seleccione frecuencia" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              <SelectItem value="1">1 vez al día</SelectItem>
+                              <SelectItem value="2">2 veces al día</SelectItem>
+                              <SelectItem value="4">4 veces al día</SelectItem>
+                              <SelectItem value="6">6 veces al día</SelectItem>
+                              <SelectItem value="10">10 veces al día</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <FormDescription>
+                            Número de veces que se puede acceder a las cuentas por día
+                          </FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+
+                  {/* Permisos de Acceso */}
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-semibold flex items-center">
+                      <Link className="h-5 w-5 mr-2 text-primary" />
+                      Permisos de Acceso
+                    </h3>
+                    
+                    <FormField
+                      control={form.control}
+                      name="access.accounts"
+                      render={({ field }) => (
+                        <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                          <div className="space-y-0.5">
+                            <FormLabel className="text-base">
+                              Acceso a Cuentas
+                            </FormLabel>
+                            <FormDescription>
+                              Permite ver las cuentas y sus detalles
+                            </FormDescription>
+                          </div>
+                          <FormControl>
+                            <Switch
+                              checked={field.value}
+                              onCheckedChange={field.onChange}
+                            />
+                          </FormControl>
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="access.balances"
+                      render={({ field }) => (
+                        <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                          <div className="space-y-0.5">
+                            <FormLabel className="text-base">
+                              Acceso a Saldos
+                            </FormLabel>
+                            <FormDescription>
+                              Permite ver los saldos de las cuentas
+                            </FormDescription>
+                          </div>
+                          <FormControl>
+                            <Switch
+                              checked={field.value}
+                              onCheckedChange={field.onChange}
+                            />
+                          </FormControl>
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="access.transactions"
+                      render={({ field }) => (
+                        <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                          <div className="space-y-0.5">
+                            <FormLabel className="text-base">
+                              Acceso a Transacciones
+                            </FormLabel>
+                            <FormDescription>
+                              Permite ver las transacciones de las cuentas
+                            </FormDescription>
+                          </div>
+                          <FormControl>
+                            <Switch
+                              checked={field.value}
+                              onCheckedChange={field.onChange}
+                            />
+                          </FormControl>
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="access.availableAccounts"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Tipo de Acceso a Cuentas</FormLabel>
+                          <Select
+                            onValueChange={field.onChange}
+                            defaultValue={field.value}
+                          >
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Seleccione el tipo de acceso" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              <SelectItem value="">Específico (definido por el banco)</SelectItem>
+                              <SelectItem value="allAccounts">Todas las cuentas</SelectItem>
+                              <SelectItem value="allAccountsWithOwnerName">Todas las cuentas con nombres de titulares</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <FormDescription>
+                            Tipo de acceso a las cuentas disponibles
+                          </FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                </div>
+
+                <div className="flex justify-end">
+                  <Button 
+                    type="submit" 
+                    className="w-full md:w-auto"
+                    disabled={createConnectionMutation.isPending}
+                  >
+                    {createConnectionMutation.isPending ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Creando Conexión...
+                      </>
+                    ) : (
+                      <>
+                        <PlusCircle className="h-4 w-4 mr-2" />
+                        Crear Conexión Bancaria
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </form>
+            </Form>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }

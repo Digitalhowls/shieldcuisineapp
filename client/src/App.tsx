@@ -12,6 +12,7 @@ import AlmacenModule from "./pages/almacen";
 import TransparenciaModule from "./pages/transparencia";
 import ClientePortal from "@/pages/cliente";
 import AdminModule from "@/pages/admin";
+import BancaModule from "./pages/banca";
 
 function AppRouter() {
   return (
@@ -26,6 +27,8 @@ function AppRouter() {
       <ProtectedRoute path="/transparencia/:rest*" component={TransparenciaModule} />
       <ProtectedRoute path="/admin" component={AdminModule} />
       <ProtectedRoute path="/admin/:rest*" component={AdminModule} />
+      <ProtectedRoute path="/banca" component={BancaModule} />
+      <ProtectedRoute path="/banca/:rest*" component={BancaModule} />
       
       {/* Rutas públicas */}
       <Route path="/auth" component={AuthPage} />

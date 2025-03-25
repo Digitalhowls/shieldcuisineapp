@@ -12,7 +12,7 @@ import {
   CardTitle 
 } from "@/components/ui/card";
 import { useAuth } from "@/hooks/use-auth";
-import { ShieldCheck, LayoutGrid, Warehouse, Store, Receipt, Utensils } from "lucide-react";
+import { ShieldCheck, LayoutGrid, Warehouse, Store, Receipt, Utensils, PiggyBank } from "lucide-react";
 
 export default function HomePage() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -53,6 +53,13 @@ export default function HomePage() {
       description: "Gestiona recetas, ingredientes, costos y etiquetado para productos elaborados.",
       icon: <Utensils className="h-12 w-12 text-primary" />,
       path: "/escandallos"
+    },
+    {
+      id: "banca",
+      title: "Banca y Finanzas",
+      description: "Gestiona conexiones bancarias, cuentas, transacciones y categorización de gastos e ingresos.",
+      icon: <PiggyBank className="h-12 w-12 text-primary" />,
+      path: "/banca"
     }
   ];
   
