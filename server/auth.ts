@@ -3,9 +3,9 @@ import { Strategy as LocalStrategy } from "passport-local";
 import { Express } from "express";
 import session from "express-session";
 import { hash, verify } from "@node-rs/bcrypt";
-import { storage } from "./storage";
 import { User as SelectUser } from "@shared/schema";
 import createMemoryStore from "memorystore";
+import * as directDb from "./direct-db";
 
 declare global {
   namespace Express {
@@ -55,7 +55,7 @@ export function setupAuth(app: Express) {
     new LocalStrategy(async (username, password, done) => {
       try {
         console.log(`Attempting login for user: ${username}`);
-        const user = await storage.getUserByUsername(username);
+        const user = await directDb.getUserByUsername(username);
         console.log(`User found:`, user ? `ID: ${user.id}` : "No user found");
         
         if (!user) {
@@ -83,7 +83,7 @@ export function setupAuth(app: Express) {
   passport.serializeUser((user, done) => done(null, user.id));
   passport.deserializeUser(async (id: number, done) => {
     try {
-      const user = await storage.getUser(id);
+      const user = await directDb.getUserById(id);
       done(null, user);
     } catch (err) {
       done(err);
@@ -92,12 +92,12 @@ export function setupAuth(app: Express) {
 
   app.post("/api/register", async (req, res, next) => {
     try {
-      const existingUser = await storage.getUserByUsername(req.body.username);
+      const existingUser = await directDb.getUserByUsername(req.body.username);
       if (existingUser) {
         return res.status(400).send("El nombre de usuario ya existe");
       }
 
-      const user = await storage.createUser({
+      const user = await directDb.createUser({
         ...req.body,
         password: await hashPassword(req.body.password),
       });
