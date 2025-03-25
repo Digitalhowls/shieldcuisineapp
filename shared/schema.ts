@@ -35,6 +35,8 @@ export const companies = pgTable("companies", {
   country: text("country").default("España"),
   phone: text("phone"),
   email: text("email"),
+  website: text("website"),
+  description: text("description"),
   logo: text("logo"),
   businessType: businessTypeEnum("business_type").notNull(),
   active: boolean("active").notNull().default(true),

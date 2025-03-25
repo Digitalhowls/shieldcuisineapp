@@ -12,13 +12,17 @@ export async function apiRequest(
   method: string,
   url: string,
   data?: unknown | undefined,
+  headers?: Record<string, string>,
 ): Promise<Response> {
   console.log(`API Request: ${method} ${url}`, data);
   
   try {
+    const defaultHeaders: Record<string, string> = data ? { "Content-Type": "application/json" } : {};
+    const mergedHeaders = { ...defaultHeaders, ...headers };
+    
     const res = await fetch(url, {
       method,
-      headers: data ? { "Content-Type": "application/json" } : {},
+      headers: mergedHeaders,
       body: data ? JSON.stringify(data) : undefined,
       credentials: "include",
     });

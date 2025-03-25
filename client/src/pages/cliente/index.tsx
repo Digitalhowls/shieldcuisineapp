@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Route, Switch, useLocation, useParams } from "wouter";
+import { Route, Switch, useLocation, Link } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,47 +16,45 @@ import {
 import Dashboard from "./dashboard";
 import Controles from "./controles";
 import ControlDetalle from "./control-detalle";
+import { useClientAuth, ClientAuthProvider } from "@/hooks/use-client-auth";
+
+// Contenedor con el provider de autenticación
+export default function ClientePortalContainer() {
+  return (
+    <ClientAuthProvider>
+      <ClientePortal />
+    </ClientAuthProvider>
+  );
+}
 
 // Interfaz principal del portal de cliente
-export default function ClientePortal() {
+function ClientePortal() {
   const [location] = useLocation();
-  const params = useParams();
   const searchParams = new URLSearchParams(window.location.search);
   const token = searchParams.get('token');
   const empresa = searchParams.get('empresa');
   
-  // Estado para autenticación del portal
-  const [isAutenticado, setIsAutenticado] = useState<boolean | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const { 
+    isLoading, 
+    isAuthenticated, 
+    error, 
+    validateToken, 
+    companyId, 
+    companyName 
+  } = useClientAuth();
   
   // Verificar acceso en la carga inicial
   useEffect(() => {
-    async function verificarAcceso() {
-      // Si no hay token o empresa, rechazar el acceso
-      if (!token || !empresa) {
-        setIsAutenticado(false);
-        setError("Falta el token de acceso o la identificación de la empresa");
-        setIsLoading(false);
-        return;
-      }
-      
-      try {
-        // Aquí se verificaría el token y la empresa contra la API
-        // Por ahora, simularemos una validación exitosa
-        setTimeout(() => {
-          setIsAutenticado(true);
-          setIsLoading(false);
-        }, 1000);
-      } catch (err) {
-        setIsAutenticado(false);
-        setError("Error al verificar el acceso");
-        setIsLoading(false);
+    // Si ya está autenticado o en proceso de carga, no hacer nada
+    if (isAuthenticated || isLoading === true) return;
+    
+    if (token && empresa) {
+      const companyId = parseInt(empresa);
+      if (!isNaN(companyId)) {
+        validateToken(token, companyId);
       }
     }
-    
-    verificarAcceso();
-  }, [token, empresa]);
+  }, [token, empresa, isAuthenticated, isLoading, validateToken]);
   
   // Mostrar pantalla de carga mientras se verifica
   if (isLoading) {
@@ -64,7 +62,7 @@ export default function ClientePortal() {
   }
   
   // Si no está autenticado, mostrar error
-  if (!isAutenticado) {
+  if (!isAuthenticated) {
     return <AccesoDenegado motivo={error || "Acceso no autorizado"} />;
   }
   
@@ -75,29 +73,33 @@ export default function ClientePortal() {
   
   // Renderizar interfaz principal
   return (
-    <div className="min-h-screen bg-neutral-50">
+    <div className="min-h-screen bg-neutral-50 flex flex-col">
       {/* Barra de navegación superior */}
       <header className="bg-white border-b py-4 px-6 shadow-sm">
         <div className="flex justify-between items-center">
           <div className="flex items-center">
             <Building className="h-6 w-6 text-primary mr-2" />
-            <h1 className="text-xl font-semibold">Portal de Seguridad Alimentaria</h1>
+            <h1 className="text-xl font-semibold">
+              {companyName ? `Portal de ${companyName}` : 'Portal de Seguridad Alimentaria'}
+            </h1>
           </div>
           
           {/* Mostrar botón de volver en subrutas */}
           {isInSubroute && (
             <Button 
-              variant="outline" 
-              onClick={() => window.location.href = `/cliente?empresa=${empresa}&token=${token}`}
+              variant="outline"
+              asChild
             >
-              Volver al inicio
+              <Link href="/cliente">
+                Volver al inicio
+              </Link>
             </Button>
           )}
         </div>
       </header>
       
       {/* Contenido principal */}
-      <main className="container mx-auto py-6 px-4">
+      <main className="container mx-auto py-6 px-4 flex-1">
         <Switch>
           <Route path="/cliente">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -113,9 +115,9 @@ export default function ClientePortal() {
                     className="w-full" 
                     asChild
                   >
-                    <a href={`/cliente/dashboard?empresa=${empresa}&token=${token}`}>
+                    <Link href="/cliente/dashboard">
                       Acceder <ChevronRight className="ml-2 h-4 w-4" />
-                    </a>
+                    </Link>
                   </Button>
                 </CardContent>
               </Card>
@@ -132,9 +134,9 @@ export default function ClientePortal() {
                     className="w-full" 
                     asChild
                   >
-                    <a href={`/cliente/controles?empresa=${empresa}&token=${token}`}>
+                    <Link href="/cliente/controles">
                       Acceder <ChevronRight className="ml-2 h-4 w-4" />
-                    </a>
+                    </Link>
                   </Button>
                 </CardContent>
               </Card>
@@ -152,9 +154,9 @@ export default function ClientePortal() {
                     variant="outline"
                     asChild
                   >
-                    <a href={`/cliente/informacion?empresa=${empresa}&token=${token}`}>
+                    <Link href="/cliente/informacion">
                       Acceder <ChevronRight className="ml-2 h-4 w-4" />
-                    </a>
+                    </Link>
                   </Button>
                 </CardContent>
               </Card>
@@ -162,11 +164,11 @@ export default function ClientePortal() {
           </Route>
           
           <Route path="/cliente/dashboard">
-            <Dashboard empresaId={parseInt(empresa || "0")} />
+            <Dashboard empresaId={companyId || 0} />
           </Route>
           
           <Route path="/cliente/controles">
-            <Controles empresaId={parseInt(empresa || "0")} />
+            <Controles empresaId={companyId || 0} />
           </Route>
           
           <Route path="/cliente/control/:controlId">
@@ -198,7 +200,7 @@ export default function ClientePortal() {
       </main>
       
       {/* Pie de página */}
-      <footer className="bg-white border-t py-4 px-6 mt-auto">
+      <footer className="bg-white border-t py-4 px-6">
         <div className="container mx-auto text-center text-neutral-500 text-sm">
           <p>Portal de Transparencia ShieldCuisine &copy; {new Date().getFullYear()}</p>
         </div>
@@ -229,7 +231,7 @@ function AccesoDenegado({ motivo }: { motivo: string }) {
         <h2 className="text-xl font-medium mb-2">Acceso denegado</h2>
         <p className="text-neutral-600 mb-6">{motivo}</p>
         <Button asChild>
-          <a href="/">Volver al inicio</a>
+          <Link href="/">Volver al inicio</Link>
         </Button>
       </div>
     </div>
