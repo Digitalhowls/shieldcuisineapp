@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect } from "react";
 import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,6 +12,24 @@ interface TopBarProps {
 
 export default function TopBar({ title, onMenuToggle, tabs = [] }: TopBarProps) {
   const [location] = useLocation();
+  
+  // Para debug - mostrar la ruta actual en la consola
+  useEffect(() => {
+    console.log("TopBar - Current location:", location);
+    console.log("TopBar - Active tab:", tabs.find(tab => tab.path === location)?.id || "none");
+  }, [location, tabs]);
+  
+  // Determinar si una pestaña está activa
+  const isTabActive = (tabPath: string) => {
+    if (tabPath === location) return true;
+    
+    // Caso especial para la ruta raíz del módulo (por ejemplo, /almacen o /appcc)
+    if (tabPath.split('/').length === 2 && tabPath === location.split('/').slice(0, 2).join('/')) {
+      return true;
+    }
+    
+    return false;
+  };
   
   return (
     <header className="bg-white shadow-sm z-10">
@@ -58,7 +76,7 @@ export default function TopBar({ title, onMenuToggle, tabs = [] }: TopBarProps) 
             >
               <div className={cn(
                 "mr-4 py-2 text-sm cursor-pointer",
-                location === tab.path
+                isTabActive(tab.path)
                   ? "border-b-2 border-primary text-primary font-medium"
                   : "text-neutral-500 hover:text-neutral-700"
               )}>

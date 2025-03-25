@@ -42,7 +42,7 @@ export default function AlmacenModule() {
         
         <div className="flex-grow overflow-y-auto p-4">
           <Switch>
-            <Route path="/almacen" exact>
+            <Route path="/almacen">
               <Dashboard />
             </Route>
             <Route path="/almacen/dashboard">
