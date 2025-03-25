@@ -356,6 +356,74 @@ export const notifications = pgTable("notifications", {
   expiresAt: timestamp("expires_at"), // Fecha opcional de caducidad
 });
 
+// Tablas para módulo de compras
+export const purchaseOrders = pgTable("purchase_orders", {
+  id: serial("id").primaryKey(),
+  orderNumber: text("order_number").notNull(),
+  companyId: integer("company_id").notNull().references(() => companies.id),
+  locationId: integer("location_id").notNull().references(() => locations.id),
+  supplierId: integer("supplier_id").notNull().references(() => suppliers.id),
+  warehouseId: integer("warehouse_id").notNull().references(() => warehouses.id),
+  status: purchaseOrderStatusEnum("status").notNull().default('draft'),
+  orderDate: date("order_date").notNull(),
+  expectedDeliveryDate: date("expected_delivery_date"),
+  subtotal: doublePrecision("subtotal").notNull().default(0),
+  tax: doublePrecision("tax").default(0),
+  total: doublePrecision("total").notNull().default(0),
+  paymentTerms: text("payment_terms"),
+  shippingMethod: text("shipping_method"),
+  notes: text("notes"),
+  createdBy: integer("created_by").notNull().references(() => users.id),
+  approvedBy: integer("approved_by").references(() => users.id),
+  approvedAt: timestamp("approved_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const purchaseOrderItems = pgTable("purchase_order_items", {
+  id: serial("id").primaryKey(),
+  purchaseOrderId: integer("purchase_order_id").notNull().references(() => purchaseOrders.id),
+  productId: integer("product_id").notNull().references(() => products.id),
+  quantity: doublePrecision("quantity").notNull(),
+  unit: text("unit").notNull(),
+  unitPrice: doublePrecision("unit_price").notNull(),
+  discount: doublePrecision("discount").default(0),
+  tax: doublePrecision("tax").default(0),
+  subtotal: doublePrecision("subtotal").notNull(),
+  receivedQuantity: doublePrecision("received_quantity").default(0),
+  notes: text("notes"),
+});
+
+export const goodsReceipts = pgTable("goods_receipts", {
+  id: serial("id").primaryKey(),
+  receiptNumber: text("receipt_number").notNull(),
+  purchaseOrderId: integer("purchase_order_id").notNull().references(() => purchaseOrders.id),
+  warehouseId: integer("warehouse_id").notNull().references(() => warehouses.id),
+  receivedBy: integer("received_by").notNull().references(() => users.id),
+  receiptDate: date("receipt_date").notNull(),
+  deliveryNoteNumber: text("delivery_note_number"),
+  carrierName: text("carrier_name"),
+  status: text("status").notNull().default('completed'), // 'completed', 'partial', 'pending_quality_check'
+  notes: text("notes"),
+  signature: text("signature"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const goodsReceiptItems = pgTable("goods_receipt_items", {
+  id: serial("id").primaryKey(),
+  goodsReceiptId: integer("goods_receipt_id").notNull().references(() => goodsReceipts.id),
+  purchaseOrderItemId: integer("purchase_order_item_id").notNull().references(() => purchaseOrderItems.id),
+  productId: integer("product_id").notNull().references(() => products.id),
+  quantity: doublePrecision("quantity").notNull(),
+  unit: text("unit").notNull(),
+  batchNumber: text("batch_number"),
+  expiryDate: date("expiry_date"),
+  locationInWarehouse: text("location_in_warehouse"),
+  qualityCheck: boolean("quality_check").default(true),
+  notes: text("notes"),
+});
+
 export const notificationPreferences = pgTable("notification_preferences", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").notNull().references(() => users.id),
@@ -365,6 +433,7 @@ export const notificationPreferences = pgTable("notification_preferences", {
   bankingNotifications: boolean("banking_notifications").notNull().default(true),
   systemNotifications: boolean("system_notifications").notNull().default(true),
   securityNotifications: boolean("security_notifications").notNull().default(true),
+  purchasingNotifications: boolean("purchasing_notifications").notNull().default(true),
   emailNotifications: boolean("email_notifications").notNull().default(true),
   emailFrequency: text("email_frequency").notNull().default("daily"), // "immediate", "daily", "weekly"
   createdAt: timestamp("created_at").defaultNow().notNull(),
@@ -440,6 +509,79 @@ export const bankTransactionRelations = relations(bankTransactions, ({ one }) =>
   }),
 }));
 
+// Relations for purchasing module
+export const purchaseOrderRelations = relations(purchaseOrders, ({ one, many }) => ({
+  company: one(companies, {
+    fields: [purchaseOrders.companyId],
+    references: [companies.id],
+  }),
+  location: one(locations, {
+    fields: [purchaseOrders.locationId],
+    references: [locations.id],
+  }),
+  supplier: one(suppliers, {
+    fields: [purchaseOrders.supplierId],
+    references: [suppliers.id],
+  }),
+  warehouse: one(warehouses, {
+    fields: [purchaseOrders.warehouseId],
+    references: [warehouses.id],
+  }),
+  createdByUser: one(users, {
+    fields: [purchaseOrders.createdBy],
+    references: [users.id],
+  }),
+  approvedByUser: one(users, {
+    fields: [purchaseOrders.approvedBy],
+    references: [users.id],
+  }),
+  items: many(purchaseOrderItems),
+  goodsReceipts: many(goodsReceipts),
+}));
+
+export const purchaseOrderItemRelations = relations(purchaseOrderItems, ({ one, many }) => ({
+  purchaseOrder: one(purchaseOrders, {
+    fields: [purchaseOrderItems.purchaseOrderId],
+    references: [purchaseOrders.id],
+  }),
+  product: one(products, {
+    fields: [purchaseOrderItems.productId],
+    references: [products.id],
+  }),
+  goodsReceiptItems: many(goodsReceiptItems),
+}));
+
+export const goodsReceiptRelations = relations(goodsReceipts, ({ one, many }) => ({
+  purchaseOrder: one(purchaseOrders, {
+    fields: [goodsReceipts.purchaseOrderId],
+    references: [purchaseOrders.id],
+  }),
+  warehouse: one(warehouses, {
+    fields: [goodsReceipts.warehouseId],
+    references: [warehouses.id],
+  }),
+  receivedByUser: one(users, {
+    fields: [goodsReceipts.receivedBy],
+    references: [users.id],
+  }),
+  items: many(goodsReceiptItems),
+}));
+
+export const goodsReceiptItemRelations = relations(goodsReceiptItems, ({ one }) => ({
+  goodsReceipt: one(goodsReceipts, {
+    fields: [goodsReceiptItems.goodsReceiptId],
+    references: [goodsReceipts.id],
+  }),
+  purchaseOrderItem: one(purchaseOrderItems, {
+    fields: [goodsReceiptItems.purchaseOrderItemId],
+    references: [purchaseOrderItems.id],
+  }),
+  product: one(products, {
+    fields: [goodsReceiptItems.productId],
+    references: [products.id],
+  }),
+}));
+
 // Insert and Select schemas
 export const insertUserSchema = createInsertSchema(users).omit({ id: true, lastLogin: true, createdAt: true });
 export const insertCompanySchema = createInsertSchema(companies).omit({ id: true, createdAt: true });
@@ -458,6 +600,12 @@ export const insertSaleSchema = createInsertSchema(sales).omit({ id: true, creat
 export const insertSaleItemSchema = createInsertSchema(saleItems).omit({ id: true });
 export const insertInvoiceSchema = createInsertSchema(invoices).omit({ id: true, createdAt: true });
 export const insertInvoiceItemSchema = createInsertSchema(invoiceItems).omit({ id: true });
+
+// Esquemas para módulo de compras
+export const insertPurchaseOrderSchema = createInsertSchema(purchaseOrders).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertPurchaseOrderItemSchema = createInsertSchema(purchaseOrderItems).omit({ id: true });
+export const insertGoodsReceiptSchema = createInsertSchema(goodsReceipts).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertGoodsReceiptItemSchema = createInsertSchema(goodsReceiptItems).omit({ id: true });
 
 // Esquemas para entidades bancarias
 export const insertBankConnectionSchema = createInsertSchema(bankConnections).omit({ id: true, createdAt: true, updatedAt: true });
@@ -504,6 +652,16 @@ export type InsertInvoice = z.infer<typeof insertInvoiceSchema>;
 export type Invoice = typeof invoices.$inferSelect;
 export type InsertInvoiceItem = z.infer<typeof insertInvoiceItemSchema>;
 export type InvoiceItem = typeof invoiceItems.$inferSelect;
+
+// Tipos para el módulo de compras
+export type InsertPurchaseOrder = z.infer<typeof insertPurchaseOrderSchema>;
+export type PurchaseOrder = typeof purchaseOrders.$inferSelect;
+export type InsertPurchaseOrderItem = z.infer<typeof insertPurchaseOrderItemSchema>;
+export type PurchaseOrderItem = typeof purchaseOrderItems.$inferSelect;
+export type InsertGoodsReceipt = z.infer<typeof insertGoodsReceiptSchema>;
+export type GoodsReceipt = typeof goodsReceipts.$inferSelect;
+export type InsertGoodsReceiptItem = z.infer<typeof insertGoodsReceiptItemSchema>;
+export type GoodsReceiptItem = typeof goodsReceiptItems.$inferSelect;
 
 // Tipos para entidades bancarias
 export type InsertBankConnection = z.infer<typeof insertBankConnectionSchema>;

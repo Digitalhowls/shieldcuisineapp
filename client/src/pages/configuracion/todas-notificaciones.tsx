@@ -58,6 +58,10 @@ const notificationTypeConfig = {
     color: "bg-yellow-100 text-yellow-800 hover:bg-yellow-200", 
     label: "Banca" 
   },
+  purchasing: { 
+    color: "bg-orange-100 text-orange-800 hover:bg-orange-200", 
+    label: "Compras" 
+  },
   system: { 
     color: "bg-gray-100 text-gray-800 hover:bg-gray-200", 
     label: "Sistema" 

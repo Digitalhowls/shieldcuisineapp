@@ -35,6 +35,7 @@ const notificationTypeConfig = {
   appcc_control: { color: "bg-green-500", icon: Bell },
   learning: { color: "bg-purple-500", icon: Bell },
   banking: { color: "bg-yellow-500", icon: Bell },
+  purchasing: { color: "bg-orange-500", icon: Bell },
   system: { color: "bg-gray-500", icon: Bell },
 };
 
