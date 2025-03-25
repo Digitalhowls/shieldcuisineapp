@@ -43,43 +43,22 @@ import {
   updateConnectionStatus
 } from "@/lib/banking-api";
 
-// Interfaces locales para mantener compatibilidad
-interface BankAccount {
-  id: number;
-  connectionId?: number;
-  accountNumber: string;
-  iban: string;
-  name: string;
-  type: "checking" | "savings" | "credit";
-  balance: number;
-  availableBalance: number;
-  currency: string;
-  lastUpdated: string;
-  bankName: string;
-  status?: string;
-}
+import {
+  BankAccount,
+  Transaction as ApiTransaction,
+  MonthlyBalance as ApiMonthlyBalance
+} from "@/lib/banking-api";
 
-interface Transaction {
-  id: number;
-  accountId: number;
-  date: string;
-  amount: number;
-  description: string;
+// Interfaces locales para compatibilidad con datos existentes y API
+interface LocalTransaction extends ApiTransaction {
+  // Campos adicionales o modificados para el componente local
   category?: string;
-  type: typeof bankTransactionTypeEnum.enumValues[number];
-  valueDate?: string;
-  currency?: string;
-  categoryId?: number;
-  reference?: string;
-  counterparty?: string;
-  status?: string;
 }
 
-interface MonthlyBalance {
-  month: string;
-  balance: number;
-  income?: number;
-  expenses?: number;
+interface LocalMonthlyBalance extends ApiMonthlyBalance {
+  // Garantizamos que siempre tengamos estos campos, aunque sean opcionales en la API
+  income: number;
+  expenses: number;
 }
 
 export default function Dashboard() {
@@ -91,12 +70,12 @@ export default function Dashboard() {
   });
 
   // Consulta para obtener transacciones recientes
-  const { data: recentTransactions, isLoading: isLoadingTransactions } = useQuery<Transaction[]>({
+  const { data: recentTransactions, isLoading: isLoadingTransactions } = useQuery<ApiTransaction[]>({
     queryKey: ['/api/banking/transactions/recent'],
   });
 
   // Consulta para obtener balances mensuales
-  const { data: monthlyBalances, isLoading: isLoadingBalances } = useQuery<MonthlyBalance[]>({
+  const { data: monthlyBalances, isLoading: isLoadingBalances } = useQuery<ApiMonthlyBalance[]>({
     queryKey: ['/api/banking/balances/monthly'],
   });
 
@@ -115,6 +94,7 @@ export default function Dashboard() {
   const accountsData: BankAccount[] = accounts || [
     {
       id: 1,
+      connectionId: 1,
       accountNumber: "1234567890",
       iban: "ES1234567890123456789012",
       name: "Cuenta Corriente Principal",
@@ -123,10 +103,12 @@ export default function Dashboard() {
       availableBalance: 5250.75,
       currency: "EUR",
       lastUpdated: "2025-03-22T10:30:00Z",
-      bankName: "BBVA"
+      bankName: "BBVA",
+      status: "active"
     },
     {
       id: 2,
+      connectionId: 1,
       accountNumber: "9876543210",
       iban: "ES9876543210987654321098",
       name: "Cuenta de Ahorro",
@@ -135,10 +117,12 @@ export default function Dashboard() {
       availableBalance: 12500.00,
       currency: "EUR",
       lastUpdated: "2025-03-22T10:30:00Z",
-      bankName: "Santander"
+      bankName: "Santander",
+      status: "active"
     },
     {
       id: 3,
+      connectionId: 2,
       accountNumber: "5432167890",
       iban: "ES5432167890543216789054",
       name: "Tarjeta de Crédito Empresarial",
@@ -147,11 +131,12 @@ export default function Dashboard() {
       availableBalance: 3749.70,
       currency: "EUR",
       lastUpdated: "2025-03-22T10:30:00Z",
-      bankName: "CaixaBank"
+      bankName: "CaixaBank",
+      status: "active"
     }
   ];
 
-  const transactionsData: Transaction[] = recentTransactions || [
+  const transactionsData: LocalTransaction[] = recentTransactions as LocalTransaction[] || [
     {
       id: 1,
       accountId: 1,
@@ -199,19 +184,19 @@ export default function Dashboard() {
     }
   ];
 
-  const balancesData: MonthlyBalance[] = monthlyBalances || [
-    { month: "Ene", balance: 3500 },
-    { month: "Feb", balance: 3800 },
-    { month: "Mar", balance: 4200 },
-    { month: "Abr", balance: 4100 },
-    { month: "May", balance: 4500 },
-    { month: "Jun", balance: 4700 },
-    { month: "Jul", balance: 5100 },
-    { month: "Ago", balance: 5250 },
-    { month: "Sep", balance: 5350 },
-    { month: "Oct", balance: 5500 },
-    { month: "Nov", balance: 5200 },
-    { month: "Dic", balance: 5750 }
+  const balancesData: LocalMonthlyBalance[] = monthlyBalances as LocalMonthlyBalance[] || [
+    { month: "Ene", balance: 3500, income: 5000, expenses: 1500 },
+    { month: "Feb", balance: 3800, income: 4800, expenses: 1000 },
+    { month: "Mar", balance: 4200, income: 5200, expenses: 1000 },
+    { month: "Abr", balance: 4100, income: 4900, expenses: 800 },
+    { month: "May", balance: 4500, income: 5300, expenses: 800 },
+    { month: "Jun", balance: 4700, income: 5200, expenses: 500 },
+    { month: "Jul", balance: 5100, income: 5600, expenses: 500 },
+    { month: "Ago", balance: 5250, income: 5750, expenses: 500 },
+    { month: "Sep", balance: 5350, income: 5850, expenses: 500 },
+    { month: "Oct", balance: 5500, income: 6000, expenses: 500 },
+    { month: "Nov", balance: 5200, income: 5700, expenses: 500 },
+    { month: "Dic", balance: 5750, income: 6250, expenses: 500 }
   ];
 
   // Cálculos para el dashboard
