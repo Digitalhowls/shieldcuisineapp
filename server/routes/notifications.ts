@@ -142,12 +142,15 @@ export function registerNotificationRoutes(app: Express) {
         // Si no hay preferencias, crear unas por defecto
         const defaultPreferences = {
           userId: req.user.id,
-          emailEnabled: true,
-          pushEnabled: true,
-          inAppEnabled: true,
-          appccReminders: true,
-          inventoryAlerts: true,
-          courseNotifications: true
+          appccNotifications: true,
+          inventoryNotifications: true,
+          learningNotifications: true,
+          bankingNotifications: true,
+          systemNotifications: true,
+          securityNotifications: true,
+          purchasingNotifications: true,
+          emailNotifications: true,
+          emailFrequency: "daily"
         };
         
         const newPreferences = await storage.createNotificationPreferences(defaultPreferences);
@@ -180,12 +183,15 @@ export function registerNotificationRoutes(app: Express) {
         // Si no hay preferencias, crear unas nuevas con los datos proporcionados
         const newPreferences = {
           userId: req.user.id,
-          emailEnabled: true,
-          pushEnabled: true,
-          inAppEnabled: true,
-          appccReminders: true,
-          inventoryAlerts: true,
-          courseNotifications: true,
+          appccNotifications: true,
+          inventoryNotifications: true,
+          learningNotifications: true,
+          bankingNotifications: true,
+          systemNotifications: true,
+          securityNotifications: true,
+          purchasingNotifications: true,
+          emailNotifications: true,
+          emailFrequency: "daily",
           ...validationResult.data
         };
         
