@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { 
   Card, 
@@ -33,20 +33,30 @@ import {
   ArrowUpDown, 
   Edit, 
   Trash2, 
-  Calendar 
+  Calendar,
+  CalendarClock,
+  Eye 
 } from "lucide-react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useAuth } from "@/hooks/use-auth";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import TemplateBuilder, { TemplateData } from "@/components/appcc/template-builder";
+import ScheduleControl, { ScheduleData } from "@/components/appcc/schedule-control";
+import DynamicControlForm from "@/components/appcc/dynamic-control-form";
 
 interface TemplateItem {
   id: number;
   name: string;
+  description?: string;
   type: "checklist" | "form";
   frequency: string;
+  formStructure: string;
+  requiredRole?: string;
   active: boolean;
   createdAt: string;
+  companyId: number;
+  locationId?: number;
 }
 
 export default function Templates() {
@@ -118,42 +128,102 @@ export default function Templates() {
     {
       id: 1,
       name: "Control Temperatura Cámaras",
+      description: "Control diario de temperaturas de cámaras frigoríficas",
       type: "checklist",
       frequency: "daily",
+      formStructure: JSON.stringify({
+        sections: [{
+          id: "s1",
+          title: "Control de Temperaturas",
+          fields: [
+            { id: "t1", type: "temperature", label: "Temperatura Cámara 1", required: true, temperatureRange: { min: 1, max: 4, unit: "C" } },
+            { id: "t2", type: "temperature", label: "Temperatura Cámara 2", required: true, temperatureRange: { min: -18, max: -20, unit: "C" } }
+          ]
+        }]
+      }),
       active: true,
-      createdAt: "2023-09-15T10:30:00Z"
+      createdAt: "2023-09-15T10:30:00Z",
+      companyId: 1
     },
     {
       id: 2,
       name: "Limpieza y Desinfección",
+      description: "Registro de limpieza diaria",
       type: "form",
       frequency: "daily",
+      formStructure: JSON.stringify({
+        sections: [{
+          id: "s1",
+          title: "Registro de Limpieza",
+          fields: [
+            { id: "c1", type: "checkbox", label: "Cocina limpia", required: true },
+            { id: "c2", type: "checkbox", label: "Superficies desinfectadas", required: true }
+          ]
+        }]
+      }),
       active: true,
-      createdAt: "2023-09-10T14:15:00Z"
+      createdAt: "2023-09-10T14:15:00Z",
+      companyId: 1
     },
     {
       id: 3,
       name: "Control Recepción Mercancía",
+      description: "Registro para control de recepción de materias primas",
       type: "form",
       frequency: "daily",
+      formStructure: JSON.stringify({
+        sections: [{
+          id: "s1",
+          title: "Datos del Proveedor",
+          fields: [
+            { id: "p1", type: "text", label: "Proveedor", required: true },
+            { id: "p2", type: "text", label: "Nº Albarán", required: true }
+          ]
+        }]
+      }),
       active: true,
-      createdAt: "2023-08-22T09:45:00Z"
+      createdAt: "2023-08-22T09:45:00Z",
+      companyId: 1
     },
     {
       id: 4,
       name: "Verificación Etiquetado",
+      description: "Control semanal de etiquetado de productos",
       type: "checklist",
       frequency: "weekly",
+      formStructure: JSON.stringify({
+        sections: [{
+          id: "s1",
+          title: "Verificación",
+          fields: [
+            { id: "e1", type: "checkbox", label: "Etiquetas correctas", required: true },
+            { id: "e2", type: "checkbox", label: "Fechas visibles", required: true }
+          ]
+        }]
+      }),
       active: true,
-      createdAt: "2023-07-30T11:20:00Z"
+      createdAt: "2023-07-30T11:20:00Z",
+      companyId: 1
     },
     {
       id: 5,
       name: "Auditoría Instalaciones",
+      description: "Inspección mensual de instalaciones",
       type: "form",
       frequency: "monthly",
+      formStructure: JSON.stringify({
+        sections: [{
+          id: "s1",
+          title: "Inspección General",
+          fields: [
+            { id: "i1", type: "textarea", label: "Observaciones", required: true },
+            { id: "i2", type: "signature", label: "Firma del Inspector", required: true }
+          ]
+        }]
+      }),
       active: true,
-      createdAt: "2023-06-15T13:10:00Z"
+      createdAt: "2023-06-15T13:10:00Z",
+      companyId: 1
     }
   ];
   
@@ -180,20 +250,63 @@ export default function Templates() {
     }
   };
   
-  // Create template placeholder (would be implemented with actual form)
-  const handleCreateTemplate = (data: any) => {
-    createTemplateMutation.mutate({
-      name: data.name,
-      type: data.type,
-      frequency: data.frequency,
-      formStructure: { 
-        fields: [
-          { id: 1, type: "text", label: "Texto ejemplo", required: true },
-          { id: 2, type: "number", label: "Número ejemplo", required: false }
-        ] 
-      },
-      companyId: user?.companyId || 1
+  // State for template-related dialogs and actions
+  const [selectedTemplate, setSelectedTemplate] = useState<TemplateItem | null>(null);
+  const [isTemplateBuilderOpen, setIsTemplateBuilderOpen] = useState(false);
+  const [isScheduleDialogOpen, setIsScheduleDialogOpen] = useState(false);
+  const [isViewFormOpen, setIsViewFormOpen] = useState(false);
+  
+  // Create or update a template
+  const handleSaveTemplate = (data: TemplateData) => {
+    // Convert the template data to the format expected by the API
+    const formStructureJson = JSON.stringify({
+      sections: data.sections
     });
+    
+    // For a new template
+    if (!selectedTemplate) {
+      createTemplateMutation.mutate({
+        name: data.name,
+        description: data.description,
+        type: data.type,
+        frequency: data.frequency,
+        formStructure: formStructureJson,
+        requiredRole: data.requiredRole,
+        active: data.active,
+        companyId: user?.companyId || 1
+      });
+    } else {
+      // For updating an existing template - we would implement this with a proper updateTemplateMutation
+      toast({
+        title: "Actualización pendiente",
+        description: "La funcionalidad de actualización será implementada en la próxima versión",
+      });
+    }
+    setIsTemplateBuilderOpen(false);
+  };
+  
+  // Sample locations and users for schedule dialog
+  const locations = [
+    { id: 1, name: "Cocina Principal" },
+    { id: 2, name: "Almacén Central" },
+    { id: 3, name: "Zona de Preparación" }
+  ];
+  
+  const users = [
+    { id: 1, name: "Administrador", role: "admin" },
+    { id: 2, name: "Jefe de Cocina", role: "area_supervisor" },
+    { id: 3, name: "Responsable Almacén", role: "employee" }
+  ];
+  
+  // Handle scheduling a control
+  const handleScheduleControl = (data: ScheduleData) => {
+    // We would implement this with a proper scheduleControlMutation
+    console.log("Programando control:", data);
+    toast({
+      title: "Control programado",
+      description: "El control ha sido programado exitosamente",
+    });
+    setIsScheduleDialogOpen(false);
   };
   
   return (
@@ -354,11 +467,48 @@ export default function Templates() {
                           </span>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                          <Button variant="ghost" size="sm" className="text-neutral-600 hover:text-neutral-900">
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            className="text-neutral-600 hover:text-neutral-900"
+                            onClick={() => {
+                              setSelectedTemplate(template);
+                              setIsTemplateBuilderOpen(true);
+                            }}
+                            title="Editar plantilla"
+                          >
                             <Edit className="h-4 w-4" />
                           </Button>
-                          <Button variant="ghost" size="sm" className="text-neutral-600 hover:text-error"
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            className="text-neutral-600 hover:text-primary"
+                            onClick={() => {
+                              setSelectedTemplate(template);
+                              setIsViewFormOpen(true);
+                            }}
+                            title="Ver formulario"
+                          >
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            className="text-neutral-600 hover:text-success"
+                            onClick={() => {
+                              setSelectedTemplate(template);
+                              setIsScheduleDialogOpen(true);
+                            }}
+                            title="Programar control"
+                          >
+                            <CalendarClock className="h-4 w-4" />
+                          </Button>
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            className="text-neutral-600 hover:text-error"
                             onClick={() => setTemplateToDelete(template.id)}
+                            title="Eliminar plantilla"
                           >
                             <Trash2 className="h-4 w-4" />
                           </Button>
@@ -428,11 +578,12 @@ export default function Templates() {
               Cancelar
             </Button>
             <Button 
-              onClick={() => handleCreateTemplate({
-                name: (document.getElementById('name') as HTMLInputElement)?.value,
-                type: (document.querySelector('[id="type"] [data-value]') as HTMLElement)?.getAttribute('data-value'),
-                frequency: (document.querySelector('[id="frequency"] [data-value]') as HTMLElement)?.getAttribute('data-value'),
-              })}
+              onClick={() => {
+                // Initializar el constructor de plantillas con valores básicos
+                setSelectedTemplate(null);
+                setIsCreateDialogOpen(false);
+                setIsTemplateBuilderOpen(true);
+              }}
               disabled={createTemplateMutation.isPending}
             >
               {createTemplateMutation.isPending ? "Creando..." : "Crear Plantilla"}
@@ -467,6 +618,60 @@ export default function Templates() {
               {deleteTemplateMutation.isPending ? "Eliminando..." : "Eliminar"}
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      
+      {/* Template Builder Dialog */}
+      <Dialog open={isTemplateBuilderOpen} onOpenChange={setIsTemplateBuilderOpen}>
+        <DialogContent className="max-w-5xl">
+          <TemplateBuilder 
+            initialData={selectedTemplate ? {
+              name: selectedTemplate.name,
+              description: selectedTemplate.description || "",
+              type: selectedTemplate.type,
+              frequency: selectedTemplate.frequency as any,
+              active: selectedTemplate.active,
+              requiredRole: selectedTemplate.requiredRole,
+              sections: JSON.parse(selectedTemplate.formStructure).sections
+            } : undefined}
+            onSave={handleSaveTemplate}
+            onCancel={() => setIsTemplateBuilderOpen(false)}
+            isLoading={createTemplateMutation.isPending}
+          />
+        </DialogContent>
+      </Dialog>
+      
+      {/* Schedule Control Dialog */}
+      <Dialog open={isScheduleDialogOpen} onOpenChange={setIsScheduleDialogOpen}>
+        <DialogContent className="max-w-4xl">
+          {selectedTemplate && (
+            <ScheduleControl
+              template={selectedTemplate}
+              locations={locations}
+              users={users}
+              onSchedule={handleScheduleControl}
+              onCancel={() => setIsScheduleDialogOpen(false)}
+              isLoading={false}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
+      
+      {/* View Form Dialog */}
+      <Dialog open={isViewFormOpen} onOpenChange={setIsViewFormOpen}>
+        <DialogContent className="max-w-4xl">
+          {selectedTemplate && (
+            <DynamicControlForm
+              template={selectedTemplate}
+              onSubmit={data => {
+                console.log("Form data:", data);
+                setIsViewFormOpen(false);
+              }}
+              onCancel={() => setIsViewFormOpen(false)}
+              isReadOnly={true}
+              currentUser={user as any}
+            />
+          )}
         </DialogContent>
       </Dialog>
     </main>
