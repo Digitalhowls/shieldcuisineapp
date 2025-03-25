@@ -5,7 +5,14 @@ import {
   Check, 
   Trash2, 
   Settings, 
-  X 
+  X,
+  Shield,
+  Package,
+  ClipboardCheck,
+  GraduationCap,
+  CreditCard,
+  ShoppingCart,
+  ServerCog
 } from "lucide-react";
 import { useNotifications } from "@/hooks/use-notifications";
 import { formatDistanceToNow } from "date-fns";
@@ -30,13 +37,13 @@ import { useLocation } from "wouter";
 
 // Mapeamos los tipos de notificación a íconos y colores
 const notificationTypeConfig = {
-  security: { color: "bg-red-500", icon: Bell },
-  inventory: { color: "bg-blue-500", icon: Bell },
-  appcc_control: { color: "bg-green-500", icon: Bell },
-  learning: { color: "bg-purple-500", icon: Bell },
-  banking: { color: "bg-yellow-500", icon: Bell },
-  purchasing: { color: "bg-orange-500", icon: Bell },
-  system: { color: "bg-gray-500", icon: Bell },
+  security: { color: "bg-red-500", icon: Shield },
+  inventory: { color: "bg-blue-500", icon: Package },
+  appcc_control: { color: "bg-green-500", icon: ClipboardCheck },
+  learning: { color: "bg-purple-500", icon: GraduationCap },
+  banking: { color: "bg-yellow-500", icon: CreditCard },
+  purchasing: { color: "bg-orange-500", icon: ShoppingCart },
+  system: { color: "bg-gray-500", icon: ServerCog },
 };
 
 export function NotificationBell() {

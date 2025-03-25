@@ -41,6 +41,7 @@ export default function NotificacionesPage() {
     bankingNotifications: false,
     systemNotifications: false,
     securityNotifications: false,
+    purchasingNotifications: false,
     // Frecuencia
     emailFrequency: "daily"
   });
@@ -56,6 +57,7 @@ export default function NotificacionesPage() {
         bankingNotifications: preferences.bankingNotifications,
         systemNotifications: preferences.systemNotifications,
         securityNotifications: preferences.securityNotifications,
+        purchasingNotifications: preferences.purchasingNotifications || false,
         emailFrequency: preferences.emailFrequency
       });
     }
@@ -265,6 +267,22 @@ export default function NotificacionesPage() {
                 id="security-notifications"
                 checked={formState.securityNotifications}
                 onCheckedChange={handleToggle('securityNotifications')}
+              />
+            </div>
+            
+            <Separator />
+            
+            <div className="flex items-center justify-between">
+              <div className="space-y-0.5">
+                <Label htmlFor="purchasing-notifications">Compras</Label>
+                <p className="text-sm text-muted-foreground">
+                  Pedidos y recepciones de mercancía
+                </p>
+              </div>
+              <Switch
+                id="purchasing-notifications"
+                checked={formState.purchasingNotifications}
+                onCheckedChange={handleToggle('purchasingNotifications')}
               />
             </div>
           </CardContent>
