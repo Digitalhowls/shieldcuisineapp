@@ -18,7 +18,15 @@ async function hashPassword(password: string) {
 }
 
 async function comparePasswords(supplied: string, stored: string) {
-  return await verify(supplied, stored);
+  console.log(`Comparing passwords: supplied='${supplied}', stored='${stored}'`);
+  try {
+    const result = await verify(supplied, stored);
+    console.log(`Verification result: ${result}`);
+    return result;
+  } catch (err) {
+    console.error('Password comparison error:', err);
+    return false;
+  }
 }
 
 export function setupAuth(app: Express) {
