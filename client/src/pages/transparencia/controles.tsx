@@ -294,11 +294,11 @@ export default function Controles() {
                   <Button variant="outline" className="w-full md:w-auto">
                     <Filter className="mr-2 h-4 w-4" />
                     Filtros
-                    {(statusFilter !== "all" || typeFilter !== "all" || dateRange.from || dateRange.to) && (
+                    {(statusFilter !== "all" || typeFilter !== "all" || (dateRange && (dateRange.from || dateRange.to))) && (
                       <Badge className="ml-2 bg-primary text-white">
                         {(statusFilter !== "all" ? 1 : 0) + 
                          (typeFilter !== "all" ? 1 : 0) + 
-                         ((dateRange.from || dateRange.to) ? 1 : 0)}
+                         ((dateRange && (dateRange.from || dateRange.to)) ? 1 : 0)}
                       </Badge>
                     )}
                   </Button>
