@@ -34,20 +34,29 @@ import {
   Settings,
   RefreshCw
 } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 import { bankAccountTypeEnum, bankTransactionTypeEnum } from "@shared/schema";
+import {
+  getAllBankAccounts,
+  getRecentTransactions,
+  getMonthlyBalances,
+  updateConnectionStatus
+} from "@/lib/banking-api";
 
-// Interfaces para los datos bancarios
+// Interfaces locales para mantener compatibilidad
 interface BankAccount {
   id: number;
+  connectionId?: number;
   accountNumber: string;
   iban: string;
   name: string;
-  type: typeof bankAccountTypeEnum.enumValues[number];
+  type: "checking" | "savings" | "credit";
   balance: number;
   availableBalance: number;
   currency: string;
   lastUpdated: string;
   bankName: string;
+  status?: string;
 }
 
 interface Transaction {
@@ -58,11 +67,19 @@ interface Transaction {
   description: string;
   category?: string;
   type: typeof bankTransactionTypeEnum.enumValues[number];
+  valueDate?: string;
+  currency?: string;
+  categoryId?: number;
+  reference?: string;
+  counterparty?: string;
+  status?: string;
 }
 
 interface MonthlyBalance {
   month: string;
   balance: number;
+  income?: number;
+  expenses?: number;
 }
 
 export default function Dashboard() {
@@ -206,7 +223,8 @@ export default function Dashboard() {
 
   // Datos para gráfico circular de gastos por categoría
   const expensesByCategory = outgoingTransactions.reduce((acc, tx) => {
-    const category = tx.category || "Otros";
+    // Usamos una propiedad 'category' que puede venir de datos reales o categoría agregada
+    const category = (tx as any).category || "Otros";
     acc[category] = (acc[category] || 0) + Math.abs(tx.amount);
     return acc;
   }, {} as Record<string, number>);
@@ -445,7 +463,7 @@ export default function Dashboard() {
                       <div className="font-medium">{transaction.description}</div>
                       <div className="text-sm text-muted-foreground">
                         {formatDate(transaction.date)} • 
-                        {transaction.category && <span className="ml-1">{transaction.category}</span>}
+                        {(transaction as any).category && <span className="ml-1">{(transaction as any).category}</span>}
                       </div>
                     </div>
                   </div>
