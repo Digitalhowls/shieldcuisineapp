@@ -148,12 +148,17 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
         <div className="flex flex-col h-full">
           {/* Logo */}
           <div className="p-4 border-b border-neutral-100 flex items-center justify-between">
-            <div className="flex items-center">
-              <div className="w-8 h-8 rounded-md bg-primary flex items-center justify-center mr-2">
-                <ShieldCheck className="h-5 w-5 text-white" />
+            <Link href="/">
+              <div className="flex items-center cursor-pointer">
+                <div className="w-10 h-10 rounded-md bg-primary flex items-center justify-center mr-2 transition-all duration-300 hover:shadow-md">
+                  <ShieldCheck className="h-6 w-6 text-white" />
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-xl font-bold text-neutral-800">ShieldCuisine</span>
+                  <span className="text-xs text-neutral-500">Seguridad Alimentaria</span>
+                </div>
               </div>
-              <span className="text-xl font-semibold text-neutral-800">ShieldCuisine</span>
-            </div>
+            </Link>
             <button onClick={onClose} className="lg:hidden text-neutral-500">
               <i className="fas fa-times"></i>
             </button>
@@ -180,32 +185,34 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
             
             {mainModules.map((module) => (
               <div key={module.path}>
-                <div
-                  className={cn(
-                    "flex items-center pl-4 pr-4 py-3 text-neutral-700 hover:bg-neutral-50 cursor-pointer",
-                    module.isActive && "sidebar-item active"
-                  )}
-                  onClick={() => window.location.href = module.path}
-                >
-                  <i className={cn(module.icon, "w-5 mr-3", module.isActive ? "text-primary" : "text-neutral-500")}></i>
-                  <span>{module.label}</span>
-                </div>
+                <Link href={module.path}>
+                  <div
+                    className={cn(
+                      "flex items-center pl-4 pr-4 py-3 text-neutral-700 hover:bg-neutral-50 cursor-pointer",
+                      module.isActive && "sidebar-item active"
+                    )}
+                  >
+                    <i className={cn(module.icon, "w-5 mr-3", module.isActive ? "text-primary" : "text-neutral-500")}></i>
+                    <span>{module.label}</span>
+                  </div>
+                </Link>
                 
                 {/* Submenu items */}
                 {module.children && module.isActive && (
                   <div>
                     {module.children.map((child) => (
-                      <div 
+                      <Link 
                         key={child.path}
-                        className={cn(
+                        href={child.path}
+                      >
+                        <div className={cn(
                           "flex items-center pl-8 pr-4 py-2 text-neutral-600 hover:bg-neutral-50 cursor-pointer",
                           child.isActive && "bg-neutral-50 text-primary"
-                        )}
-                        onClick={() => window.location.href = child.path}
-                      >
-                        {child.icon && <i className={cn(child.icon, "w-5 text-neutral-500 mr-3")}></i>}
-                        <span>{child.label}</span>
-                      </div>
+                        )}>
+                          {child.icon && <i className={cn(child.icon, "w-5 text-neutral-500 mr-3")}></i>}
+                          <span>{child.label}</span>
+                        </div>
+                      </Link>
                     ))}
                   </div>
                 )}
