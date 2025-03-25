@@ -7,7 +7,9 @@ import { z } from "zod";
 export const userRoleEnum = pgEnum('user_role', ['admin', 'company_admin', 'location_manager', 'area_supervisor', 'employee', 'external']);
 export const controlStatusEnum = pgEnum('control_status', ['pending', 'completed', 'delayed', 'scheduled']);
 export const controlTypeEnum = pgEnum('control_type', ['checklist', 'form']);
-export const documentTypeEnum = pgEnum('document_type', ['invoice', 'receipt', 'delivery_note', 'internal_transfer']);
+export const documentTypeEnum = pgEnum('document_type', ['invoice', 'receipt', 'delivery_note', 'internal_transfer', 'purchase_order', 'goods_receipt']);
+
+export const purchaseOrderStatusEnum = pgEnum('purchase_order_status', ['draft', 'sent', 'confirmed', 'partially_received', 'completed', 'cancelled']);
 export const businessTypeEnum = pgEnum('business_type', ['restaurant', 'store', 'production', 'catering', 'wholesale']);
 export const bankAccountTypeEnum = pgEnum('bank_account_type', ['checking', 'savings', 'credit']);
 export const bankTransactionTypeEnum = pgEnum('bank_transaction_type', ['payment', 'charge', 'transfer', 'deposit', 'withdrawal', 'fee']);
@@ -17,7 +19,8 @@ export const notificationTypeEnum = pgEnum('notification_type', [
   'learning', // Notificaciones de formación (nuevos cursos, completados, etc)
   'banking', // Alertas bancarias (nuevas transacciones, etc)
   'system', // Notificaciones del sistema
-  'security' // Alertas de seguridad
+  'security', // Alertas de seguridad
+  'purchasing' // Notificaciones relacionadas con compras
 ]);
 
 // Tables
