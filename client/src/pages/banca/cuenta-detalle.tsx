@@ -1,22 +1,33 @@
 import React, { useState } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { useQuery } from "@tanstack/react-query";
 import { useLocation, useParams } from "wouter";
 import { 
-  ArrowUpRight, 
-  ArrowDownRight,
-  AlertCircle,
   PiggyBank,
-  BanknoteIcon,
   CreditCard,
   ChevronLeft,
+  RefreshCw,
+  BanknoteIcon,
   Download,
   Filter,
-  CalendarIcon
+  Calendar,
+  Search,
+  ArrowUpRight,
+  ArrowDownRight,
+  Landmark,
+  CalendarRange,
+  Copy,
+  LineChart,
+  Clock,
+  Share,
+  Pencil,
+  MoreHorizontal
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress";
+import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { DatePickerWithRange, DateRange } from "@/components/ui/date-range-picker";
+import { Progress } from "@/components/ui/progress";
 import {
   Table,
   TableBody,
@@ -27,23 +38,33 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuItem,
+} from "@/components/ui/dropdown-menu";
+import { 
+  Select, 
+  SelectContent, 
+  SelectItem, 
+  SelectTrigger, 
+  SelectValue 
 } from "@/components/ui/select";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import { Calendar } from "@/components/ui/calendar";
-import { format } from "date-fns";
+import { 
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { Badge } from "@/components/ui/badge";
+import { bankAccountTypeEnum, bankTransactionTypeEnum } from "@shared/schema";
+import { addDays, format, subDays, subMonths } from "date-fns";
 import { es } from "date-fns/locale";
-import { bankAccountTypeEnum } from "@shared/schema";
+import { useToast } from "@/hooks/use-toast";
 
-// Tipos para los detalles de cuenta bancaria
+// Interfaces para los datos bancarios
 interface BankAccount {
   id: number;
   accountNumber: string;
@@ -56,56 +77,65 @@ interface BankAccount {
   lastUpdated: string;
   bankName: string;
   connectionId: number;
+  swift?: string;
+  holderName?: string;
+  openDate?: string;
 }
 
 interface Transaction {
   id: number;
+  accountId: number;
   date: string;
+  valueDate: string;
   amount: number;
   description: string;
   category?: string;
-  isExpense: boolean;
   reference?: string;
   status: "pending" | "settled";
+  type: typeof bankTransactionTypeEnum.enumValues[number];
+  counterparty?: string;
+  balance?: number;
+  notes?: string;
 }
 
-interface AccountDetail {
-  account: BankAccount;
-  transactions: Transaction[];
+type DateRange = {
+  from: Date;
+  to?: Date;
 }
 
+// Vista de detalle de cuenta bancaria
 export default function CuentaDetalle() {
   const [_, navigate] = useLocation();
   const params = useParams();
-  const accountId = params.id;
-
-  const [dateFrom, setDateFrom] = useState<Date | undefined>(new Date(new Date().setMonth(new Date().getMonth() - 1)));
-  const [dateTo, setDateTo] = useState<Date | undefined>(new Date());
-  const [categoryFilter, setCategoryFilter] = useState<string | undefined>(undefined);
-  const [typeFilter, setTypeFilter] = useState<"all" | "income" | "expense">("all");
-
-  // Consulta para obtener los detalles de la cuenta bancaria
-  const { data, isLoading, error } = useQuery<AccountDetail>({
-    queryKey: ["/api/banking/accounts", accountId, dateFrom, dateTo],
-    enabled: !!accountId,
+  const accountId = parseInt(params.id);
+  const { toast } = useToast();
+  
+  const [searchQuery, setSearchQuery] = useState("");
+  const [categoryFilter, setCategoryFilter] = useState<string>("");
+  const [typeFilter, setTypeFilter] = useState<string>("");
+  const [dateRange, setDateRange] = useState<DateRange>({
+    from: subMonths(new Date(), 1),
+    to: new Date()
   });
 
-  // Categorías para filtrado
-  const categories = [
-    "Alimentación",
-    "Transporte",
-    "Restaurantes",
-    "Servicios",
-    "Electrónica",
-    "Salud",
-    "Ocio",
-    "Educación",
-    "Ingresos",
-    "Transferencias"
-  ];
+  // Consulta para obtener los datos de la cuenta
+  const { data: account, isLoading: isLoadingAccount } = useQuery<BankAccount>({
+    queryKey: [`/api/banking/accounts/${accountId}`],
+    enabled: !isNaN(accountId),
+  });
 
-  // Manejo de estado de carga y errores
-  if (isLoading) {
+  // Consulta para obtener las transacciones de la cuenta
+  const { data: transactions, isLoading: isLoadingTransactions } = useQuery<Transaction[]>({
+    queryKey: [
+      `/api/banking/accounts/${accountId}/transactions`, 
+      dateRange.from, 
+      dateRange.to
+    ],
+    enabled: !isNaN(accountId),
+  });
+
+  // Manejo de estado de carga
+  if (isLoadingAccount || isLoadingTransactions) {
     return (
       <div className="container mx-auto py-8">
         <div className="flex justify-center items-center h-64">
@@ -115,25 +145,21 @@ export default function CuentaDetalle() {
     );
   }
 
-  if (error) {
+  // Si no se encuentra el ID o hay error
+  if (isNaN(accountId)) {
     return (
       <div className="container mx-auto py-8">
-        <Card className="border-destructive">
+        <Card>
           <CardHeader>
-            <CardTitle className="text-destructive flex items-center">
-              <AlertCircle className="h-5 w-5 mr-2" />
-              Error al cargar detalles de la cuenta
-            </CardTitle>
+            <CardTitle>Cuenta no encontrada</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-muted-foreground">
-              No se pudieron cargar los detalles de la cuenta bancaria.
-            </p>
+            <p>No se ha podido encontrar la cuenta bancaria solicitada.</p>
             <Button 
               className="mt-4" 
               onClick={() => navigate("/banca/cuentas")}
             >
-              Volver a Cuentas
+              Ver todas las cuentas
             </Button>
           </CardContent>
         </Card>
@@ -142,147 +168,182 @@ export default function CuentaDetalle() {
   }
 
   // Datos de ejemplo si no hay conexión a la API
-  const accountData: AccountDetail = data || {
-    account: {
-      id: Number(accountId) || 1,
-      accountNumber: "1234567890",
-      iban: "ES1234567890123456789012",
-      name: "Cuenta Corriente Principal",
-      type: "checking",
-      balance: 5250.75,
-      availableBalance: 5250.75,
-      currency: "EUR",
-      lastUpdated: "2025-03-22T10:30:00Z",
-      bankName: "BBVA",
-      connectionId: 1
-    },
-    transactions: [
-      {
-        id: 1,
-        date: "2025-03-24T14:23:00Z",
-        amount: -120.50,
-        description: "Supermercado El Corte",
-        category: "Alimentación",
-        isExpense: true,
-        reference: "REF123456789",
-        status: "settled"
-      },
-      {
-        id: 2,
-        date: "2025-03-23T11:45:00Z",
-        amount: -35.00,
-        description: "Gasolinera Shell",
-        category: "Transporte",
-        isExpense: true,
-        reference: "REF987654321",
-        status: "settled"
-      },
-      {
-        id: 3,
-        date: "2025-03-22T09:15:00Z",
-        amount: 1450.00,
-        description: "Transferencia recibida",
-        category: "Ingresos",
-        isExpense: false,
-        reference: "REF456789123",
-        status: "settled"
-      },
-      {
-        id: 4,
-        date: "2025-03-21T18:30:00Z",
-        amount: -78.25,
-        description: "Restaurante La Mesa",
-        category: "Restaurantes",
-        isExpense: true,
-        reference: "REF741852963",
-        status: "settled"
-      },
-      {
-        id: 5,
-        date: "2025-03-20T16:45:00Z",
-        amount: -249.99,
-        description: "Media Markt",
-        category: "Electrónica",
-        isExpense: true,
-        reference: "REF369258147",
-        status: "settled"
-      },
-      {
-        id: 6,
-        date: "2025-03-19T10:00:00Z",
-        amount: -60.00,
-        description: "Netflix",
-        category: "Servicios",
-        isExpense: true,
-        reference: "REF147258369",
-        status: "pending"
-      },
-      {
-        id: 7,
-        date: "2025-03-18T14:30:00Z",
-        amount: -45.00,
-        description: "Farmacia Sana",
-        category: "Salud",
-        isExpense: true,
-        reference: "REF258369147",
-        status: "settled"
-      },
-      {
-        id: 8,
-        date: "2025-03-17T09:00:00Z",
-        amount: 750.00,
-        description: "Devolución Hacienda",
-        category: "Ingresos",
-        isExpense: false,
-        reference: "REF963852741",
-        status: "settled"
-      }
-    ]
+  const accountData: BankAccount = account || {
+    id: 1,
+    accountNumber: "1234567890",
+    iban: "ES1234567890123456789012",
+    name: "Cuenta Corriente Principal",
+    type: "checking",
+    balance: 5250.75,
+    availableBalance: 5250.75,
+    currency: "EUR",
+    lastUpdated: "2025-03-22T10:30:00Z",
+    bankName: "BBVA",
+    connectionId: 1,
+    swift: "BBVAESMM",
+    holderName: "Restaurante Ejemplo, S.L.",
+    openDate: "2020-01-15T00:00:00Z"
   };
 
-  // Filtrar transacciones
-  const filteredTransactions = accountData.transactions.filter(transaction => {
-    // Filtro por categoría
-    if (categoryFilter && transaction.category !== categoryFilter) {
-      return false;
+  // Transacciones de ejemplo si no hay conexión a la API
+  const transactionData: Transaction[] = transactions || [
+    {
+      id: 1,
+      accountId: 1,
+      date: "2025-03-24T14:23:00Z",
+      valueDate: "2025-03-24T00:00:00Z",
+      amount: -120.50,
+      description: "Supermercado El Corte",
+      category: "Alimentación",
+      reference: "REF123456789",
+      status: "settled",
+      type: "payment",
+      counterparty: "Supermercado El Corte",
+      balance: 5250.75
+    },
+    {
+      id: 2,
+      accountId: 1,
+      date: "2025-03-23T11:45:00Z",
+      valueDate: "2025-03-23T00:00:00Z",
+      amount: -35.00,
+      description: "Gasolinera Shell",
+      category: "Transporte",
+      reference: "REF987654321",
+      status: "settled",
+      type: "payment",
+      counterparty: "Gasolinera Shell",
+      balance: 5371.25
+    },
+    {
+      id: 3,
+      accountId: 1,
+      date: "2025-03-22T09:15:00Z",
+      valueDate: "2025-03-22T00:00:00Z",
+      amount: 1450.00,
+      description: "Transferencia recibida",
+      category: "Ingresos",
+      reference: "REF456789123",
+      status: "settled",
+      type: "transfer",
+      counterparty: "Cliente Fidelidad",
+      balance: 5406.25,
+      notes: "Pago por evento catering"
+    },
+    {
+      id: 4,
+      accountId: 1,
+      date: "2025-03-21T18:30:00Z",
+      valueDate: "2025-03-21T00:00:00Z",
+      amount: -78.25,
+      description: "Restaurante La Mesa",
+      category: "Restaurantes",
+      reference: "REF741852963",
+      status: "settled",
+      type: "payment",
+      counterparty: "Restaurante La Mesa",
+      balance: 3956.25
+    },
+    {
+      id: 5,
+      accountId: 1,
+      date: "2025-03-20T16:45:00Z",
+      valueDate: "2025-03-20T00:00:00Z",
+      amount: -249.99,
+      description: "Media Markt",
+      category: "Electrónica",
+      reference: "REF369258147",
+      status: "settled",
+      type: "payment",
+      counterparty: "Media Markt",
+      balance: 4034.50
+    },
+    {
+      id: 6,
+      accountId: 1,
+      date: "2025-03-18T12:30:00Z",
+      valueDate: "2025-03-18T00:00:00Z",
+      amount: -15.99,
+      description: "Suscripción mensual",
+      category: "Servicios",
+      reference: "REFSUB123456",
+      status: "settled",
+      type: "fee",
+      counterparty: "BBVA",
+      balance: 4284.49
+    },
+    {
+      id: 7,
+      accountId: 1,
+      date: "2025-03-15T09:00:00Z",
+      valueDate: "2025-03-15T00:00:00Z",
+      amount: 2500.00,
+      description: "Transferencia recibida",
+      category: "Ingresos",
+      reference: "REF753159852",
+      status: "settled",
+      type: "transfer",
+      counterparty: "Cliente Corporativo",
+      balance: 4300.48,
+      notes: "Contrato de servicios mensuales"
+    },
+    {
+      id: 8,
+      accountId: 1,
+      date: "2025-03-10T14:00:00Z",
+      valueDate: "2025-03-10T00:00:00Z",
+      amount: -350.00,
+      description: "Alquiler local",
+      category: "Instalaciones",
+      reference: "REFALQ202502",
+      status: "settled",
+      type: "payment",
+      counterparty: "Inmobiliaria Central",
+      balance: 1800.48
+    },
+    {
+      id: 9,
+      accountId: 1,
+      date: "2025-03-05T10:45:00Z",
+      valueDate: "2025-03-05T00:00:00Z",
+      amount: -1200.00,
+      description: "Nóminas personal",
+      category: "Personal",
+      reference: "REFNOM202502",
+      status: "settled",
+      type: "payment",
+      counterparty: "Varios",
+      balance: 2150.48
+    },
+    {
+      id: 10,
+      accountId: 1,
+      date: "2025-03-01T09:30:00Z",
+      valueDate: "2025-03-01T00:00:00Z",
+      amount: 1500.00,
+      description: "Transferencia recibida",
+      category: "Ingresos",
+      reference: "REF963852741",
+      status: "settled",
+      type: "transfer",
+      counterparty: "Cliente Particular",
+      balance: 3350.48
     }
-    
-    // Filtro por tipo (ingreso/gasto)
-    if (typeFilter === "income" && transaction.isExpense) {
-      return false;
-    }
-    if (typeFilter === "expense" && !transaction.isExpense) {
-      return false;
-    }
-    
-    // Filtro por fecha
-    if (dateFrom || dateTo) {
-      const transactionDate = new Date(transaction.date);
-      if (dateFrom && transactionDate < dateFrom) {
-        return false;
-      }
-      if (dateTo) {
-        const nextDay = new Date(dateTo);
-        nextDay.setDate(nextDay.getDate() + 1);
-        if (transactionDate >= nextDay) {
-          return false;
-        }
-      }
-    }
-    
-    return true;
-  });
+  ];
 
-  // Calcular estadísticas filtradas
-  const totalIncome = filteredTransactions
-    .filter(t => !t.isExpense)
-    .reduce((sum, t) => sum + t.amount, 0);
-    
-  const totalExpense = filteredTransactions
-    .filter(t => t.isExpense)
-    .reduce((sum, t) => sum + Math.abs(t.amount), 0);
-    
-  const balance = totalIncome - totalExpense;
+  // Formateo de fecha
+  const formatDate = (dateString: string, includeTime = true) => {
+    const date = new Date(dateString);
+    return new Intl.DateTimeFormat('es-ES', {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+      ...(includeTime && { 
+        hour: '2-digit', 
+        minute: '2-digit' 
+      })
+    }).format(date);
+  };
 
   // Función para formatear números monetarios
   const formatCurrency = (amount: number, currency: string = "EUR") => {
@@ -292,16 +353,13 @@ export default function CuentaDetalle() {
     }).format(amount);
   };
 
-  // Formatear fecha
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return new Intl.DateTimeFormat('es-ES', {
-      day: 'numeric',
-      month: 'short',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    }).format(date);
+  // Función para copiar texto al portapapeles
+  const copyToClipboard = (text: string, message: string) => {
+    navigator.clipboard.writeText(text).then(() => {
+      toast({
+        description: message,
+      });
+    });
   };
 
   // Función para obtener el ícono según el tipo de cuenta
@@ -332,166 +390,289 @@ export default function CuentaDetalle() {
     }
   };
 
+  // Función para obtener el nombre en español del tipo de transacción
+  const getTransactionTypeName = (type: typeof bankTransactionTypeEnum.enumValues[number]) => {
+    switch (type) {
+      case "payment":
+        return "Pago";
+      case "charge":
+        return "Cargo";
+      case "transfer":
+        return "Transferencia";
+      case "deposit":
+        return "Depósito";
+      case "withdrawal":
+        return "Retirada";
+      case "fee":
+        return "Comisión";
+      default:
+        return "Transacción";
+    }
+  };
+
+  // Filtrar transacciones
+  const filteredTransactions = transactionData
+    .filter(transaction => {
+      // Filtro de búsqueda
+      if (searchQuery && !transaction.description.toLowerCase().includes(searchQuery.toLowerCase()) && 
+          !transaction.reference?.includes(searchQuery) &&
+          !transaction.counterparty?.toLowerCase().includes(searchQuery.toLowerCase())) {
+        return false;
+      }
+      
+      // Filtro por categoría
+      if (categoryFilter && transaction.category !== categoryFilter) {
+        return false;
+      }
+      
+      // Filtro por tipo
+      if (typeFilter && transaction.type !== typeFilter) {
+        return false;
+      }
+      
+      // Filtro por fecha
+      const txDate = new Date(transaction.date);
+      if (dateRange.from && txDate < dateRange.from) {
+        return false;
+      }
+      if (dateRange.to && txDate > dateRange.to) {
+        return false;
+      }
+      
+      return true;
+    })
+    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+  // Calcular ingresos y gastos para el período
+  const periodIncome = filteredTransactions
+    .filter(tx => tx.amount > 0)
+    .reduce((sum, tx) => sum + tx.amount, 0);
+    
+  const periodExpense = filteredTransactions
+    .filter(tx => tx.amount < 0)
+    .reduce((sum, tx) => sum + Math.abs(tx.amount), 0);
+
+  // Obtener categorías únicas para filtros
+  const uniqueCategories = Array.from(
+    new Set(transactionData.map(tx => tx.category).filter(Boolean))
+  );
+
   return (
     <div className="container mx-auto py-8">
+      {/* Cabecera */}
       <div className="flex mb-6">
         <Button variant="outline" onClick={() => navigate("/banca/cuentas")} className="mr-2">
           <ChevronLeft className="h-4 w-4 mr-2" />
           Volver a Cuentas
         </Button>
+        <Button variant="outline" onClick={() => navigate(`/banca/cuenta/${accountId}/movimientos`)} className="mr-2">
+          <Download className="h-4 w-4 mr-2" />
+          Exportar
+        </Button>
+        <Button>
+          <RefreshCw className="h-4 w-4 mr-2" />
+          Actualizar
+        </Button>
       </div>
 
-      {/* Detalles de la cuenta */}
-      <Card className="mb-8">
-        <CardHeader className="pb-4">
-          <div className="flex justify-between items-center">
-            <div>
-              <div className="flex items-center">
-                {getAccountIcon(accountData.account.type)}
-                <CardTitle className="text-2xl">{accountData.account.name}</CardTitle>
+      {/* Detalle de Cuenta */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div className="md:col-span-2">
+          <Card>
+            <CardHeader className="pb-2">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center">
+                  {getAccountIcon(accountData.type)}
+                  <CardTitle>{accountData.name}</CardTitle>
+                </div>
+                <Badge>{getAccountTypeName(accountData.type)}</Badge>
               </div>
-              <CardDescription className="mt-1">
-                {accountData.account.bankName} - {getAccountTypeName(accountData.account.type)}
+              <CardDescription className="flex items-center">
+                <Landmark className="h-4 w-4 mr-1" />
+                {accountData.bankName}
               </CardDescription>
-            </div>
-            <div className="flex flex-col items-end">
-              <div className="text-xl font-bold">
-                {formatCurrency(accountData.account.balance, accountData.account.currency)}
+            </CardHeader>
+            <CardContent>
+              <div className="flex flex-col md:flex-row justify-between gap-4 mb-4">
+                <div>
+                  <div className="text-sm font-medium text-muted-foreground">IBAN</div>
+                  <div className="flex items-center gap-1 font-mono">
+                    {accountData.iban}
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-5 w-5" 
+                            onClick={() => copyToClipboard(accountData.iban, "IBAN copiado al portapapeles")}
+                          >
+                            <Copy className="h-3 w-3" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Copiar IBAN</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  </div>
+                </div>
+                {accountData.swift && (
+                  <div>
+                    <div className="text-sm font-medium text-muted-foreground">SWIFT/BIC</div>
+                    <div className="flex items-center gap-1 font-mono">
+                      {accountData.swift}
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              className="h-5 w-5" 
+                              onClick={() => copyToClipboard(accountData.swift!, "SWIFT copiado al portapapeles")}
+                            >
+                              <Copy className="h-3 w-3" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Copiar SWIFT</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    </div>
+                  </div>
+                )}
+                <div>
+                  <div className="text-sm font-medium text-muted-foreground">Número de cuenta</div>
+                  <div className="font-mono">{accountData.accountNumber}</div>
+                </div>
               </div>
-              <div className="text-xs text-muted-foreground">
-                IBAN: {accountData.account.iban}
+              
+              <div className="flex flex-col md:flex-row justify-between gap-4">
+                {accountData.holderName && (
+                  <div>
+                    <div className="text-sm font-medium text-muted-foreground">Titular</div>
+                    <div>{accountData.holderName}</div>
+                  </div>
+                )}
+                {accountData.openDate && (
+                  <div>
+                    <div className="text-sm font-medium text-muted-foreground">Fecha de apertura</div>
+                    <div>{formatDate(accountData.openDate, false)}</div>
+                  </div>
+                )}
+                <div>
+                  <div className="text-sm font-medium text-muted-foreground">Última actualización</div>
+                  <div>{formatDate(accountData.lastUpdated)}</div>
+                </div>
               </div>
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 py-4">
-            <div className="flex flex-col">
-              <span className="text-muted-foreground text-sm">Última actualización</span>
-              <span className="font-medium">
-                {formatDate(accountData.account.lastUpdated)}
-              </span>
-            </div>
-            <div className="flex flex-col">
-              <span className="text-muted-foreground text-sm">Número de cuenta</span>
-              <span className="font-medium font-mono">
-                {accountData.account.accountNumber}
-              </span>
-            </div>
-            {accountData.account.type === "credit" && (
-              <div className="flex flex-col">
-                <span className="text-muted-foreground text-sm">Disponible</span>
-                <span className="font-medium">
-                  {formatCurrency(accountData.account.availableBalance, accountData.account.currency)}
-                </span>
-                <Progress 
-                  value={Math.min(100, (accountData.account.availableBalance / 5000) * 100)} 
-                  className="h-2 mt-2" 
-                />
-              </div>
-            )}
-          </div>
-        </CardContent>
-      </Card>
+            </CardContent>
+          </Card>
+        </div>
 
-      {/* Filtros para transacciones */}
-      <Card className="mb-8">
-        <CardHeader>
-          <CardTitle className="text-lg flex items-center">
-            <Filter className="h-5 w-5 mr-2 text-primary" />
-            Filtros
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div>
-              <label className="text-sm font-medium mb-1 block">Fecha Desde</label>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className="w-full justify-start text-left font-normal"
-                  >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {dateFrom ? format(dateFrom, "PPP", { locale: es }) : "Seleccionar fecha"}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0">
-                  <Calendar
-                    mode="single"
-                    selected={dateFrom}
-                    onSelect={setDateFrom}
-                    initialFocus
+        <div>
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-lg">Saldo</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className={`text-3xl font-bold ${accountData.balance < 0 ? 'text-destructive' : ''}`}>
+                {formatCurrency(accountData.balance, accountData.currency)}
+              </div>
+              
+              {accountData.type === "credit" && (
+                <div className="mt-4">
+                  <div className="flex justify-between text-sm mb-1">
+                    <span>Límite disponible</span>
+                    <span>{formatCurrency(accountData.availableBalance, accountData.currency)}</span>
+                  </div>
+                  <Progress 
+                    value={Math.min(100, (accountData.availableBalance / 5000) * 100)} 
+                    className="h-2" 
                   />
-                </PopoverContent>
-              </Popover>
-            </div>
-            <div>
-              <label className="text-sm font-medium mb-1 block">Fecha Hasta</label>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className="w-full justify-start text-left font-normal"
-                  >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {dateTo ? format(dateTo, "PPP", { locale: es }) : "Seleccionar fecha"}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0">
-                  <Calendar
-                    mode="single"
-                    selected={dateTo}
-                    onSelect={setDateTo}
-                    initialFocus
-                  />
-                </PopoverContent>
-              </Popover>
-            </div>
-            <div>
-              <label className="text-sm font-medium mb-1 block">Categoría</label>
-              <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Todas las categorías" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value={undefined as any}>Todas las categorías</SelectItem>
-                  {categories.map((category) => (
-                    <SelectItem key={category} value={category}>{category}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <label className="text-sm font-medium mb-1 block">Tipo</label>
-              <Select value={typeFilter} onValueChange={(value) => setTypeFilter(value as any)}>
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Todos los tipos" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todos los tipos</SelectItem>
-                  <SelectItem value="income">Ingresos</SelectItem>
-                  <SelectItem value="expense">Gastos</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+                </div>
+              )}
+              
+              <div className="flex justify-between mt-4">
+                <Button variant="outline" onClick={() => navigate("/banca/transferencia")}>
+                  <Share className="h-4 w-4 mr-2" />
+                  Transferir
+                </Button>
+                <Button variant="outline" onClick={() => navigate(`/banca/cuenta/${accountId}/editar`)}>
+                  <Pencil className="h-4 w-4 mr-2" />
+                  Editar
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
 
-      {/* Resumen Financiero */}
+      {/* Resumen del período seleccionado */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-lg flex items-center">
+              <CalendarRange className="h-5 w-5 mr-2 text-primary" />
+              Período seleccionado
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex justify-between items-center">
+              <DatePickerWithRange 
+                date={dateRange} 
+                setDate={setDateRange} 
+              />
+              <div className="flex gap-2">
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={() => setDateRange({
+                    from: subDays(new Date(), 7),
+                    to: new Date()
+                  })}
+                >
+                  7D
+                </Button>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={() => setDateRange({
+                    from: subDays(new Date(), 30),
+                    to: new Date()
+                  })}
+                >
+                  1M
+                </Button>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={() => setDateRange({
+                    from: subDays(new Date(), 90),
+                    to: new Date()
+                  })}
+                >
+                  3M
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-lg flex items-center">
               <ArrowUpRight className="h-5 w-5 mr-2 text-success" />
-              Ingresos Filtrados
+              Ingresos
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-success">
-              {formatCurrency(totalIncome, accountData.account.currency)}
+              {formatCurrency(periodIncome, accountData.currency)}
             </div>
+            <p className="text-sm text-muted-foreground">
+              {filteredTransactions.filter(tx => tx.amount > 0).length} transacciones
+            </p>
           </CardContent>
         </Card>
 
@@ -499,93 +680,201 @@ export default function CuentaDetalle() {
           <CardHeader className="pb-2">
             <CardTitle className="text-lg flex items-center">
               <ArrowDownRight className="h-5 w-5 mr-2 text-destructive" />
-              Gastos Filtrados
+              Gastos
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-destructive">
-              {formatCurrency(totalExpense, accountData.account.currency)}
+              {formatCurrency(periodExpense, accountData.currency)}
             </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-lg flex items-center">
-              <BanknoteIcon className="h-5 w-5 mr-2 text-primary" />
-              Balance Filtrado
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className={`text-2xl font-bold ${balance >= 0 ? 'text-success' : 'text-destructive'}`}>
-              {formatCurrency(balance, accountData.account.currency)}
-            </div>
+            <p className="text-sm text-muted-foreground">
+              {filteredTransactions.filter(tx => tx.amount < 0).length} transacciones
+            </p>
           </CardContent>
         </Card>
       </div>
 
-      {/* Tabla de Transacciones */}
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle>Transacciones</CardTitle>
-          <Button variant="outline" size="sm">
-            <Download className="h-4 w-4 mr-2" />
-            Exportar CSV
-          </Button>
-        </CardHeader>
-        <CardContent className="p-0">
-          <Table>
-            <TableCaption>Transacciones filtradas para la cuenta {accountData.account.name}</TableCaption>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Fecha</TableHead>
-                <TableHead>Descripción</TableHead>
-                <TableHead>Categoría</TableHead>
-                <TableHead>Referencia</TableHead>
-                <TableHead>Estado</TableHead>
-                <TableHead className="text-right">Importe</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredTransactions.map(transaction => (
-                <TableRow key={transaction.id}>
-                  <TableCell className="whitespace-nowrap">
-                    {formatDate(transaction.date)}
-                  </TableCell>
-                  <TableCell className="font-medium max-w-[250px] truncate">
-                    {transaction.description}
-                  </TableCell>
-                  <TableCell>
-                    {transaction.category || "No categorizado"}
-                  </TableCell>
-                  <TableCell className="font-mono text-xs">
-                    {transaction.reference || "-"}
-                  </TableCell>
-                  <TableCell>
-                    <span className={`px-2 py-1 rounded-full text-xs ${
-                      transaction.status === "pending" 
-                        ? "bg-warning/20 text-warning" 
-                        : "bg-success/20 text-success"
-                    }`}>
-                      {transaction.status === "pending" ? "Pendiente" : "Liquidado"}
-                    </span>
-                  </TableCell>
-                  <TableCell className={`text-right font-medium ${transaction.isExpense ? 'text-destructive' : 'text-success'}`}>
-                    {transaction.isExpense ? '-' : '+'}{formatCurrency(Math.abs(transaction.amount), accountData.account.currency)}
-                  </TableCell>
-                </TableRow>
+      {/* Filtros de transacciones */}
+      <div className="flex flex-col md:flex-row gap-4 mb-6">
+        <div className="relative flex-grow">
+          <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input 
+            placeholder="Buscar en transacciones..." 
+            className="pl-8" 
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+        </div>
+        
+        <div className="flex flex-wrap gap-2">
+          <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+            <SelectTrigger className="w-[180px]">
+              <Filter className="h-4 w-4 mr-2" />
+              <SelectValue placeholder="Categoría" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="">Todas las categorías</SelectItem>
+              {uniqueCategories.map(category => (
+                <SelectItem key={category} value={category as string}>{category}</SelectItem>
               ))}
-              {filteredTransactions.length === 0 && (
-                <TableRow>
-                  <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
-                    No se encontraron transacciones con los filtros seleccionados
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+            </SelectContent>
+          </Select>
+
+          <Select value={typeFilter} onValueChange={setTypeFilter}>
+            <SelectTrigger className="w-[180px]">
+              <Clock className="h-4 w-4 mr-2" />
+              <SelectValue placeholder="Tipo" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="">Todos los tipos</SelectItem>
+              <SelectItem value="payment">Pagos</SelectItem>
+              <SelectItem value="charge">Cargos</SelectItem>
+              <SelectItem value="transfer">Transferencias</SelectItem>
+              <SelectItem value="deposit">Depósitos</SelectItem>
+              <SelectItem value="withdrawal">Retiradas</SelectItem>
+              <SelectItem value="fee">Comisiones</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
+      {/* Transacciones */}
+      <Tabs defaultValue="list" className="mb-8">
+        <TabsList className="mb-4">
+          <TabsTrigger value="list">Lista</TabsTrigger>
+          <TabsTrigger value="chart">Gráfico</TabsTrigger>
+        </TabsList>
+        
+        <TabsContent value="list">
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-lg">Movimientos</CardTitle>
+              <CardDescription>
+                Mostrando {filteredTransactions.length} transacciones
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="p-0">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-[160px]">Fecha</TableHead>
+                    <TableHead>Descripción</TableHead>
+                    <TableHead>Categoría</TableHead>
+                    <TableHead>Tipo</TableHead>
+                    <TableHead className="text-right">Importe</TableHead>
+                    <TableHead className="text-right">Saldo</TableHead>
+                    <TableHead></TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredTransactions.map(transaction => (
+                    <TableRow key={transaction.id} className="group">
+                      <TableCell className="text-xs">
+                        <div>{formatDate(transaction.date, false)}</div>
+                        <div className="text-muted-foreground">Valor: {formatDate(transaction.valueDate, false)}</div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="font-medium">{transaction.description}</div>
+                        {transaction.counterparty && (
+                          <div className="text-xs text-muted-foreground">{transaction.counterparty}</div>
+                        )}
+                        {transaction.reference && (
+                          <div className="text-xs font-mono text-muted-foreground">Ref: {transaction.reference}</div>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {transaction.category ? (
+                          <Badge variant="outline">{transaction.category}</Badge>
+                        ) : (
+                          <Badge variant="outline" className="text-muted-foreground bg-muted">Sin categoría</Badge>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="secondary">{getTransactionTypeName(transaction.type)}</Badge>
+                      </TableCell>
+                      <TableCell className={`text-right font-medium ${transaction.amount < 0 ? 'text-destructive' : 'text-success'}`}>
+                        {transaction.amount < 0 ? '-' : '+'}{formatCurrency(Math.abs(transaction.amount), accountData.currency)}
+                      </TableCell>
+                      <TableCell className="text-right font-medium">
+                        {transaction.balance !== undefined && 
+                          formatCurrency(transaction.balance, accountData.currency)
+                        }
+                      </TableCell>
+                      <TableCell>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button 
+                              variant="ghost" 
+                              size="icon"
+                              className="opacity-0 group-hover:opacity-100"
+                            >
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuLabel>Opciones</DropdownMenuLabel>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem>
+                              Categorizar
+                            </DropdownMenuItem>
+                            <DropdownMenuItem>
+                              Añadir notas
+                            </DropdownMenuItem>
+                            <DropdownMenuItem>
+                              Exportar detalle
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </CardContent>
+            <CardFooter className="flex justify-between py-4">
+              <div className="text-sm text-muted-foreground">
+                Balance inicial: {
+                  filteredTransactions.length > 0 && filteredTransactions[filteredTransactions.length - 1].balance !== undefined ? 
+                  formatCurrency(
+                    (filteredTransactions[filteredTransactions.length - 1].balance || 0) - 
+                    (filteredTransactions[filteredTransactions.length - 1].amount || 0), 
+                    accountData.currency
+                  ) : 
+                  "N/A"
+                }
+              </div>
+              <div className="text-sm">
+                Balance final: {
+                  filteredTransactions.length > 0 && filteredTransactions[0].balance !== undefined ? 
+                  formatCurrency(filteredTransactions[0].balance || 0, accountData.currency) : 
+                  "N/A"
+                }
+              </div>
+            </CardFooter>
+          </Card>
+        </TabsContent>
+        
+        <TabsContent value="chart">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg flex items-center">
+                <LineChart className="h-5 w-5 mr-2 text-primary" />
+                Evolución del saldo
+              </CardTitle>
+              <CardDescription>
+                Gráfico de movimientos en el período seleccionado
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="h-80 flex items-center justify-center">
+              <div className="text-center text-muted-foreground">
+                <LineChart className="h-16 w-16 mx-auto mb-4 text-muted" />
+                <p>La visualización gráfica estará disponible próximamente</p>
+                <p className="text-sm">Utilice la vista de lista para ver el detalle de transacciones</p>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

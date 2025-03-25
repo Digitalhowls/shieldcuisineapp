@@ -1,24 +1,17 @@
 import React, { useState } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
-import { 
-  PiggyBank,
-  CreditCard,
-  ChevronRight,
-  RefreshCw,
-  BanknoteIcon,
-  LayoutGrid,
-  LayoutList,
-  Filter,
-  Search,
-  PlusCircle,
-  Landmark,
-  ArrowUpDown
-} from "lucide-react";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Progress } from "@/components/ui/progress";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Table,
   TableBody,
@@ -29,21 +22,29 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import {
+  BanknoteIcon,
+  CreditCard,
+  PiggyBank,
+  Eye,
+  FileText,
+  Download,
+  Plus,
+  Filter,
+  Settings,
+  Search,
+  MoreHorizontal,
+  ExternalLink,
+  RefreshCw
+} from "lucide-react";
+import {
   DropdownMenu,
   DropdownMenuTrigger,
   DropdownMenuContent,
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuItem,
-  DropdownMenuCheckboxItem,
 } from "@/components/ui/dropdown-menu";
-import { 
-  Select, 
-  SelectContent, 
-  SelectItem, 
-  SelectTrigger, 
-  SelectValue 
-} from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
 import { bankAccountTypeEnum } from "@shared/schema";
 
 // Interfaces para los datos bancarios
@@ -59,43 +60,22 @@ interface BankAccount {
   lastUpdated: string;
   bankName: string;
   connectionId: number;
+  swift?: string;
+  holderName?: string;
+  openDate?: string;
 }
 
-interface BankConnection {
-  id: number;
-  companyId: number;
-  bankName: string;
-  apiUrl: string;
-  status: "received" | "valid" | "rejected" | "revoked" | "expired";
-  consentId: string;
-  createdAt: string;
-  updatedAt: string;
-  expiresAt: string;
-  description?: string;
-}
-
-// Vista de cuentas bancarias
-export default function CuentasBancarias() {
+export default function Cuentas() {
   const [_, navigate] = useLocation();
-  const [viewType, setViewType] = useState<"grid" | "list">("grid");
+  const [activeTab, setActiveTab] = useState("todos");
   const [searchQuery, setSearchQuery] = useState("");
-  const [bankFilter, setBankFilter] = useState<string>("");
-  const [accountTypeFilter, setAccountTypeFilter] = useState<string>("");
-  const [sortOption, setSortOption] = useState<string>("name");
 
-  // Consulta para obtener las cuentas bancarias
-  const { data: accounts, isLoading, error } = useQuery<BankAccount[]>({
-    queryKey: ["/api/banking/accounts"],
-    enabled: true,
+  // Consulta para obtener cuentas bancarias
+  const { data: accounts, isLoading } = useQuery<BankAccount[]>({
+    queryKey: ['/api/banking/accounts'],
   });
 
-  // Consulta para obtener conexiones bancarias (para filtros)
-  const { data: connections } = useQuery<BankConnection[]>({
-    queryKey: ["/api/banking/connections/1"],
-    enabled: true,
-  });
-
-  // Manejo de estado de carga y errores
+  // Manejo de estado de carga
   if (isLoading) {
     return (
       <div className="container mx-auto py-8">
@@ -107,7 +87,7 @@ export default function CuentasBancarias() {
   }
 
   // Datos de ejemplo si no hay conexión a la API
-  const bankAccounts: BankAccount[] = accounts || [
+  const accountsData: BankAccount[] = accounts || [
     {
       id: 1,
       accountNumber: "1234567890",
@@ -119,12 +99,15 @@ export default function CuentasBancarias() {
       currency: "EUR",
       lastUpdated: "2025-03-22T10:30:00Z",
       bankName: "BBVA",
-      connectionId: 1
+      connectionId: 1,
+      swift: "BBVAESMM",
+      holderName: "Restaurante Ejemplo, S.L.",
+      openDate: "2020-01-15T00:00:00Z"
     },
     {
       id: 2,
-      accountNumber: "0987654321",
-      iban: "ES0987654321098765432109",
+      accountNumber: "9876543210",
+      iban: "ES9876543210987654321098",
       name: "Cuenta de Ahorro",
       type: "savings",
       balance: 12500.00,
@@ -132,98 +115,81 @@ export default function CuentasBancarias() {
       currency: "EUR",
       lastUpdated: "2025-03-22T10:30:00Z",
       bankName: "Santander",
-      connectionId: 2
+      connectionId: 1,
+      swift: "SANTESMM",
+      holderName: "Restaurante Ejemplo, S.L.",
+      openDate: "2021-05-10T00:00:00Z"
     },
     {
       id: 3,
-      accountNumber: "5678901234",
-      iban: "ES5678901234567890123456",
-      name: "Tarjeta de Crédito",
+      accountNumber: "5432167890",
+      iban: "ES5432167890543216789054",
+      name: "Tarjeta de Crédito Empresarial",
       type: "credit",
-      balance: -1230.45,
-      availableBalance: 3769.55,
+      balance: -1250.30,
+      availableBalance: 3749.70,
       currency: "EUR",
       lastUpdated: "2025-03-22T10:30:00Z",
       bankName: "CaixaBank",
-      connectionId: 1
+      connectionId: 2,
+      swift: "CAIXESBB",
+      holderName: "Restaurante Ejemplo, S.L.",
+      openDate: "2022-03-05T00:00:00Z"
     },
     {
       id: 4,
-      accountNumber: "1357924680",
-      iban: "ES1357924680135792468013",
-      name: "Cuenta Nómina",
+      accountNumber: "1357908642",
+      iban: "ES1357908642135790864213",
+      name: "Cuenta Nóminas",
       type: "checking",
-      balance: 1850.30,
-      availableBalance: 1850.30,
+      balance: 2350.20,
+      availableBalance: 2350.20,
       currency: "EUR",
       lastUpdated: "2025-03-22T10:30:00Z",
-      bankName: "BBVA",
-      connectionId: 1
+      bankName: "ING Direct",
+      connectionId: 3,
+      swift: "INGDESM1",
+      holderName: "Restaurante Ejemplo, S.L.",
+      openDate: "2023-01-15T00:00:00Z"
     },
     {
       id: 5,
       accountNumber: "2468013579",
       iban: "ES2468013579246801357924",
-      name: "Tarjeta Business",
-      type: "credit",
-      balance: -450.25,
-      availableBalance: 4549.75,
+      name: "Cuenta Proveedores",
+      type: "checking",
+      balance: 8750.50,
+      availableBalance: 8750.50,
       currency: "EUR",
       lastUpdated: "2025-03-22T10:30:00Z",
-      bankName: "Santander",
-      connectionId: 2
+      bankName: "Sabadell",
+      connectionId: 4,
+      swift: "BSABESBB",
+      holderName: "Restaurante Ejemplo, S.L.",
+      openDate: "2021-11-20T00:00:00Z"
     }
   ];
 
-  const bankConnections: BankConnection[] = connections || [
-    {
-      id: 1,
-      companyId: 1,
-      bankName: "BBVA",
-      apiUrl: "https://api.bbva.com/psd2",
-      status: "valid",
-      consentId: "consent-12345-bbva",
-      createdAt: "2025-03-01T10:00:00Z",
-      updatedAt: "2025-03-01T10:00:00Z",
-      expiresAt: "2025-06-01T10:00:00Z",
-      description: "Conexión principal para cuentas corporativas"
-    },
-    {
-      id: 2,
-      companyId: 1,
-      bankName: "Santander",
-      apiUrl: "https://api.santander.com/psd2",
-      status: "valid",
-      consentId: "consent-67890-santander",
-      createdAt: "2025-03-05T15:30:00Z",
-      updatedAt: "2025-03-05T15:30:00Z",
-      expiresAt: "2025-06-05T15:30:00Z",
-      description: "Conexión para cuentas de gastos"
-    },
-    {
-      id: 3,
-      companyId: 1,
-      bankName: "CaixaBank",
-      apiUrl: "https://api.caixabank.com/psd2",
-      status: "valid",
-      consentId: "consent-24680-caixa",
-      createdAt: "2025-02-15T09:45:00Z",
-      updatedAt: "2025-02-15T09:45:00Z",
-      expiresAt: "2025-03-15T09:45:00Z"
+  // Aplicar filtrado por pestaña activa
+  const filteredAccounts = accountsData.filter(account => {
+    // Filtro por tipo de cuenta
+    if (activeTab !== "todos" && account.type !== activeTab) {
+      return false;
     }
-  ];
 
-  // Formatear fecha
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return new Intl.DateTimeFormat('es-ES', {
-      day: 'numeric',
-      month: 'short',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    }).format(date);
-  };
+    // Filtro por búsqueda
+    if (searchQuery && !account.name.toLowerCase().includes(searchQuery.toLowerCase()) &&
+        !account.bankName.toLowerCase().includes(searchQuery.toLowerCase()) &&
+        !account.iban.includes(searchQuery)) {
+      return false;
+    }
+
+    return true;
+  });
+
+  // Calcular sumas
+  const totalBalance = filteredAccounts.reduce((sum, account) => sum + account.balance, 0);
+  const totalAvailable = filteredAccounts.reduce((sum, account) => sum + account.availableBalance, 0);
 
   // Función para formatear números monetarios
   const formatCurrency = (amount: number, currency: string = "EUR") => {
@@ -261,216 +227,151 @@ export default function CuentasBancarias() {
     }
   };
 
-  // Filtrar y ordenar cuentas
-  const filteredSortedAccounts = bankAccounts
-    .filter(account => {
-      // Filtro de búsqueda
-      if (searchQuery && !account.name.toLowerCase().includes(searchQuery.toLowerCase()) && 
-          !account.iban.includes(searchQuery)) {
-        return false;
-      }
-      // Filtro por banco
-      if (bankFilter && account.bankName !== bankFilter) {
-        return false;
-      }
-      // Filtro por tipo de cuenta
-      if (accountTypeFilter && account.type !== accountTypeFilter) {
-        return false;
-      }
-      return true;
-    })
-    .sort((a, b) => {
-      // Ordenar
-      switch (sortOption) {
-        case "name":
-          return a.name.localeCompare(b.name);
-        case "bankName":
-          return a.bankName.localeCompare(b.bankName);
-        case "balanceAsc":
-          return a.balance - b.balance;
-        case "balanceDesc":
-          return b.balance - a.balance;
-        default:
-          return 0;
-      }
-    });
+  // Formateo de fecha
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return new Intl.DateTimeFormat('es-ES', {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+    }).format(date);
+  };
 
   return (
     <div className="container mx-auto py-8">
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl font-bold">Cuentas Bancarias</h1>
         <div>
-          <h1 className="text-3xl font-bold">Cuentas Bancarias</h1>
-          <p className="text-muted-foreground">
-            Gestione todas sus cuentas bancarias conectadas por PSD2/Open Banking
-          </p>
-        </div>
-        
-        <div className="flex space-x-2 mt-4 md:mt-0">
-          <Button variant="outline" onClick={() => navigate("/banca/configuracion")}>
-            <PlusCircle className="h-4 w-4 mr-2" />
-            Añadir Cuenta
-          </Button>
-          <Button>
+          <Button variant="outline" className="mr-2" onClick={() => navigate("/banca")}>
             <RefreshCw className="h-4 w-4 mr-2" />
-            Actualizar
+            Dashboard
+          </Button>
+          <Button variant="outline" className="mr-2" onClick={() => {}}>
+            <Download className="h-4 w-4 mr-2" />
+            Exportar
+          </Button>
+          <Button onClick={() => navigate("/banca/configuracion")}>
+            <Settings className="h-4 w-4 mr-2" />
+            Configuración
           </Button>
         </div>
       </div>
 
-      {/* Filtros y Búsqueda */}
-      <div className="flex flex-col md:flex-row gap-4 mb-6">
-        <div className="relative flex-grow">
-          <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input 
-            placeholder="Buscar por nombre o IBAN..." 
-            className="pl-8" 
+      {/* Búsqueda y Filtros */}
+      <div className="flex flex-col sm:flex-row justify-between mb-6 gap-4">
+        <div className="relative w-full sm:w-1/3">
+          <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Buscar cuentas..."
+            className="pl-8"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
         </div>
-        
-        <div className="flex flex-wrap gap-2">
-          <Select value={bankFilter} onValueChange={setBankFilter}>
-            <SelectTrigger className="w-[180px]">
-              <Landmark className="h-4 w-4 mr-2" />
-              <SelectValue placeholder="Filtrar por banco" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="">Todos los bancos</SelectItem>
-              {bankConnections.map(conn => (
-                <SelectItem key={conn.id} value={conn.bankName}>{conn.bankName}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          <Select value={accountTypeFilter} onValueChange={setAccountTypeFilter}>
-            <SelectTrigger className="w-[180px]">
-              <Filter className="h-4 w-4 mr-2" />
-              <SelectValue placeholder="Tipo de cuenta" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="">Todos los tipos</SelectItem>
-              <SelectItem value="checking">Cuentas Corrientes</SelectItem>
-              <SelectItem value="savings">Cuentas de Ahorro</SelectItem>
-              <SelectItem value="credit">Tarjetas de Crédito</SelectItem>
-            </SelectContent>
-          </Select>
-
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" className="w-[180px]">
-                <ArrowUpDown className="h-4 w-4 mr-2" />
-                Ordenar por
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuLabel>Criterio de ordenación</DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              <DropdownMenuCheckboxItem 
-                checked={sortOption === "name"}
-                onCheckedChange={() => setSortOption("name")}
-              >
-                Nombre
-              </DropdownMenuCheckboxItem>
-              <DropdownMenuCheckboxItem 
-                checked={sortOption === "bankName"}
-                onCheckedChange={() => setSortOption("bankName")}
-              >
-                Banco
-              </DropdownMenuCheckboxItem>
-              <DropdownMenuCheckboxItem 
-                checked={sortOption === "balanceAsc"}
-                onCheckedChange={() => setSortOption("balanceAsc")}
-              >
-                Saldo (menor a mayor)
-              </DropdownMenuCheckboxItem>
-              <DropdownMenuCheckboxItem 
-                checked={sortOption === "balanceDesc"}
-                onCheckedChange={() => setSortOption("balanceDesc")}
-              >
-                Saldo (mayor a menor)
-              </DropdownMenuCheckboxItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-
-          <div className="flex rounded-md border">
-            <Button
-              variant={viewType === "grid" ? "default" : "ghost"}
-              size="icon"
-              onClick={() => setViewType("grid")}
-              className="rounded-r-none"
-            >
-              <LayoutGrid className="h-4 w-4" />
-            </Button>
-            <Button
-              variant={viewType === "list" ? "default" : "ghost"}
-              size="icon"
-              onClick={() => setViewType("list")}
-              className="rounded-l-none"
-            >
-              <LayoutList className="h-4 w-4" />
-            </Button>
-          </div>
-        </div>
+        <Tabs defaultValue="todos" value={activeTab} onValueChange={setActiveTab} className="w-full sm:w-auto">
+          <TabsList>
+            <TabsTrigger value="todos">Todas</TabsTrigger>
+            <TabsTrigger value="checking">Corrientes</TabsTrigger>
+            <TabsTrigger value="savings">Ahorro</TabsTrigger>
+            <TabsTrigger value="credit">Crédito</TabsTrigger>
+          </TabsList>
+        </Tabs>
       </div>
 
-      {/* Cuentas - Vista de Grid */}
-      {viewType === "grid" && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-          {filteredSortedAccounts.map(account => (
-            <Card key={account.id} className="hover:shadow-md transition-shadow cursor-pointer" 
-                  onClick={() => navigate(`/banca/cuenta/${account.id}`)}>
-              <CardHeader className="pb-2">
-                <div className="flex justify-between items-center">
-                  <CardTitle className="text-base flex items-center">
-                    {getAccountIcon(account.type)}
-                    {account.name}
-                  </CardTitle>
-                  <span className="text-xs px-2 py-1 rounded-full bg-primary/10 text-primary">
-                    {getAccountTypeName(account.type)}
-                  </span>
-                </div>
-                <CardDescription className="flex flex-col">
-                  <span className="text-xs">{account.bankName}</span>
-                  <span className="text-xs font-mono">{account.iban}</span>
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="pb-2">
-                <div className="flex justify-between items-center">
-                  <div className="text-lg font-bold">
-                    {formatCurrency(account.balance, account.currency)}
-                  </div>
-                  <Button variant="ghost" size="icon" onClick={(e) => {
-                    e.stopPropagation();
-                    navigate(`/banca/cuenta/${account.id}`);
-                  }}>
-                    <ChevronRight className="h-5 w-5" />
-                  </Button>
-                </div>
-                {account.type === "credit" && (
-                  <div className="mt-1">
-                    <div className="flex justify-between text-xs mb-1">
-                      <span>Disponible</span>
-                      <span>{formatCurrency(account.availableBalance, account.currency)}</span>
-                    </div>
-                    <Progress 
-                      value={Math.min(100, (account.availableBalance / 5000) * 100)} 
-                      className="h-1.5" 
-                    />
-                  </div>
-                )}
-                <div className="text-xs text-muted-foreground mt-2">
-                  Actualizado: {formatDate(account.lastUpdated)}
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      )}
+      {/* Indicadores de Balance */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle>Balance Total</CardTitle>
+            <CardDescription>Saldo de todas las cuentas</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{formatCurrency(totalBalance)}</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle>Disponible Total</CardTitle>
+            <CardDescription>Incluye líneas de crédito</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{formatCurrency(totalAvailable)}</div>
+          </CardContent>
+        </Card>
+      </div>
 
-      {/* Cuentas - Vista de Lista */}
-      {viewType === "list" && (
-        <div className="mb-8">
+      {/* Pestañas de Vista */}
+      <Tabs defaultValue="cards" className="mb-6">
+        <TabsList>
+          <TabsTrigger value="cards">Vista Tarjetas</TabsTrigger>
+          <TabsTrigger value="table">Vista Tabla</TabsTrigger>
+        </TabsList>
+        <TabsContent value="cards">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredAccounts.map((account) => (
+              <Card key={account.id} className="hover:shadow-md transition-shadow">
+                <CardHeader className="pb-2">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center">
+                      {getAccountIcon(account.type)}
+                      <CardTitle className="text-lg">{account.name}</CardTitle>
+                    </div>
+                    <Badge>{getAccountTypeName(account.type)}</Badge>
+                  </div>
+                  <CardDescription className="flex items-center">
+                    {account.bankName}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-2 gap-4 mb-4">
+                    <div>
+                      <div className="text-sm font-medium text-muted-foreground">Saldo</div>
+                      <div className={`font-medium ${account.balance < 0 ? 'text-red-600' : ''}`}>
+                        {formatCurrency(account.balance, account.currency)}
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-sm font-medium text-muted-foreground">Disponible</div>
+                      <div className="font-medium">
+                        {formatCurrency(account.availableBalance, account.currency)}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="text-sm text-muted-foreground flex justify-between">
+                    <div>IBAN: {account.iban.substring(0, 6)}...{account.iban.substring(account.iban.length - 4)}</div>
+                    <div>Actualizado: {formatDate(account.lastUpdated)}</div>
+                  </div>
+                </CardContent>
+                <CardFooter className="flex justify-between">
+                  <Button variant="outline" size="sm" onClick={() => navigate(`/banca/cuenta/${account.id}`)}>
+                    <Eye className="h-4 w-4 mr-2" />
+                    Ver Detalles
+                  </Button>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="sm">
+                        <MoreHorizontal className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuLabel>Acciones</DropdownMenuLabel>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem onClick={() => navigate(`/banca/cuenta/${account.id}/movimientos`)}>
+                        <FileText className="h-4 w-4 mr-2" />
+                        <span>Exportar Movimientos</span>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => navigate(`/banca/cuenta/${account.id}/acceso`)}>
+                        <ExternalLink className="h-4 w-4 mr-2" />
+                        <span>Acceso Directo Banco</span>
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </CardFooter>
+              </Card>
+            ))}
+          </div>
+        </TabsContent>
+        <TabsContent value="table">
           <Card>
             <CardContent className="p-0">
               <Table>
@@ -481,13 +382,14 @@ export default function CuentasBancarias() {
                     <TableHead>Tipo</TableHead>
                     <TableHead>IBAN</TableHead>
                     <TableHead className="text-right">Saldo</TableHead>
-                    <TableHead className="text-right">Última actualización</TableHead>
-                    <TableHead></TableHead>
+                    <TableHead className="text-right">Disponible</TableHead>
+                    <TableHead className="text-right">Actualizado</TableHead>
+                    <TableHead className="text-right">Acciones</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredSortedAccounts.map(account => (
-                    <TableRow key={account.id}>
+                  {filteredAccounts.map((account) => (
+                    <TableRow key={account.id} className="cursor-pointer" onClick={() => navigate(`/banca/cuenta/${account.id}`)}>
                       <TableCell className="font-medium">
                         <div className="flex items-center">
                           {getAccountIcon(account.type)}
@@ -496,25 +398,53 @@ export default function CuentasBancarias() {
                       </TableCell>
                       <TableCell>{account.bankName}</TableCell>
                       <TableCell>
-                        <span className="text-xs px-2 py-1 rounded-full bg-primary/10">
-                          {getAccountTypeName(account.type)}
-                        </span>
+                        <Badge variant="outline">{getAccountTypeName(account.type)}</Badge>
                       </TableCell>
-                      <TableCell className="font-mono text-xs">{account.iban}</TableCell>
-                      <TableCell className={`text-right font-medium ${account.balance < 0 ? 'text-destructive' : ''}`}>
+                      <TableCell className="font-mono">
+                        {account.iban.substring(0, 6)}...{account.iban.substring(account.iban.length - 4)}
+                      </TableCell>
+                      <TableCell className={`text-right ${account.balance < 0 ? 'text-red-600' : ''}`}>
                         {formatCurrency(account.balance, account.currency)}
                       </TableCell>
-                      <TableCell className="text-right text-xs text-muted-foreground">
+                      <TableCell className="text-right">
+                        {formatCurrency(account.availableBalance, account.currency)}
+                      </TableCell>
+                      <TableCell className="text-right">
                         {formatDate(account.lastUpdated)}
                       </TableCell>
-                      <TableCell>
-                        <Button 
-                          variant="ghost" 
-                          size="icon"
-                          onClick={() => navigate(`/banca/cuenta/${account.id}`)}
-                        >
-                          <ChevronRight className="h-4 w-4" />
-                        </Button>
+                      <TableCell className="text-right">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="sm">
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuLabel>Acciones</DropdownMenuLabel>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem onClick={(e) => {
+                              e.stopPropagation();
+                              navigate(`/banca/cuenta/${account.id}`);
+                            }}>
+                              <Eye className="h-4 w-4 mr-2" />
+                              <span>Ver Detalles</span>
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={(e) => {
+                              e.stopPropagation();
+                              navigate(`/banca/cuenta/${account.id}/movimientos`);
+                            }}>
+                              <FileText className="h-4 w-4 mr-2" />
+                              <span>Exportar Movimientos</span>
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={(e) => {
+                              e.stopPropagation();
+                              navigate(`/banca/cuenta/${account.id}/acceso`);
+                            }}>
+                              <ExternalLink className="h-4 w-4 mr-2" />
+                              <span>Acceso Directo Banco</span>
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       </TableCell>
                     </TableRow>
                   ))}
@@ -522,52 +452,8 @@ export default function CuentasBancarias() {
               </Table>
             </CardContent>
           </Card>
-        </div>
-      )}
-
-      {/* Resumen */}
-      <div className="mb-8">
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-lg">Resumen de cuentas</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div>
-                <h3 className="text-sm font-medium text-muted-foreground">Cuentas</h3>
-                <p className="text-2xl font-bold">
-                  {filteredSortedAccounts.length}
-                </p>
-              </div>
-              <div>
-                <h3 className="text-sm font-medium text-muted-foreground">Balance total</h3>
-                <p className="text-2xl font-bold">
-                  {formatCurrency(
-                    filteredSortedAccounts.reduce((sum, account) => sum + account.balance, 0),
-                    "EUR"
-                  )}
-                </p>
-              </div>
-              <div>
-                <h3 className="text-sm font-medium text-muted-foreground">Bancos conectados</h3>
-                <p className="text-2xl font-bold">
-                  {new Set(filteredSortedAccounts.map(account => account.bankName)).size}
-                </p>
-              </div>
-              <div>
-                <h3 className="text-sm font-medium text-muted-foreground">Última actualización</h3>
-                <p className="text-base font-medium">
-                  {filteredSortedAccounts.length > 0 ? formatDate(
-                    filteredSortedAccounts.reduce((latest, account) => {
-                      return new Date(latest) > new Date(account.lastUpdated) ? latest : account.lastUpdated;
-                    }, "1970-01-01T00:00:00Z")
-                  ) : "N/A"}
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
