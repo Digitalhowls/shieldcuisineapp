@@ -5,6 +5,8 @@ import { setupAuth } from "./auth";
 import { insertControlTemplateSchema, insertControlRecordSchema } from "@shared/schema";
 import { ZodError } from "zod";
 import { fromZodError } from "zod-validation-error";
+import { registerClientAuthRoutes } from "./routes/client-auth";
+import { registerClientDataRoutes } from "./routes/client-data";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Setup auth routes
@@ -171,6 +173,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       next(err);
     }
   });
+
+  // Registrar rutas de autenticación y datos para cliente
+  registerClientAuthRoutes(app);
+  registerClientDataRoutes(app);
 
   const httpServer = createServer(app);
   return httpServer;
