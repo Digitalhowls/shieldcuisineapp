@@ -8,12 +8,14 @@ import AuthPage from "@/pages/auth-page";
 import { ProtectedRoute } from "./lib/protected-route";
 import { AuthProvider } from "./hooks/use-auth";
 import AppccModule from "./pages/appcc";
+import AlmacenModule from "./pages/almacen";
 
 function Router() {
   return (
     <Switch>
       <ProtectedRoute path="/" component={HomePage} />
       <ProtectedRoute path="/appcc/*" component={AppccModule} />
+      <ProtectedRoute path="/almacen/*" component={AlmacenModule} />
       <Route path="/auth" component={AuthPage} />
       <Route component={NotFound} />
     </Switch>
