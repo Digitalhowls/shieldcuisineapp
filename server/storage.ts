@@ -36,6 +36,7 @@ import {
 import session from "express-session";
 import createMemoryStore from "memorystore";
 
+// Use MemoryStore for session storage - more reliable for development
 const MemoryStore = createMemoryStore(session);
 
 // modify the interface with any CRUD methods
