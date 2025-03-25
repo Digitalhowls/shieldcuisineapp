@@ -8,6 +8,7 @@ import { fromZodError } from "zod-validation-error";
 import { registerClientAuthRoutes } from "./routes/client-auth";
 import { registerClientDataRoutes } from "./routes/client-data";
 import { registerAIAnalysisRoutes } from "./routes/ai-analysis";
+import { registerWooCommerceRoutes } from "./routes/woocommerce";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Setup auth routes
@@ -181,6 +182,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Registrar rutas para análisis con IA
   registerAIAnalysisRoutes(app);
+  
+  // Registrar rutas para integración con WooCommerce
+  registerWooCommerceRoutes(app);
 
   const httpServer = createServer(app);
   return httpServer;
