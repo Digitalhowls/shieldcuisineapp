@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { Link } from "wouter";
 import { 
   Card, 
   CardContent, 
@@ -329,8 +330,10 @@ export default function DailyControls() {
                 </CardContent>
                 <CardFooter className="flex justify-end pt-2">
                   {control.status === "completed" ? (
-                    <Button variant="outline" onClick={() => handleViewOrPerformControl(control.id)}>
-                      Ver Detalle
+                    <Button variant="outline" asChild>
+                      <Link href={`/appcc/control/${control.id}`}>
+                        Ver Detalle
+                      </Link>
                     </Button>
                   ) : (
                     <Button 
