@@ -32,12 +32,24 @@ export default function AlmacenModule() {
         />
         
         <Switch>
-          <Route path="/almacen" component={Dashboard} />
-          <Route path="/almacen/dashboard" component={Dashboard} />
-          <Route path="/almacen/inventory" component={Inventory} />
-          <Route path="/almacen/movements" component={Movements} />
-          <Route path="/almacen/suppliers" component={Suppliers} />
-          <Route component={NotFound} />
+          <Route path="/almacen">
+            <Dashboard />
+          </Route>
+          <Route path="/almacen/dashboard">
+            <Dashboard />
+          </Route>
+          <Route path="/almacen/inventory">
+            <Inventory />
+          </Route>
+          <Route path="/almacen/movements">
+            <Movements />
+          </Route>
+          <Route path="/almacen/suppliers">
+            <Suppliers />
+          </Route>
+          <Route path="/almacen/:rest*">
+            <NotFound />
+          </Route>
         </Switch>
       </div>
     </div>

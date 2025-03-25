@@ -34,13 +34,27 @@ export default function AppccModule() {
         />
         
         <Switch>
-          <Route path="/appcc" component={Dashboard} />
-          <Route path="/appcc/dashboard" component={Dashboard} />
-          <Route path="/appcc/templates" component={Templates} />
-          <Route path="/appcc/daily-controls" component={DailyControls} />
-          <Route path="/appcc/records" component={Records} />
-          <Route path="/appcc/reports" component={Reports} />
-          <Route component={NotFound} />
+          <Route path="/appcc">
+            <Dashboard />
+          </Route>
+          <Route path="/appcc/dashboard">
+            <Dashboard />
+          </Route>
+          <Route path="/appcc/templates">
+            <Templates />
+          </Route>
+          <Route path="/appcc/daily-controls">
+            <DailyControls />
+          </Route>
+          <Route path="/appcc/records">
+            <Records />
+          </Route>
+          <Route path="/appcc/reports">
+            <Reports />
+          </Route>
+          <Route path="/appcc/:rest*">
+            <NotFound />
+          </Route>
         </Switch>
       </div>
     </div>
