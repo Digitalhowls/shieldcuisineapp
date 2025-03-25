@@ -21,8 +21,13 @@ async function comparePasswords(supplied: string, stored: string) {
 }
 
 export function setupAuth(app: Express) {
+  // Generate a random secret for this session
+  const sessionSecret = process.env.SESSION_SECRET || "shield-cuisine-secret-" + Math.random().toString(36).substring(2, 15);
+  
+  console.log("Configuring session store...");
+  
   const sessionSettings: session.SessionOptions = {
-    secret: "shield-cuisine-secret",
+    secret: sessionSecret,
     resave: false,
     saveUninitialized: false,
     store: storage.sessionStore,
@@ -30,6 +35,7 @@ export function setupAuth(app: Express) {
       maxAge: 1000 * 60 * 60 * 24 * 7, // 1 week
       httpOnly: true,
       secure: false,
+      sameSite: 'lax'
     }
   };
 
@@ -41,13 +47,27 @@ export function setupAuth(app: Express) {
   passport.use(
     new LocalStrategy(async (username, password, done) => {
       try {
+        console.log(`Attempting login for user: ${username}`);
         const user = await storage.getUserByUsername(username);
-        if (!user || !(await comparePasswords(password, user.password))) {
+        console.log(`User found:`, user ? `ID: ${user.id}` : "No user found");
+        
+        if (!user) {
+          console.log("Authentication failed: User not found");
+          return done(null, false);
+        }
+        
+        const passwordMatches = await comparePasswords(password, user.password);
+        console.log(`Password comparison result: ${passwordMatches}`);
+        
+        if (!passwordMatches) {
+          console.log("Authentication failed: Invalid password");
           return done(null, false);
         } else {
+          console.log("Authentication successful");
           return done(null, user);
         }
       } catch (err) {
+        console.error("Authentication error:", err);
         return done(err);
       }
     }),

@@ -47,10 +47,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const loginMutation = useMutation({
     mutationFn: async (credentials: LoginData) => {
-      const res = await apiRequest("POST", "/api/login", credentials);
-      return await res.json();
+      console.log("Attempting login with:", credentials.username);
+      try {
+        const res = await apiRequest("POST", "/api/login", credentials);
+        console.log("Login response:", res.status);
+        const data = await res.json();
+        console.log("Login data:", data);
+        return data;
+      } catch (error) {
+        console.error("Login error:", error);
+        throw error;
+      }
     },
     onSuccess: (user: SelectUser) => {
+      console.log("Login successful, user:", user);
       queryClient.setQueryData(["/api/user"], user);
       toast({
         title: "Inicio de sesión exitoso",
@@ -58,6 +68,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
     },
     onError: (error: Error) => {
+      console.error("Login error in onError:", error);
       toast({
         title: "Error de inicio de sesión",
         description: "Nombre de usuario o contraseña incorrectos",
