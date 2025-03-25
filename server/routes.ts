@@ -9,6 +9,7 @@ import { registerClientAuthRoutes } from "./routes/client-auth";
 import { registerClientDataRoutes } from "./routes/client-data";
 import { registerAIAnalysisRoutes } from "./routes/ai-analysis";
 import { registerWooCommerceRoutes } from "./routes/woocommerce";
+import { registerBankingRoutes } from "./routes/banking";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Setup auth routes
@@ -185,6 +186,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Registrar rutas para integración con WooCommerce
   registerWooCommerceRoutes(app);
+  
+  // Registrar rutas para integración bancaria PSD2/Open Banking
+  registerBankingRoutes(app);
 
   const httpServer = createServer(app);
   return httpServer;

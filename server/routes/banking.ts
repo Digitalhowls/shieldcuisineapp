@@ -6,7 +6,7 @@ import { Request, Response, Express, NextFunction } from 'express';
 import { bankingService, PSD2Config, ConsentRequest } from '../services/banking';
 import { bankConnections, bankAccounts, bankTransactions, bankCategoriesRules } from '@shared/schema';
 import { db } from '../db';
-import { eq, desc, and, isNull } from 'drizzle-orm';
+import { eq, desc, and, isNull, inArray } from 'drizzle-orm';
 import { verifyAuth } from './auth-middleware';
 
 // Middleware para verificar que el usuario tiene rol adecuado para acciones bancarias
@@ -46,7 +46,7 @@ export function registerBankingRoutes(app: Express) {
       
       res.status(200).json({ success: true, message: 'Configuración bancaria guardada' });
     } catch (error) {
-      res.status(500).json({ error: `Error al configurar API bancaria: ${error.message}` });
+      res.status(500).json({ error: `Error al configurar API bancaria: ${(error as Error).message}` });
     }
   });
 
@@ -78,7 +78,7 @@ export function registerBankingRoutes(app: Express) {
       
       res.status(201).json(connection);
     } catch (error) {
-      res.status(500).json({ error: `Error al crear consentimiento: ${error.message}` });
+      res.status(500).json({ error: `Error al crear consentimiento: ${(error as Error).message}` });
     }
   });
 
@@ -341,14 +341,21 @@ export function registerBankingRoutes(app: Express) {
       
       // Obtener las últimas transacciones
       const accountIds = accounts.map(a => a.id);
-      const recentTransactions = accountIds.length > 0 ? await db
-        .select()
-        .from(bankTransactions)
-        .where(
-          bankTransactions.accountId.in(accountIds)
-        )
-        .orderBy(desc(bankTransactions.transactionDate))
-        .limit(10) : [];
+      let recentTransactions = [];
+      
+      if (accountIds.length > 0) {
+        // Construir una consulta con OR para cada ID de cuenta
+        const whereConditions = accountIds.map(id => 
+          eq(bankTransactions.accountId, id)
+        );
+        
+        recentTransactions = await db
+          .select()
+          .from(bankTransactions)
+          .where(whereConditions.length === 1 ? whereConditions[0] : or(...whereConditions))
+          .orderBy(desc(bankTransactions.transactionDate))
+          .limit(10);
+      }
       
       // Agrupar transacciones por categoría para el gráfico
       const categoryGroups = {};
