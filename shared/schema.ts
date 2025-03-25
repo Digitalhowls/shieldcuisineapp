@@ -9,6 +9,8 @@ export const controlStatusEnum = pgEnum('control_status', ['pending', 'completed
 export const controlTypeEnum = pgEnum('control_type', ['checklist', 'form']);
 export const documentTypeEnum = pgEnum('document_type', ['invoice', 'receipt', 'delivery_note', 'internal_transfer']);
 export const businessTypeEnum = pgEnum('business_type', ['restaurant', 'store', 'production', 'catering', 'wholesale']);
+export const bankAccountTypeEnum = pgEnum('bank_account_type', ['checking', 'savings', 'credit']);
+export const bankTransactionTypeEnum = pgEnum('bank_transaction_type', ['payment', 'charge', 'transfer', 'deposit', 'withdrawal', 'fee']);
 
 // Tables
 export const users = pgTable("users", {
@@ -261,6 +263,73 @@ export const invoiceItems = pgTable("invoice_items", {
   subtotal: doublePrecision("subtotal").notNull(),
 });
 
+// Tablas para integración bancaria
+export const bankConnections = pgTable("bank_connections", {
+  id: serial("id").primaryKey(),
+  companyId: integer("company_id").notNull().references(() => companies.id),
+  provider: text("provider").notNull(), // 'psd2', 'plaid', 'tink', etc.
+  accessToken: text("access_token"),
+  refreshToken: text("refresh_token"),
+  consentId: text("consent_id"), // ID de consentimiento PSD2
+  status: text("status").notNull(), // 'active', 'expired', 'revoked'
+  expiresAt: timestamp("expires_at"),
+  metadata: jsonb("metadata"), // Información adicional específica del proveedor
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const bankAccounts = pgTable("bank_accounts", {
+  id: serial("id").primaryKey(),
+  companyId: integer("company_id").notNull().references(() => companies.id),
+  connectionId: integer("connection_id").notNull().references(() => bankConnections.id),
+  accountId: text("account_id").notNull(), // ID externo proporcionado por el banco
+  accountNumber: text("account_number"), // Número de cuenta (IBAN)
+  accountName: text("account_name").notNull(),
+  bankName: text("bank_name").notNull(),
+  type: bankAccountTypeEnum("type").notNull(),
+  currency: text("currency").notNull().default("EUR"),
+  balance: doublePrecision("balance").notNull().default(0),
+  availableBalance: doublePrecision("available_balance"),
+  lastSyncAt: timestamp("last_sync_at"),
+  active: boolean("active").notNull().default(true),
+  metadata: jsonb("metadata"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const bankTransactions = pgTable("bank_transactions", {
+  id: serial("id").primaryKey(),
+  accountId: integer("account_id").notNull().references(() => bankAccounts.id),
+  externalId: text("external_id").notNull(), // ID proporcionado por el banco
+  type: bankTransactionTypeEnum("type").notNull(),
+  amount: doublePrecision("amount").notNull(),
+  currency: text("currency").notNull().default("EUR"),
+  description: text("description"),
+  category: text("category"),
+  counterpartyName: text("counterparty_name"),
+  counterpartyAccount: text("counterparty_account"),
+  reference: text("reference"),
+  transactionDate: timestamp("transaction_date").notNull(),
+  valueDate: timestamp("value_date"),
+  status: text("status").notNull(), // 'booked', 'pending'
+  bookingDate: timestamp("booking_date"),
+  invoiceId: integer("invoice_id").references(() => invoices.id),
+  metadata: jsonb("metadata"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const bankCategoriesRules = pgTable("bank_categories_rules", {
+  id: serial("id").primaryKey(),
+  companyId: integer("company_id").notNull().references(() => companies.id),
+  name: text("name").notNull(),
+  pattern: text("pattern").notNull(), // Patrón regex para coincidir con la descripción
+  category: text("category").notNull(),
+  priority: integer("priority").notNull().default(1),
+  active: boolean("active").notNull().default(true),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
 // Relations
 export const userRelations = relations(users, ({ one }) => ({
   company: one(companies, {
@@ -276,6 +345,8 @@ export const userRelations = relations(users, ({ one }) => ({
 export const companyRelations = relations(companies, ({ many }) => ({
   locations: many(locations),
   users: many(users),
+  bankConnections: many(bankConnections),
+  bankAccounts: many(bankAccounts),
 }));
 
 export const locationRelations = relations(locations, ({ one, many }) => ({
@@ -293,6 +364,37 @@ export const warehouseRelations = relations(warehouses, ({ one, many }) => ({
     references: [locations.id],
   }),
   inventory: many(inventory),
+}));
+
+export const bankConnectionRelations = relations(bankConnections, ({ one, many }) => ({
+  company: one(companies, {
+    fields: [bankConnections.companyId],
+    references: [companies.id],
+  }),
+  accounts: many(bankAccounts),
+}));
+
+export const bankAccountRelations = relations(bankAccounts, ({ one, many }) => ({
+  company: one(companies, {
+    fields: [bankAccounts.companyId],
+    references: [companies.id],
+  }),
+  connection: one(bankConnections, {
+    fields: [bankAccounts.connectionId],
+    references: [bankConnections.id],
+  }),
+  transactions: many(bankTransactions),
+}));
+
+export const bankTransactionRelations = relations(bankTransactions, ({ one }) => ({
+  account: one(bankAccounts, {
+    fields: [bankTransactions.accountId],
+    references: [bankAccounts.id],
+  }),
+  invoice: one(invoices, {
+    fields: [bankTransactions.invoiceId],
+    references: [invoices.id],
+  }),
 }));
 
 // Insert and Select schemas
@@ -313,6 +415,12 @@ export const insertSaleSchema = createInsertSchema(sales).omit({ id: true, creat
 export const insertSaleItemSchema = createInsertSchema(saleItems).omit({ id: true });
 export const insertInvoiceSchema = createInsertSchema(invoices).omit({ id: true, createdAt: true });
 export const insertInvoiceItemSchema = createInsertSchema(invoiceItems).omit({ id: true });
+
+// Esquemas para entidades bancarias
+export const insertBankConnectionSchema = createInsertSchema(bankConnections).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertBankAccountSchema = createInsertSchema(bankAccounts).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertBankTransactionSchema = createInsertSchema(bankTransactions).omit({ id: true, createdAt: true });
+export const insertBankCategoryRuleSchema = createInsertSchema(bankCategoriesRules).omit({ id: true, createdAt: true, updatedAt: true });
 
 // Type exports
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -349,3 +457,13 @@ export type InsertInvoice = z.infer<typeof insertInvoiceSchema>;
 export type Invoice = typeof invoices.$inferSelect;
 export type InsertInvoiceItem = z.infer<typeof insertInvoiceItemSchema>;
 export type InvoiceItem = typeof invoiceItems.$inferSelect;
+
+// Tipos para entidades bancarias
+export type InsertBankConnection = z.infer<typeof insertBankConnectionSchema>;
+export type BankConnection = typeof bankConnections.$inferSelect;
+export type InsertBankAccount = z.infer<typeof insertBankAccountSchema>;
+export type BankAccount = typeof bankAccounts.$inferSelect;
+export type InsertBankTransaction = z.infer<typeof insertBankTransactionSchema>;
+export type BankTransaction = typeof bankTransactions.$inferSelect;
+export type InsertBankCategoryRule = z.infer<typeof insertBankCategoryRuleSchema>;
+export type BankCategoryRule = typeof bankCategoriesRules.$inferSelect;
