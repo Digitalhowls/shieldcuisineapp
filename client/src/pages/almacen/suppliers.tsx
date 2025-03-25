@@ -80,7 +80,7 @@ export default function Suppliers() {
                     </TableCell>
                     <TableCell>
                       {supplier.active ? (
-                        <Badge variant="success">Activo</Badge>
+                        <Badge className="bg-green-100 text-green-800 hover:bg-green-200">Activo</Badge>
                       ) : (
                         <Badge variant="secondary">Inactivo</Badge>
                       )}

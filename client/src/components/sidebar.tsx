@@ -60,7 +60,33 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
       path: "/almacen",
       label: "Almacén y Trazabilidad",
       icon: "fas fa-warehouse",
-      isActive: location.startsWith("/almacen")
+      isActive: location.startsWith("/almacen"),
+      children: [
+        { 
+          path: "/almacen", 
+          label: "Dashboard", 
+          icon: "",
+          isActive: location === "/almacen" || location === "/almacen/dashboard"
+        },
+        { 
+          path: "/almacen/inventory", 
+          label: "Inventario", 
+          icon: "",
+          isActive: location === "/almacen/inventory"
+        },
+        { 
+          path: "/almacen/movements", 
+          label: "Movimientos", 
+          icon: "",
+          isActive: location === "/almacen/movements"
+        },
+        { 
+          path: "/almacen/suppliers", 
+          label: "Proveedores", 
+          icon: "",
+          isActive: location === "/almacen/suppliers"
+        }
+      ]
     },
     {
       path: "/tpv",
@@ -154,32 +180,33 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
             
             {mainModules.map((module) => (
               <div key={module.path}>
-                <div 
-                  className={cn(
-                    "flex items-center pl-4 pr-4 py-3 text-neutral-700 hover:bg-neutral-50 cursor-pointer",
-                    module.isActive && "sidebar-item active"
-                  )}
-                  onClick={() => window.location.href = module.path}
-                >
-                  <i className={cn(module.icon, "w-5 mr-3", module.isActive ? "text-primary" : "text-neutral-500")}></i>
-                  <span>{module.label}</span>
-                </div>
+                <Link href={module.path}>
+                  <a
+                    className={cn(
+                      "flex items-center pl-4 pr-4 py-3 text-neutral-700 hover:bg-neutral-50 cursor-pointer",
+                      module.isActive && "sidebar-item active"
+                    )}
+                  >
+                    <i className={cn(module.icon, "w-5 mr-3", module.isActive ? "text-primary" : "text-neutral-500")}></i>
+                    <span>{module.label}</span>
+                  </a>
+                </Link>
                 
                 {/* Submenu items */}
                 {module.children && module.isActive && (
                   <div>
                     {module.children.map((child) => (
-                      <div 
-                        key={child.path} 
-                        className={cn(
-                          "flex items-center pl-8 pr-4 py-2 text-neutral-600 hover:bg-neutral-50 cursor-pointer",
-                          child.isActive && "bg-neutral-50 text-primary"
-                        )}
-                        onClick={() => window.location.href = child.path}
-                      >
-                        {child.icon && <i className={cn(child.icon, "w-5 text-neutral-500 mr-3")}></i>}
-                        <span>{child.label}</span>
-                      </div>
+                      <Link key={child.path} href={child.path}>
+                        <a
+                          className={cn(
+                            "flex items-center pl-8 pr-4 py-2 text-neutral-600 hover:bg-neutral-50 cursor-pointer",
+                            child.isActive && "bg-neutral-50 text-primary"
+                          )}
+                        >
+                          {child.icon && <i className={cn(child.icon, "w-5 text-neutral-500 mr-3")}></i>}
+                          <span>{child.label}</span>
+                        </a>
+                      </Link>
                     ))}
                   </div>
                 )}
@@ -189,17 +216,17 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
             <h3 className="px-4 mt-6 text-xs font-semibold text-neutral-400 uppercase tracking-wider mb-2">Configuración</h3>
             
             {configModules.map((module) => (
-              <div 
-                key={module.path} 
-                className={cn(
-                  "flex items-center pl-4 pr-4 py-3 text-neutral-600 hover:bg-neutral-50 cursor-pointer",
-                  module.isActive && "sidebar-item active"
-                )}
-                onClick={() => window.location.href = module.path}
-              >
-                <i className={cn(module.icon, "w-5 mr-3", module.isActive ? "text-primary" : "text-neutral-500")}></i>
-                <span>{module.label}</span>
-              </div>
+              <Link key={module.path} href={module.path}>
+                <a
+                  className={cn(
+                    "flex items-center pl-4 pr-4 py-3 text-neutral-600 hover:bg-neutral-50 cursor-pointer",
+                    module.isActive && "sidebar-item active"
+                  )}
+                >
+                  <i className={cn(module.icon, "w-5 mr-3", module.isActive ? "text-primary" : "text-neutral-500")}></i>
+                  <span>{module.label}</span>
+                </a>
+              </Link>
             ))}
           </nav>
           

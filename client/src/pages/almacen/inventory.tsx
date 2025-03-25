@@ -25,7 +25,7 @@ export default function Inventory() {
   
   const getStockStatus = (stock: number, minStock: number) => {
     if (stock === 0) return { label: "Sin stock", variant: "destructive" };
-    if (stock < minStock) return { label: "Bajo mínimo", variant: "warning" };
+    if (stock < minStock) return { label: "Bajo mínimo", variant: "secondary" };
     return { label: "Correcto", variant: "outline" };
   };
   
@@ -89,7 +89,7 @@ export default function Inventory() {
                       </TableCell>
                       <TableCell>
                         {isExpiryClose ? (
-                          <span className="text-warning flex items-center">
+                          <span className="text-orange-500 flex items-center">
                             <i className="fas fa-exclamation-circle mr-1"></i>
                             {formattedDate}
                           </span>
