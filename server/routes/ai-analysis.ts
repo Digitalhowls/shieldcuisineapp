@@ -2,7 +2,14 @@ import { Express, Request, Response } from 'express';
 import { analyzeAPPCCControl, APPCCAnalysisRequest, APPCCAnalysisResponse } from '../services/openai';
 import { storage } from '../storage';
 import { log } from '../vite';
-import { verifyAuth } from './auth-middleware';
+
+// Middleware de autenticación temporal hasta que se implemente correctamente
+const verifyAuth = (req: Request, res: Response, next: Function) => {
+  if (!req.isAuthenticated()) {
+    return res.status(401).json({ error: 'No autenticado' });
+  }
+  next();
+};
 
 /**
  * Registra las rutas para el análisis de datos usando IA
@@ -36,7 +43,7 @@ export function registerAIAnalysisRoutes(app: Express) {
       }
       
       // Preparar los datos para el análisis
-      const formData = controlRecord.formData ? JSON.parse(controlRecord.formData) : {};
+      const formData = controlRecord.formData ? JSON.parse(controlRecord.formData as string) : {};
       
       // Transformar los datos al formato esperado por la IA
       const sections = [];
@@ -61,15 +68,22 @@ export function registerAIAnalysisRoutes(app: Express) {
         }
       }
       
+      // Formateamos las fechas como string
+      const dateStr = controlRecord.completedAt 
+        ? new Date(controlRecord.completedAt).toISOString()
+        : controlRecord.scheduledFor 
+          ? new Date(controlRecord.scheduledFor).toISOString()
+          : new Date().toISOString();
+      
       // Construir la solicitud de análisis
       const analysisRequest: APPCCAnalysisRequest = {
         controlData: {
           id: controlRecord.id,
           name: template.name,
-          type: template.type,
+          type: template.type || 'checklist', // Tipo predeterminado si no existe
           status: controlRecord.status,
           location: location.name,
-          date: controlRecord.completedAt || controlRecord.scheduledFor,
+          date: dateStr,
           responsible: 'Responsable', // Deberíamos obtener el nombre del usuario responsable
           sections,
           summary: {
@@ -120,7 +134,7 @@ export function registerAIAnalysisRoutes(app: Express) {
       // Filtrar registros completados según el marco temporal (si se especifica)
       const filteredRecords = controlRecords.filter(record => 
         record.status === 'completed' && 
-        (!timeframe || isWithinTimeframe(record.completedAt, timeframe))
+        (!timeframe || (record.completedAt && isWithinTimeframe(record.completedAt.toString(), timeframe)))
       );
       
       if (filteredRecords.length === 0) {

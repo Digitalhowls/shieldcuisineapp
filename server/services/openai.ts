@@ -1,10 +1,13 @@
 import OpenAI from 'openai';
 import { log } from '../vite';
 
-// Inicializar el cliente de OpenAI con la clave API
+// Inicializar el cliente de OpenAI
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
+
+// the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
+const MODEL = "gpt-4o";
 
 /**
  * Tipos de datos para las solicitudes de análisis
@@ -55,57 +58,131 @@ export interface APPCCAnalysisResponse {
  */
 export async function analyzeAPPCCControl(request: APPCCAnalysisRequest): Promise<APPCCAnalysisResponse> {
   try {
-    log(`Analizando control APPCC ${request.controlData.id} - ${request.controlData.name}`, 'openai');
+    const { controlData, requestType, language = 'es' } = request;
     
-    // Crear un prompt apropiado según el tipo de solicitud
-    const systemPrompt = getSystemPrompt(request.requestType, request.language || 'es');
+    // Construir el prompt del sistema según el tipo de solicitud
+    const systemPrompt = getSystemPrompt(requestType, language);
     
-    // Convertir los datos del control a un formato legible para el modelo
-    const controlDataString = JSON.stringify(request.controlData, null, 2);
+    // Construir el contenido del mensaje del usuario con los datos del control
+    let userMessageContent = '';
     
-    // Realizar la solicitud a OpenAI
-    const completion = await openai.chat.completions.create({
-      model: "gpt-4o",
-      messages: [
-        { 
-          role: "system", 
-          content: systemPrompt
-        },
-        { 
-          role: "user", 
-          content: `Datos del control APPCC a analizar:\n\n${controlDataString}`
+    if (language === 'es') {
+      userMessageContent += `Datos del control APPCC #${controlData.id}: "${controlData.name}"\n\n`;
+      userMessageContent += `Tipo: ${controlData.type}\n`;
+      userMessageContent += `Estado: ${controlData.status}\n`;
+      userMessageContent += `Ubicación: ${controlData.location}\n`;
+      userMessageContent += `Fecha: ${controlData.date}\n`;
+      userMessageContent += `Responsable: ${controlData.responsible}\n\n`;
+    } else {
+      userMessageContent += `HACCP Control Data #${controlData.id}: "${controlData.name}"\n\n`;
+      userMessageContent += `Type: ${controlData.type}\n`;
+      userMessageContent += `Status: ${controlData.status}\n`;
+      userMessageContent += `Location: ${controlData.location}\n`;
+      userMessageContent += `Date: ${controlData.date}\n`;
+      userMessageContent += `Responsible: ${controlData.responsible}\n\n`;
+    }
+    
+    // Añadir las secciones y elementos de control
+    for (const section of controlData.sections) {
+      userMessageContent += `### ${section.title}\n\n`;
+      
+      for (const item of section.items) {
+        const statusEmoji = item.status === 'ok' ? '✅' : 
+                           item.status === 'warning' ? '⚠️' : 
+                           item.status === 'error' ? '❌' : '';
+        
+        userMessageContent += `${statusEmoji} ${item.question}: ${item.answer}\n`;
+        
+        if (item.notes) {
+          userMessageContent += `   ${language === 'es' ? 'Notas' : 'Notes'}: ${item.notes}\n`;
         }
+        
+        userMessageContent += '\n';
+      }
+    }
+    
+    // Añadir el resumen si está disponible
+    if (controlData.summary) {
+      userMessageContent += `### ${language === 'es' ? 'Resumen' : 'Summary'}\n\n`;
+      
+      if (controlData.summary.score !== undefined) {
+        userMessageContent += `${language === 'es' ? 'Puntuación' : 'Score'}: ${controlData.summary.score}\n`;
+      }
+      
+      if (controlData.summary.issues && controlData.summary.issues.length > 0) {
+        userMessageContent += `${language === 'es' ? 'Problemas identificados' : 'Identified issues'}:\n`;
+        for (const issue of controlData.summary.issues) {
+          userMessageContent += `- ${issue}\n`;
+        }
+        userMessageContent += '\n';
+      }
+      
+      if (controlData.summary.correctiveActions && controlData.summary.correctiveActions.length > 0) {
+        userMessageContent += `${language === 'es' ? 'Acciones correctivas' : 'Corrective actions'}:\n`;
+        for (const action of controlData.summary.correctiveActions) {
+          userMessageContent += `- ${action}\n`;
+        }
+        userMessageContent += '\n';
+      }
+    }
+    
+    // Añadir la solicitud específica según el tipo
+    switch (requestType) {
+      case 'summary':
+        userMessageContent += language === 'es' 
+          ? 'Por favor, proporciona un resumen conciso de este control APPCC, destacando los puntos clave y cualquier área de preocupación.' 
+          : 'Please provide a concise summary of this HACCP control, highlighting key points and any areas of concern.';
+        break;
+      case 'recommendations':
+        userMessageContent += language === 'es'
+          ? 'Basándote en estos datos, proporciona recomendaciones específicas para mejorar el cumplimiento de seguridad alimentaria.'
+          : 'Based on this data, provide specific recommendations to improve food safety compliance.';
+        break;
+      case 'compliance':
+        userMessageContent += language === 'es'
+          ? 'Evalúa el nivel de cumplimiento de este control APPCC según los datos proporcionados. Incluye una puntuación estimada (0-100%) y un nivel de riesgo (bajo, medio, alto).'
+          : 'Assess the compliance level of this HACCP control based on the provided data. Include an estimated score (0-100%) and risk level (low, medium, high).';
+        break;
+      case 'trends':
+        userMessageContent += language === 'es'
+          ? 'Analiza las tendencias generales de los controles APPCC para esta ubicación, identificando patrones, fortalezas y áreas que requieren atención.'
+          : 'Analyze the general trends of HACCP controls for this location, identifying patterns, strengths, and areas requiring attention.';
+        break;
+    }
+    
+    log('Enviando solicitud a OpenAI...', 'openai-service');
+    
+    // Realizar la llamada a la API
+    const response = await openai.chat.completions.create({
+      model: MODEL,
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: userMessageContent }
       ],
-      temperature: 0.7,
-      max_tokens: 1000,
+      temperature: 0.2, // Valores bajos para respuestas más consistentes y menos creativas
+      response_format: { type: "json_object" },
     });
     
-    // Procesar la respuesta
-    const responseContent = completion.choices[0].message.content;
-    
-    if (!responseContent) {
-      throw new Error('No se recibió respuesta del modelo de OpenAI');
+    const content = response.choices[0].message.content;
+    if (!content) {
+      throw new Error('No se recibió respuesta de la IA');
     }
     
-    // Intentar parsear la respuesta como JSON si es posible
-    try {
-      const parsedResponse = JSON.parse(responseContent);
-      return {
-        analysis: parsedResponse.analysis || responseContent,
-        recommendations: parsedResponse.recommendations,
-        complianceScore: parsedResponse.complianceScore,
-        riskLevel: parsedResponse.riskLevel,
-      };
-    } catch (e) {
-      // Si no es JSON, devolver como texto plano
-      return {
-        analysis: responseContent,
-      };
+    log('Respuesta recibida de OpenAI', 'openai-service');
+    
+    // Parsear la respuesta JSON
+    const result = JSON.parse(content) as APPCCAnalysisResponse;
+    
+    // Asegurarse de que la respuesta tenga el formato correcto
+    if (!result.analysis) {
+      throw new Error('Formato de respuesta de la IA inválido: falta el campo "analysis"');
     }
+    
+    return result;
     
   } catch (error) {
-    log(`Error al analizar control APPCC: ${error}`, 'openai');
-    throw new Error(`Error al analizar los datos del control APPCC: ${error instanceof Error ? error.message : String(error)}`);
+    log(`Error en el servicio de OpenAI: ${error}`, 'openai-service');
+    throw error;
   }
 }
 
@@ -113,147 +190,80 @@ export async function analyzeAPPCCControl(request: APPCCAnalysisRequest): Promis
  * Obtiene el prompt del sistema según el tipo de solicitud
  */
 function getSystemPrompt(requestType: string, language: 'es' | 'en'): string {
-  const prompts = {
-    summary: {
-      es: `Eres un experto en seguridad alimentaria y sistemas APPCC (Análisis de Peligros y Puntos de Control Crítico). 
-      Analiza los datos del control APPCC proporcionados y genera un resumen conciso que destaque los puntos más importantes.
-      Tu respuesta debe incluir:
-      1. Un resumen claro y conciso del control realizado
-      2. Identificación de cualquier problema o no conformidad encontrada
-      3. Evaluación general del nivel de cumplimiento
-      
-      Usa un tono profesional pero fácil de entender. Responde en español.
-      Si es posible, estructura tu respuesta como un objeto JSON con los siguientes campos:
-      {
-        "analysis": "Texto principal del análisis",
+  // Base del prompt del sistema
+  let basePrompt = language === 'es'
+    ? `Eres un experto en seguridad alimentaria y sistemas APPCC (Análisis de Peligros y Puntos de Control Crítico).
+      Tu tarea es analizar los datos de controles APPCC proporcionados y generar información útil para los usuarios.
+      Responde siempre en formato JSON con la siguiente estructura:
+      { 
+        "analysis": "Texto principal del análisis", 
         "recommendations": ["Recomendación 1", "Recomendación 2", ...],
-        "complianceScore": número entre 0 y 100,
-        "riskLevel": "low", "medium" o "high"
-      }`,
+        "complianceScore": número entre 0 y 100 (opcional),
+        "riskLevel": "low", "medium" o "high" (opcional)
+      }
       
-      en: `You are an expert in food safety and HACCP (Hazard Analysis Critical Control Point) systems.
-      Analyze the provided HACCP control data and generate a concise summary highlighting the most important points.
-      Your response should include:
-      1. A clear and concise summary of the control performed
-      2. Identification of any issues or non-compliances found
-      3. Overall assessment of the compliance level
-      
-      Use a professional but easy-to-understand tone. Respond in English.
-      If possible, structure your response as a JSON object with the following fields:
-      {
-        "analysis": "Main analysis text",
+      Usa un tono profesional pero accesible y asegúrate de que tus respuestas sean específicas para el control analizado.`
+    : `You are an expert in food safety and HACCP (Hazard Analysis Critical Control Points) systems.
+      Your task is to analyze the provided HACCP control data and generate useful insights for users.
+      Always respond in JSON format with the following structure:
+      { 
+        "analysis": "Main analysis text", 
         "recommendations": ["Recommendation 1", "Recommendation 2", ...],
-        "complianceScore": number between 0 and 100,
-        "riskLevel": "low", "medium" or "high"
-      }`
-    },
-    
-    recommendations: {
-      es: `Eres un consultor experto en seguridad alimentaria y sistemas APPCC.
-      Analiza los datos del control APPCC proporcionados y genera recomendaciones específicas para mejorar el cumplimiento y la seguridad alimentaria.
-      Tus recomendaciones deben ser:
-      1. Prácticas y aplicables
-      2. Basadas en la normativa vigente de seguridad alimentaria
-      3. Priorizadas según su importancia para la seguridad alimentaria
+        "complianceScore": number between 0 and 100 (optional),
+        "riskLevel": "low", "medium", or "high" (optional)
+      }
       
-      Usa un tono profesional pero constructivo. Responde en español.
-      Si es posible, estructura tu respuesta como un objeto JSON con los siguientes campos:
-      {
-        "analysis": "Breve análisis de la situación",
-        "recommendations": ["Recomendación detallada 1", "Recomendación detallada 2", ...],
-        "priorityActions": ["Acción prioritaria 1", "Acción prioritaria 2", ...]
-      }`,
-      
-      en: `You are an expert consultant in food safety and HACCP systems.
-      Analyze the provided HACCP control data and generate specific recommendations to improve compliance and food safety.
-      Your recommendations should be:
-      1. Practical and applicable
-      2. Based on current food safety regulations
-      3. Prioritized according to their importance for food safety
-      
-      Use a professional but constructive tone. Respond in English.
-      If possible, structure your response as a JSON object with the following fields:
-      {
-        "analysis": "Brief analysis of the situation",
-        "recommendations": ["Detailed recommendation 1", "Detailed recommendation 2", ...],
-        "priorityActions": ["Priority action 1", "Priority action 2", ...]
-      }`
-    },
-    
-    compliance: {
-      es: `Eres un auditor de seguridad alimentaria especializado en sistemas APPCC.
-      Analiza los datos del control APPCC proporcionados y evalúa el nivel de cumplimiento según la normativa vigente.
-      Tu evaluación debe incluir:
-      1. Una puntuación de cumplimiento (0-100%)
-      2. Detalles de las conformidades y no conformidades encontradas
-      3. Riesgos potenciales identificados
-      
-      Sé objetivo y preciso en tu evaluación. Responde en español.
-      Si es posible, estructura tu respuesta como un objeto JSON con los siguientes campos:
-      {
-        "analysis": "Análisis detallado del cumplimiento",
-        "complianceScore": número entre 0 y 100,
-        "conformities": ["Conformidad 1", "Conformidad 2", ...],
-        "nonConformities": ["No conformidad 1", "No conformidad 2", ...],
-        "riskLevel": "low", "medium" o "high",
-        "riskJustification": "Explicación del nivel de riesgo asignado"
-      }`,
-      
-      en: `You are a food safety auditor specializing in HACCP systems.
-      Analyze the provided HACCP control data and evaluate the level of compliance according to current regulations.
-      Your evaluation should include:
-      1. A compliance score (0-100%)
-      2. Details of conformities and non-conformities found
-      3. Potential risks identified
-      
-      Be objective and precise in your assessment. Respond in English.
-      If possible, structure your response as a JSON object with the following fields:
-      {
-        "analysis": "Detailed compliance analysis",
-        "complianceScore": number between 0 and 100,
-        "conformities": ["Conformity 1", "Conformity 2", ...],
-        "nonConformities": ["Non-conformity 1", "Non-conformity 2", ...],
-        "riskLevel": "low", "medium" or "high",
-        "riskJustification": "Explanation of the assigned risk level"
-      }`
-    },
-    
-    trends: {
-      es: `Eres un analista de datos en seguridad alimentaria especializado en sistemas APPCC.
-      Analiza los datos del control APPCC proporcionados e identifica posibles tendencias o patrones que puedan ser relevantes.
-      Tu análisis debe considerar:
-      1. Patrones recurrentes en no conformidades o problemas
-      2. Posibles causas raíz de los problemas identificados
-      3. Tendencias temporales o estacionales, si son identificables
-      
-      Sé analítico y orientado a datos. Responde en español.
-      Si es posible, estructura tu respuesta como un objeto JSON con los siguientes campos:
-      {
-        "analysis": "Análisis detallado de tendencias",
-        "identifiedPatterns": ["Patrón 1", "Patrón 2", ...],
-        "potentialRootCauses": ["Causa raíz 1", "Causa raíz 2", ...],
-        "recommendedFocus": ["Área de enfoque 1", "Área de enfoque 2", ...]
-      }`,
-      
-      en: `You are a data analyst in food safety specializing in HACCP systems.
-      Analyze the provided HACCP control data and identify possible trends or patterns that may be relevant.
-      Your analysis should consider:
-      1. Recurring patterns in non-conformities or issues
-      2. Possible root causes of the identified problems
-      3. Temporal or seasonal trends, if identifiable
-      
-      Be analytical and data-oriented. Respond in English.
-      If possible, structure your response as a JSON object with the following fields:
-      {
-        "analysis": "Detailed trend analysis",
-        "identifiedPatterns": ["Pattern 1", "Pattern 2", ...],
-        "potentialRootCauses": ["Root cause 1", "Root cause 2", ...],
-        "recommendedFocus": ["Focus area 1", "Focus area 2", ...]
-      }`
-    }
-  };
+      Use a professional but accessible tone and ensure your responses are specific to the control being analyzed.`;
   
-  // Devolver el prompt adecuado según el tipo de solicitud y el idioma
-  // Si no existe el tipo, usar summary como predeterminado
-  return prompts[requestType as keyof typeof prompts]?.[language] || prompts.summary[language];
+  // Añadir instrucciones específicas según el tipo de solicitud
+  switch (requestType) {
+    case 'summary':
+      basePrompt += language === 'es'
+        ? `\n\nPara este tipo de análisis, proporciona un resumen conciso (3-5 párrafos) del control APPCC. 
+          Identifica si hay problemas críticos, áreas que funcionan bien y conclusiones generales.
+          No incluyas los campos "complianceScore" o "riskLevel" en tu respuesta JSON.`
+        : `\n\nFor this type of analysis, provide a concise summary (3-5 paragraphs) of the HACCP control.
+          Identify if there are any critical issues, areas that are working well, and general conclusions.
+          Do not include the "complianceScore" or "riskLevel" fields in your JSON response.`;
+      break;
+    case 'recommendations':
+      basePrompt += language === 'es'
+        ? `\n\nPara este tipo de análisis, enfócate en generar recomendaciones prácticas y específicas 
+          basadas en los datos del control. Proporciona al menos 3-5 recomendaciones priorizadas.
+          El campo "analysis" debe explicar brevemente por qué estas recomendaciones son importantes, 
+          y el campo "recommendations" debe contener las recomendaciones específicas como un array de strings.
+          No incluyas los campos "complianceScore" o "riskLevel" en tu respuesta JSON.`
+        : `\n\nFor this type of analysis, focus on generating practical and specific recommendations 
+          based on the control data. Provide at least 3-5 prioritized recommendations.
+          The "analysis" field should briefly explain why these recommendations are important, 
+          and the "recommendations" field should contain the specific recommendations as an array of strings.
+          Do not include the "complianceScore" or "riskLevel" fields in your JSON response.`;
+      break;
+    case 'compliance':
+      basePrompt += language === 'es'
+        ? `\n\nPara este tipo de análisis, evalúa el nivel de cumplimiento del control APPCC.
+          Proporciona una puntuación estimada (complianceScore) entre 0 y 100, donde 100 representa
+          el cumplimiento perfecto. Asigna también un nivel de riesgo (riskLevel) como "low", "medium" o "high".
+          En el campo "analysis", explica los factores que influyen en tu evaluación y las implicaciones
+          para la seguridad alimentaria. Incluye todos los campos en tu respuesta JSON.`
+        : `\n\nFor this type of analysis, assess the compliance level of the HACCP control.
+          Provide an estimated score (complianceScore) between 0 and 100, where 100 represents
+          perfect compliance. Also assign a risk level (riskLevel) as "low", "medium", or "high".
+          In the "analysis" field, explain the factors influencing your assessment and the implications
+          for food safety. Include all fields in your JSON response.`;
+      break;
+    case 'trends':
+      basePrompt += language === 'es'
+        ? `\n\nPara este tipo de análisis, identifica patrones y tendencias en los controles APPCC
+          para la ubicación especificada. Destaca fortalezas consistentes y áreas que requieren atención.
+          Proporciona una visión general de la efectividad del sistema APPCC en esta ubicación.
+          No incluyas los campos "complianceScore" o "riskLevel" en tu respuesta JSON.`
+        : `\n\nFor this type of analysis, identify patterns and trends in HACCP controls
+          for the specified location. Highlight consistent strengths and areas requiring attention.
+          Provide an overview of the effectiveness of the HACCP system at this location.
+          Do not include the "complianceScore" or "riskLevel" fields in your JSON response.`;
+      break;
+  }
+  
+  return basePrompt;
 }

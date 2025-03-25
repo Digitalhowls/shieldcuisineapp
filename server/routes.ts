@@ -7,6 +7,7 @@ import { ZodError } from "zod";
 import { fromZodError } from "zod-validation-error";
 import { registerClientAuthRoutes } from "./routes/client-auth";
 import { registerClientDataRoutes } from "./routes/client-data";
+import { registerAIAnalysisRoutes } from "./routes/ai-analysis";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Setup auth routes
@@ -177,6 +178,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Registrar rutas de autenticación y datos para cliente
   registerClientAuthRoutes(app);
   registerClientDataRoutes(app);
+  
+  // Registrar rutas para análisis con IA
+  registerAIAnalysisRoutes(app);
 
   const httpServer = createServer(app);
   return httpServer;
