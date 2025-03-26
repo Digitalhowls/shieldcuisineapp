@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DataTable } from "@/components/ui/data-table";
-import { PlusCircle, Truck, ShoppingBag, Package, ArrowUpDown, Search } from "lucide-react";
+import { PlusCircle, Truck, ShoppingBag, Package, ArrowUpDown, Search, BarChartHorizontal } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -154,10 +154,20 @@ const ComprasIndex = () => {
             Administra órdenes de compra, recepciones y proveedores
           </p>
         </div>
-        <Button onClick={() => setLocation("/compras/nueva")}>
-          <PlusCircle className="mr-2 h-4 w-4" />
-          Nueva Orden
-        </Button>
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            onClick={() => setLocation("/compras/analisis")}
+            className="bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100 hover:text-blue-800"
+          >
+            <BarChartHorizontal className="mr-2 h-4 w-4" />
+            Análisis IA
+          </Button>
+          <Button onClick={() => setLocation("/compras/nueva")}>
+            <PlusCircle className="mr-2 h-4 w-4" />
+            Nueva Orden
+          </Button>
+        </div>
       </div>
 
       <div className="grid gap-4 md:grid-cols-3 mb-6">

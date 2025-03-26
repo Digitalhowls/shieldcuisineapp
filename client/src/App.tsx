@@ -19,6 +19,7 @@ import TodasNotificacionesPage from "./pages/configuracion/todas-notificaciones"
 import ComprasIndex from "./pages/compras";
 import ComprasNueva from "./pages/compras/nueva";
 import ComprasDetalle from "./pages/compras/[id]";
+import ComprasAnalisis from "./pages/compras/analisis";
 
 function AppRouter() {
   return (
@@ -41,6 +42,7 @@ function AppRouter() {
       <ProtectedRoute path="/configuracion/todas-notificaciones" component={TodasNotificacionesPage} />
       <ProtectedRoute path="/compras" component={ComprasIndex} />
       <ProtectedRoute path="/compras/nueva" component={ComprasNueva} />
+      <ProtectedRoute path="/compras/analisis" component={ComprasAnalisis} />
       <ProtectedRoute path="/compras/:id" component={ComprasDetalle} />
       
       {/* Rutas públicas */}

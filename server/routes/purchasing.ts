@@ -548,4 +548,78 @@ export function registerPurchasingRoutes(app: Express) {
       res.status(500).send("Error interno del servidor");
     }
   });
+
+  /**
+   * Análisis de datos de compras con IA
+   */
+  app.post("/api/purchase-analysis", verifyAuth, async (req: Request, res: Response) => {
+    try {
+      if (!req.user) return res.status(401).send("No autenticado");
+      
+      const companyId = req.user.companyId;
+      if (!companyId) return res.status(403).send("Usuario no asociado a una empresa");
+      
+      // Validar parámetros
+      const { analysisType, timeframe, customStartDate, customEndDate, supplierId, productCategories, warehouseId } = req.body;
+      
+      if (!analysisType || !timeframe) {
+        return res.status(400).send("Tipo de análisis y período de tiempo son requeridos");
+      }
+      
+      // Validar tipos de análisis
+      const validAnalysisTypes = [
+        'supplier_performance', 
+        'expense_trends', 
+        'inventory_optimization', 
+        'future_needs'
+      ];
+      
+      if (!validAnalysisTypes.includes(analysisType)) {
+        return res.status(400).send(`Tipo de análisis inválido. Valores permitidos: ${validAnalysisTypes.join(', ')}`);
+      }
+      
+      // Validar timeframes
+      const validTimeframes = ['last_month', 'last_quarter', 'last_year', 'custom'];
+      if (!validTimeframes.includes(timeframe)) {
+        return res.status(400).send(`Período de tiempo inválido. Valores permitidos: ${validTimeframes.join(', ')}`);
+      }
+      
+      // Si es timeframe personalizado, validar fechas
+      if (timeframe === 'custom' && (!customStartDate || !customEndDate)) {
+        return res.status(400).send("Para períodos personalizados, se requieren fechas de inicio y fin");
+      }
+      
+      // Preparar solicitud de análisis
+      const analysisRequest: PurchaseAnalysisRequest = {
+        companyId,
+        analysisType,
+        timeframe,
+        customStartDate,
+        customEndDate,
+        supplierId,
+        productCategories,
+        warehouseId
+      };
+      
+      // Obtener análisis
+      const analysis = await getPurchaseAnalysis(analysisRequest);
+      
+      // Verificar la clave de API de OpenAI
+      if (!analysis && analysisRequest.analysisType) {
+        // Probablemente falta la clave de API
+        return res.status(503).json({
+          error: "Servicio de análisis no disponible",
+          message: "Se requiere configurar la clave de API de OpenAI para realizar análisis."
+        });
+      }
+      
+      res.json(analysis);
+    } catch (error) {
+      console.error("Error en análisis de compras:", error);
+      res.status(500).json({
+        error: "Error interno del servidor",
+        message: error instanceof Error ? error.message : "Error desconocido"
+      });
+    }
+  });
 }
