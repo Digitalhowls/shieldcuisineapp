@@ -32,8 +32,10 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Loader2, Save } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Loader2, Save, Code, Blocks } from "lucide-react";
 import { slugify } from "@/lib/utils";
+import BlockEditor, { PageContent } from "./block-editor";
 
 // Definición del esquema de validación
 const pageFormSchema = z.object({
@@ -372,17 +374,45 @@ const PageEditor: React.FC<PageEditorProps> = ({
               name="content"
               render={({ field }) => (
                 <FormItem>
-                  <FormControl>
-                    <Textarea
-                      placeholder="Contenido de la página (HTML o Markdown)"
-                      {...field}
-                      rows={10}
-                      className="font-mono"
-                    />
-                  </FormControl>
-                  <FormDescription>
-                    Contenido principal en formato HTML o Markdown
-                  </FormDescription>
+                  <Tabs defaultValue="visual" className="w-full">
+                    <TabsList className="mb-4">
+                      <TabsTrigger value="visual">
+                        <Blocks className="h-4 w-4 mr-2" />
+                        Editor Visual
+                      </TabsTrigger>
+                      <TabsTrigger value="code">
+                        <Code className="h-4 w-4 mr-2" />
+                        Código HTML
+                      </TabsTrigger>
+                    </TabsList>
+                    <TabsContent value="visual" className="mt-0">
+                      <BlockEditor
+                        initialContent={field.value}
+                        onChange={(pageContent) => {
+                          field.onChange(JSON.stringify(pageContent));
+                        }}
+                        onSave={(pageContent) => {
+                          field.onChange(JSON.stringify(pageContent));
+                        }}
+                      />
+                      <FormDescription className="mt-4">
+                        Construye tu página usando bloques visuales de contenido
+                      </FormDescription>
+                    </TabsContent>
+                    <TabsContent value="code" className="mt-0">
+                      <FormControl>
+                        <Textarea
+                          placeholder="Contenido de la página (HTML o JSON)"
+                          {...field}
+                          rows={10}
+                          className="font-mono"
+                        />
+                      </FormControl>
+                      <FormDescription className="mt-2">
+                        Edita el contenido directamente en formato HTML o JSON
+                      </FormDescription>
+                    </TabsContent>
+                  </Tabs>
                   <FormMessage />
                 </FormItem>
               )}

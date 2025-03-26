@@ -1,4 +1,6 @@
 import React, { useState, useCallback, useEffect } from 'react';
+import { DndProvider } from 'react-dnd';
+import { HTML5Backend } from 'react-dnd-html5-backend';
 import { v4 as uuidv4 } from 'uuid';
 import BlockToolbar from './BlockToolbar';
 import BlockContainer from './BlockContainer';
@@ -215,54 +217,56 @@ const BlockEditor: React.FC<BlockEditorProps> = ({
   };
 
   return (
-    <div className="flex flex-col space-y-4">
-      {!readOnly && (
-        <div className="flex justify-between items-center">
-          <BlockToolbar onAddBlock={addBlock} />
-          <div className="flex space-x-2">
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={handlePreview}
-            >
-              <Eye className="h-4 w-4 mr-2" />
-              Vista previa
-            </Button>
-            <Button 
-              size="sm" 
-              onClick={handleSave}
-            >
-              <Save className="h-4 w-4 mr-2" />
-              Guardar
-            </Button>
-          </div>
-        </div>
-      )}
-      
-      <Separator />
-      
-      <Card>
-        <CardContent className="p-4">
-          {content.blocks.length === 0 ? (
-            <EmptyState onAddBlock={addBlock} />
-          ) : (
-            <div className="space-y-4">
-              {content.blocks.map((block, index) => (
-                <BlockContainer
-                  key={block.id}
-                  block={block}
-                  index={index}
-                  moveBlock={moveBlock}
-                  updateBlock={updateBlock}
-                  removeBlock={removeBlock}
-                  readOnly={readOnly}
-                />
-              ))}
+    <DndProvider backend={HTML5Backend}>
+      <div className="flex flex-col space-y-4">
+        {!readOnly && (
+          <div className="flex justify-between items-center">
+            <BlockToolbar onAddBlock={addBlock} />
+            <div className="flex space-x-2">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={handlePreview}
+              >
+                <Eye className="h-4 w-4 mr-2" />
+                Vista previa
+              </Button>
+              <Button 
+                size="sm" 
+                onClick={handleSave}
+              >
+                <Save className="h-4 w-4 mr-2" />
+                Guardar
+              </Button>
             </div>
-          )}
-        </CardContent>
-      </Card>
-    </div>
+          </div>
+        )}
+        
+        <Separator />
+        
+        <Card>
+          <CardContent className="p-4">
+            {content.blocks.length === 0 ? (
+              <EmptyState onAddBlock={addBlock} />
+            ) : (
+              <div className="space-y-4">
+                {content.blocks.map((block, index) => (
+                  <BlockContainer
+                    key={block.id}
+                    block={block}
+                    index={index}
+                    moveBlock={moveBlock}
+                    updateBlock={updateBlock}
+                    removeBlock={removeBlock}
+                    readOnly={readOnly}
+                  />
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+    </DndProvider>
   );
 };
 

@@ -17,7 +17,7 @@ import {
   Type,
   Image,
   FileText,
-  Button as ButtonIcon,
+  BadgeAlert,
   Video,
   Minus,
   Quote,
@@ -68,7 +68,7 @@ const BlockToolbar: React.FC<BlockToolbarProps> = ({ onAddBlock }) => {
     { icon: <Type size={16} />, label: 'Título', type: 'heading' as BlockType },
     { icon: <FileText size={16} />, label: 'Párrafo', type: 'paragraph' as BlockType },
     { icon: <Image size={16} />, label: 'Imagen', type: 'image' as BlockType },
-    { icon: <ButtonIcon size={16} />, label: 'Botón', type: 'button' as BlockType },
+    { icon: <BadgeAlert size={16} />, label: 'Botón', type: 'button' as BlockType },
   ];
 
   const moreTools = [
