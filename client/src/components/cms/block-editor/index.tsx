@@ -31,6 +31,18 @@ export interface Block {
   id: string;
   type: BlockType;
   content: any;
+  animation?: {
+    effect?: string;
+    duration?: string | number;
+    delay?: string | number;
+    repeat?: number;
+    threshold?: number;
+    intensity?: number;
+    direction?: string;
+    easing?: string;
+    scrollTrigger?: boolean;
+    library?: string;
+  };
 }
 
 // Interfaz para el contenido de la página completa
@@ -166,10 +178,22 @@ const BlockEditor: React.FC<BlockEditorProps> = ({
     }
   }, [content, onChange]);
 
-  const updateBlock = useCallback((id: string, updatedContent: any) => {
-    const newBlocks = content.blocks.map(block => 
-      block.id === id ? { ...block, content: updatedContent } : block
-    );
+  const updateBlock = useCallback((id: string, updatedContent: any, updatedProperties?: any) => {
+    const newBlocks = content.blocks.map(block => {
+      if (block.id === id) {
+        // Si hay propiedades adicionales para actualizar (como animation), las incluimos
+        if (updatedProperties) {
+          return { 
+            ...block, 
+            content: updatedContent, 
+            ...updatedProperties 
+          };
+        }
+        // Si solo hay contenido para actualizar
+        return { ...block, content: updatedContent };
+      }
+      return block;
+    });
     
     const newContent = { ...content, blocks: newBlocks };
     setContent(newContent);

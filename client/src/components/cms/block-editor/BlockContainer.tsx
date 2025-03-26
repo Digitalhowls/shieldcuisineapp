@@ -119,8 +119,22 @@ const BlockContainer: React.FC<BlockContainerProps> = ({
   
   // Actualizar el bloque con nuevas propiedades de animación
   const handleAnimationChange = (updatedBlock: Block) => {
-    // Aseguramos que updateBlock reciba el id y el bloque modificado
-    updateBlock(updatedBlock.id, updatedBlock);
+    // La función updateBlock espera el id y el contenido (no el bloque completo)
+    // Primero creamos una copia del bloque actual
+    const newBlock = { ...block, animation: updatedBlock.animation };
+    // Luego actualizamos el bloque conservando su contenido original
+    updateBlock(newBlock.id, block.content);
+    
+    // Necesitamos una forma de actualizar la propiedad animation del bloque
+    // Esto podría requerir modificar el método updateBlock en index.tsx
+    // Por ahora, enviamos un evento personalizado para manejarlo en el componente padre
+    const event = new CustomEvent('block-animation-change', { 
+      detail: { 
+        blockId: block.id, 
+        animation: updatedBlock.animation 
+      } 
+    });
+    document.dispatchEvent(event);
   };
 
   const renderBlockContent = () => {
