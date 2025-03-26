@@ -29,6 +29,27 @@ import {
 } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 
+// Interfaces para los diferentes tipos de contenido de bloques
+interface GalleryImage {
+  src: string;
+  alt: string;
+  caption?: string;
+}
+
+interface GalleryContent {
+  images: GalleryImage[];
+  layout?: 'grid' | 'masonry' | 'carousel';
+}
+
+interface ButtonContent {
+  text: string;
+  url: string;
+  variant?: 'default' | 'destructive' | 'outline' | 'secondary' | 'ghost' | 'link';
+  size?: 'default' | 'sm' | 'lg';
+  align?: 'left' | 'center' | 'right';
+  newTab?: boolean;
+}
+
 interface BlockContainerProps {
   block: Block;
   index: number;
@@ -147,6 +168,281 @@ const BlockContainer: React.FC<BlockContainerProps> = ({
             ) : (
               <div className="h-40 bg-muted/30 flex items-center justify-center rounded-md">
                 <p className="text-muted-foreground">Vista previa de imagen</p>
+              </div>
+            )}
+          </div>
+        );
+        
+      case 'gallery':
+        return (
+          <div className="w-full space-y-4">
+            {!readOnly ? (
+              <>
+                <div className="flex justify-between items-center">
+                  <h4 className="text-sm font-medium">Galería de imágenes</h4>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => {
+                      const images = [...(block.content.images || [])];
+                      images.push({ src: '', alt: '', caption: '' });
+                      handleContentChange({ images });
+                    }}
+                  >
+                    Añadir imagen
+                  </Button>
+                </div>
+                
+                {(block.content.images || []).length === 0 ? (
+                  <div className="h-24 border-2 border-dashed rounded-md flex items-center justify-center">
+                    <p className="text-muted-foreground text-sm">No hay imágenes en la galería</p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {(block.content.images as GalleryImage[] || []).map((image: GalleryImage, idx: number) => (
+                      <div key={idx} className="border rounded-md p-3 space-y-2 relative">
+                        <Button 
+                          variant="ghost" 
+                          size="icon"
+                          className="absolute right-2 top-2 h-6 w-6 text-destructive"
+                          onClick={() => {
+                            const images = [...(block.content.images as GalleryImage[] || [])];
+                            images.splice(idx, 1);
+                            handleContentChange({ images });
+                          }}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                        
+                        <div className="flex items-center space-x-2">
+                          <Input
+                            value={image.src || ''}
+                            onChange={(e) => {
+                              const images = [...(block.content.images as GalleryImage[] || [])];
+                              images[idx] = { ...images[idx], src: e.target.value };
+                              handleContentChange({ images });
+                            }}
+                            placeholder="URL de la imagen"
+                          />
+                          <Button variant="outline" size="sm">
+                            Seleccionar
+                          </Button>
+                        </div>
+                        
+                        <Input
+                          value={image.alt || ''}
+                          onChange={(e) => {
+                            const images = [...(block.content.images as GalleryImage[] || [])];
+                            images[idx] = { ...images[idx], alt: e.target.value };
+                            handleContentChange({ images });
+                          }}
+                          placeholder="Texto alternativo"
+                        />
+                        
+                        <Input
+                          value={image.caption || ''}
+                          onChange={(e) => {
+                            const images = [...(block.content.images as GalleryImage[] || [])];
+                            images[idx] = { ...images[idx], caption: e.target.value };
+                            handleContentChange({ images });
+                          }}
+                          placeholder="Título de la imagen"
+                        />
+                        
+                        {image.src && (
+                          <div className="mt-2">
+                            <img 
+                              src={image.src} 
+                              alt={image.alt || ''} 
+                              className="h-20 object-cover rounded-md" 
+                            />
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+                
+                <div className="mt-4">
+                  <Select
+                    value={block.content.layout || 'grid'}
+                    onValueChange={(value) => handleContentChange({ layout: value })}
+                  >
+                    <SelectTrigger className="w-[180px]">
+                      <SelectValue placeholder="Estilo de galería" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="grid">Cuadrícula</SelectItem>
+                      <SelectItem value="masonry">Mosaico</SelectItem>
+                      <SelectItem value="carousel">Carrusel</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </>
+            ) : (
+              <div>
+                {(block.content.images as GalleryImage[] || []).length > 0 ? (
+                  <div className={`grid ${
+                    block.content.layout === 'masonry' 
+                      ? 'grid-cols-2 md:grid-cols-3 gap-4' 
+                      : 'grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4'
+                  }`}>
+                    {(block.content.images as GalleryImage[] || []).map((image: GalleryImage, idx: number) => (
+                      <figure key={idx} className="overflow-hidden rounded-md">
+                        <img
+                          src={image.src}
+                          alt={image.alt || ''}
+                          className="w-full h-auto object-cover"
+                        />
+                        {image.caption && (
+                          <figcaption className="text-sm text-muted-foreground mt-2">
+                            {image.caption}
+                          </figcaption>
+                        )}
+                      </figure>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="h-40 bg-muted/30 flex items-center justify-center rounded-md">
+                    <p className="text-muted-foreground">Galería sin imágenes</p>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        );
+
+      case 'button':
+        return (
+          <div className="w-full space-y-4">
+            {!readOnly ? (
+              <>
+                <div className="flex flex-col space-y-3">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-sm font-medium mb-1 block">Texto del botón</label>
+                      <Input
+                        value={block.content.text || ''}
+                        onChange={(e) => handleContentChange({ text: e.target.value })}
+                        placeholder="Texto del botón"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium mb-1 block">URL de destino</label>
+                      <Input
+                        value={block.content.url || ''}
+                        onChange={(e) => handleContentChange({ url: e.target.value })}
+                        placeholder="https://example.com"
+                      />
+                    </div>
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-sm font-medium mb-1 block">Estilo</label>
+                      <Select
+                        value={block.content.variant || 'default'}
+                        onValueChange={(value) => handleContentChange({ variant: value })}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Seleccione un estilo" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="default">Principal</SelectItem>
+                          <SelectItem value="destructive">Destructivo</SelectItem>
+                          <SelectItem value="outline">Contorno</SelectItem>
+                          <SelectItem value="secondary">Secundario</SelectItem>
+                          <SelectItem value="ghost">Fantasma</SelectItem>
+                          <SelectItem value="link">Enlace</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium mb-1 block">Tamaño</label>
+                      <Select
+                        value={block.content.size || 'default'}
+                        onValueChange={(value) => handleContentChange({ size: value })}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Seleccione un tamaño" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="default">Normal</SelectItem>
+                          <SelectItem value="sm">Pequeño</SelectItem>
+                          <SelectItem value="lg">Grande</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-sm font-medium mb-1 block">Alineación</label>
+                      <Select
+                        value={block.content.align || 'left'}
+                        onValueChange={(value) => handleContentChange({ align: value })}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Seleccione la alineación" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="left">Izquierda</SelectItem>
+                          <SelectItem value="center">Centro</SelectItem>
+                          <SelectItem value="right">Derecha</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium mb-1 block">Abrir en nueva ventana</label>
+                      <div className="flex items-center h-10">
+                        <input
+                          type="checkbox"
+                          checked={block.content.newTab || false}
+                          onChange={(e) => handleContentChange({ newTab: e.target.checked })}
+                          id={`new-tab-${block.id}`}
+                          className="mr-2"
+                        />
+                        <label htmlFor={`new-tab-${block.id}`} className="text-sm">
+                          Abrir enlace en nueva ventana
+                        </label>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="mt-4">
+                  <p className="text-sm font-medium mb-2">Vista previa:</p>
+                  <div className={`flex ${
+                    block.content.align === 'center' ? 'justify-center' : 
+                    block.content.align === 'right' ? 'justify-end' : 'justify-start'
+                  }`}>
+                    <Button 
+                      variant={block.content.variant as any || 'default'} 
+                      size={block.content.size as any || 'default'}
+                    >
+                      {block.content.text || 'Botón'}
+                    </Button>
+                  </div>
+                </div>
+              </>
+            ) : (
+              <div className={`flex ${
+                block.content.align === 'center' ? 'justify-center' : 
+                block.content.align === 'right' ? 'justify-end' : 'justify-start'
+              }`}>
+                <Button 
+                  variant={block.content.variant as any || 'default'} 
+                  size={block.content.size as any || 'default'}
+                  asChild
+                >
+                  <a 
+                    href={block.content.url || '#'} 
+                    target={block.content.newTab ? '_blank' : '_self'}
+                    rel={block.content.newTab ? 'noopener noreferrer' : ''}
+                  >
+                    {block.content.text || 'Botón'}
+                  </a>
+                </Button>
               </div>
             )}
           </div>
