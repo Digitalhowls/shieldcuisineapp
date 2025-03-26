@@ -2,7 +2,7 @@ import React from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { Copy, DevicePhoneMobile, Monitor, Tablet } from "lucide-react";
+import { Copy, Smartphone, Monitor, Tablet } from "lucide-react";
 import BlockRenderer from "./public/block-renderer";
 import { PageContent } from "./block-editor";
 
@@ -61,7 +61,7 @@ const PagePreview: React.FC<PagePreviewProps> = ({
                   <span className="hidden sm:inline">Tablet</span>
                 </TabsTrigger>
                 <TabsTrigger value="mobile">
-                  <DevicePhoneMobile className="h-4 w-4 mr-2" />
+                  <Smartphone className="h-4 w-4 mr-2" />
                   <span className="hidden sm:inline">Móvil</span>
                 </TabsTrigger>
               </TabsList>

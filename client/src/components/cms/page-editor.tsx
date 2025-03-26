@@ -33,9 +33,10 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Loader2, Save, Code, Blocks } from "lucide-react";
+import { Loader2, Save, Code, Blocks, Eye } from "lucide-react";
 import { slugify } from "@/lib/utils";
 import BlockEditor, { PageContent } from "./block-editor";
+import PagePreview from "./page-preview";
 
 // Definición del esquema de validación
 const pageFormSchema = z.object({
@@ -70,6 +71,8 @@ const PageEditor: React.FC<PageEditorProps> = ({
   const { user } = useAuth();
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [isFetching, setIsFetching] = useState<boolean>(false);
+  const [isPreviewOpen, setIsPreviewOpen] = useState<boolean>(false);
+  const [previewContent, setPreviewContent] = useState<PageContent | null>(null);
 
   const form = useForm<PageFormValues>({
     resolver: zodResolver(pageFormSchema),
@@ -479,6 +482,30 @@ const PageEditor: React.FC<PageEditorProps> = ({
               Cancelar
             </Button>
           )}
+          
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => {
+              try {
+                const contentStr = form.getValues("content");
+                const content = contentStr ? JSON.parse(contentStr) : { blocks: [] };
+                setPreviewContent(content);
+                setIsPreviewOpen(true);
+              } catch (error) {
+                toast({
+                  title: "Error",
+                  description: "No se pudo generar la vista previa. Verifica el formato del contenido.",
+                  variant: "destructive",
+                });
+              }
+            }}
+            disabled={isLoading}
+          >
+            <Eye className="mr-2 h-4 w-4" />
+            Vista previa
+          </Button>
+          
           <Button type="submit" disabled={isLoading}>
             {isLoading ? (
               <>
@@ -494,6 +521,17 @@ const PageEditor: React.FC<PageEditorProps> = ({
           </Button>
         </div>
       </form>
+      
+      {/* Modal de Vista Previa */}
+      {previewContent && (
+        <PagePreview
+          isOpen={isPreviewOpen}
+          onClose={() => setIsPreviewOpen(false)}
+          pageContent={previewContent}
+          pageTitle={form.getValues("title") || "Sin título"}
+          pageDescription={form.getValues("description")}
+        />
+      )}
     </Form>
   );
 };
