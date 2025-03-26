@@ -6,7 +6,7 @@ import AOSAnimation from './aos-animation';
 import { AnimationConfig } from './animation-utils';
 
 // Tipo de biblioteca de animación a utilizar
-export type AnimationLibrary = 'framer-motion' | 'react-spring' | 'gsap' | 'aos' | 'none';
+type AnimationLibrary = 'framer-motion' | 'react-spring' | 'gsap' | 'aos' | 'none';
 
 interface AnimationProps extends AnimationConfig {
   children: ReactNode;
