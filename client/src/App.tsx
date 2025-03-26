@@ -58,6 +58,7 @@ function AppRouter() {
       <ProtectedRoute path="/cms" component={CMSModule} />
       <ProtectedRoute path="/cms/animation-playground" component={AnimationPlayground} />
       <ProtectedRoute path="/cms/animated-blocks-demo" component={AnimatedBlocksDemo} />
+      <ProtectedRoute path="/cms/gallery-demo" component={GalleryDemo} />
       <ProtectedRoute path="/cms/:rest*" component={CMSModule} />
       
       {/* Rutas públicas */}
