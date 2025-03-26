@@ -21,7 +21,13 @@ import ComprasNueva from "./pages/compras/nueva";
 import ComprasDetalle from "./pages/compras/[id]";
 import ComprasAnalisis from "./pages/compras/analisis";
 import CMSModule from "./pages/cms";
-import PublicPortal from "@/pages/public";
+
+// Páginas públicas
+import PublicIndex from "@/pages/public/index";
+import BlogPage from "@/pages/public/blog";
+import BlogPostPage from "@/pages/public/blog-post";
+import ShopEquipmentPage from "@/pages/public/shop-equipment";
+import ShopModulesPage from "@/pages/public/shop-modules";
 
 function AppRouter() {
   return (
@@ -56,9 +62,12 @@ function AppRouter() {
       <Route path="/cliente" component={ClientePortal} />
       <Route path="/cliente/:rest*" component={ClientePortal} />
       
-      {/* Sitio público (generado por CMS) */}
-      <Route path="/public" component={PublicPortal} />
-      <Route path="/public/:rest*" component={PublicPortal} />
+      {/* Sitio público */}
+      <Route path="/public" component={PublicIndex} />
+      <Route path="/public/blog" component={BlogPage} />
+      <Route path="/public/blog/:slug" component={BlogPostPage} />
+      <Route path="/public/shop-equipment" component={ShopEquipmentPage} />
+      <Route path="/public/shop-modules" component={ShopModulesPage} />
       
       {/* Fallback */}
       <Route component={NotFound} />
