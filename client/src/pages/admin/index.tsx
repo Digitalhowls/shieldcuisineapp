@@ -24,6 +24,7 @@ import {
 } from "@/components/ui/collapsible";
 import { useAuth } from "@/hooks/use-auth";
 import AdminDashboard from "./dashboard";
+import AdminCMS from "./cms";
 
 // Componente de navegación para panel de administrador
 const NavItem = ({ href, icon, label, active, onClick }: any) => {
@@ -81,6 +82,8 @@ export default function AdminModule() {
 
   // Determinar si algún subitem dentro de un grupo está activo
   const isCmsActive = 
+    location === "/admin/cms" ||
+    location === "/admin/cms/dashboard" ||
     location === "/admin/cms/pages" || 
     location === "/admin/cms/categories" || 
     location === "/admin/cms/media" ||
@@ -110,6 +113,11 @@ export default function AdminModule() {
 
   // Subitems para el CMS
   const cmsNavItems = [
+    {
+      name: "Dashboard",
+      href: "/admin/cms/dashboard",
+      active: location === "/admin/cms/dashboard" || location === "/admin/cms",
+    },
     {
       name: "Páginas",
       href: "/admin/cms/pages",
@@ -286,6 +294,8 @@ export default function AdminModule() {
               {location === "/admin/dashboard" && "Dashboard"}
               {location === "/admin/clients" && "Clientes"}
               {location === "/admin/stats" && "Estadísticas"}
+              {location === "/admin/cms" && "CMS"}
+              {location === "/admin/cms/dashboard" && "CMS - Dashboard"}
               {location === "/admin/cms/pages" && "CMS - Páginas"}
               {location === "/admin/cms/categories" && "CMS - Categorías"}
               {location === "/admin/cms/media" && "CMS - Medios"}
@@ -307,6 +317,8 @@ export default function AdminModule() {
         <main className="flex-1 overflow-y-auto bg-muted/20">
           <Switch>
             <Route path="/admin/dashboard" component={AdminDashboard} />
+            <Route path="/admin/cms" component={AdminCMS} />
+            <Route path="/admin/cms/:rest*" component={AdminCMS} />
             <Route path="/admin">
               {/* Redirección por defecto al dashboard */}
               {() => {
