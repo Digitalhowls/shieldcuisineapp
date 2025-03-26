@@ -19,9 +19,12 @@ import {
   MoreHorizontal,
   Trash2,
   GripVertical,
+  Plus,
 } from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 import {
   Select,
   SelectContent,
@@ -1387,6 +1390,66 @@ const BlockContainer: React.FC<BlockContainerProps> = ({
                   </ul>
                 )}
               </>
+            )}
+          </div>
+        );
+        
+      case 'html':
+        return (
+          <div className="w-full">
+            {!readOnly ? (
+              <div className="space-y-4">
+                <div className="flex flex-col space-y-3">
+                  <div>
+                    <label className="text-sm font-medium mb-1 block">Código HTML</label>
+                    <div className="relative">
+                      <Textarea
+                        value={block.content.code || ''}
+                        onChange={(e) => handleContentChange({ code: e.target.value })}
+                        placeholder="<!-- Inserta tu código HTML aquí -->"
+                        className="min-h-[200px] font-mono text-sm"
+                      />
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Inserta código HTML personalizado. Úsalo con precaución.
+                    </p>
+                  </div>
+
+                  <div>
+                    <div className="flex items-center space-x-2">
+                      <Switch
+                        id={`sanitize-${block.id}`}
+                        checked={block.content.sanitize !== false}
+                        onCheckedChange={(checked) => handleContentChange({ sanitize: checked })}
+                      />
+                      <Label htmlFor={`sanitize-${block.id}`}>Sanitizar HTML (recomendado)</Label>
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Cuando está activado, se eliminarán scripts y atributos potencialmente peligrosos.
+                    </p>
+                  </div>
+                  
+                  {block.content.code && (
+                    <div className="mt-4">
+                      <p className="text-sm font-medium mb-2">Vista previa:</p>
+                      <div className="p-4 border rounded-md bg-muted/20">
+                        <div 
+                          className="prose prose-sm max-w-none"
+                          dangerouslySetInnerHTML={{ __html: block.content.code }}
+                        />
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-2">
+                        La vista previa puede diferir de la visualización final.
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            ) : (
+              <div 
+                className="prose prose-sm max-w-none"
+                dangerouslySetInnerHTML={{ __html: block.content.code || '' }}
+              />
             )}
           </div>
         );
