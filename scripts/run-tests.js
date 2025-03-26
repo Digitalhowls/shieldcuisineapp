@@ -1,293 +1,93 @@
 #!/usr/bin/env node
 
 /**
- * Script para ejecutar pruebas automatizadas en ShieldCuisine
- * 
- * Uso:
- *   node run-tests.js [opciones]
- * 
- * Opciones:
- *   --module NOMBRE    Probar solo un módulo específico
- *   --headless         Ejecutar sin interfaz gráfica
- *   --verbose          Mostrar logs detallados
- *   --report-path RUTA Especificar ruta para el informe
- *   --help             Mostrar esta ayuda
+ * Script para ejecutar pruebas de Playwright con varias opciones
+ * de configuración y generación de informes.
  */
 
-const { spawn } = require('child_process');
-const path = require('path');
-const fs = require('fs');
+import { execSync } from 'child_process';
+import path from 'path';
+import fs from 'fs';
+import { fileURLToPath } from 'url';
 
-// Parsear argumentos
+// Obtener __dirname en un entorno de módulos ES
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Configuración
+const TEST_DIR = path.join(__dirname, '..', 'tests');
+const RESULTS_DIR = path.join(__dirname, '..', 'test-results');
+
+// Asegurar que el directorio de resultados existe
+if (!fs.existsSync(RESULTS_DIR)) {
+  fs.mkdirSync(RESULTS_DIR, { recursive: true });
+}
+
+// Opciones de comando
 const args = process.argv.slice(2);
-const options = {
-  module: null,
-  headless: false,
-  verbose: false,
-  reportPath: path.join(__dirname, '../test-results/report.json'),
-};
+const testFile = args.find(arg => arg.endsWith('.spec.js'));
+const showReport = args.includes('--show-report');
+const verbose = args.includes('--verbose');
+const debug = args.includes('--debug');
 
-// Procesar argumentos
-for (let i = 0; i < args.length; i++) {
-  switch (args[i]) {
-    case '--module':
-      options.module = args[++i];
-      break;
-    case '--headless':
-      options.headless = true;
-      break;
-    case '--verbose':
-      options.verbose = true;
-      break;
-    case '--report-path':
-      options.reportPath = args[++i];
-      break;
-    case '--help':
-      showHelp();
-      process.exit(0);
-      break;
-  }
-}
-
-// Mostrar ayuda
-function showHelp() {
-  console.log(`
-Uso: node run-tests.js [opciones]
-
-Opciones:
-  --module NOMBRE    Probar solo un módulo específico
-  --headless         Ejecutar sin interfaz gráfica
-  --verbose          Mostrar logs detallados
-  --report-path RUTA Especificar ruta para el informe
-  --help             Mostrar esta ayuda
-
-Módulos disponibles:
-  Autenticación      Tests de login y registro
-  APPCC              Tests del módulo APPCC
-  Inventario         Tests del sistema de inventario
-  Transparencia      Tests del portal de transparencia
-  WooCommerce        Tests de integración con tienda
-  Bancario           Tests de integración bancaria
-  E-Learning         Tests de la plataforma educativa
-  Compras            Tests del módulo de compras
-  CMS                Tests del constructor web
-
-Ejemplos:
-  node run-tests.js --module CMS     # Probar solo el módulo CMS
-  node run-tests.js --headless       # Ejecutar todos los tests sin interfaz gráfica
-  `);
-}
-
-// Verificar que Playwright está instalado
-function checkDependencies() {
+// Función para ejecutar los tests
+function runTests() {
   try {
-    require.resolve('playwright');
-    require.resolve('@playwright/test');
-  } catch (e) {
-    console.error('Error: Se requiere Playwright para ejecutar los tests');
-    console.log('Instala las dependencias necesarias con:');
-    console.log('npm install playwright @playwright/test');
+    console.log('🧪 Ejecutando pruebas automatizadas...');
+    
+    // Construir el comando base
+    let command = 'npx playwright test';
+    
+    // Añadir archivo específico si se proporcionó
+    if (testFile) {
+      command += ` "${path.join(TEST_DIR, testFile)}"`;
+    }
+    
+    // Añadir opciones adicionales
+    if (debug) {
+      command += ' --debug';
+    }
+    
+    if (verbose) {
+      command += ' --verbose';
+    }
+    
+    // Ejecutar las pruebas
+    console.log(`Ejecutando: ${command}`);
+    execSync(command, { stdio: 'inherit' });
+    
+    // Mostrar resultados
+    console.log('✅ Pruebas completadas');
+    
+    // Mostrar el informe HTML si se solicita
+    if (showReport) {
+      console.log('🔍 Abriendo informe de pruebas...');
+      execSync('npx playwright show-report test-results/html-report', { stdio: 'inherit' });
+    }
+  } catch (error) {
+    console.error('❌ Ocurrió un error durante la ejecución de las pruebas:', error.message);
     process.exit(1);
   }
 }
 
-// Ejecutar tests
-async function runTests() {
-  console.log('🧪 Iniciando pruebas automatizadas para ShieldCuisine');
-  console.log('═════════════════════════════════════════════════');
-  
-  if (options.module) {
-    console.log(`📊 Módulo a probar: ${options.module}`);
-  } else {
-    console.log('📊 Ejecutando pruebas en todos los módulos');
-  }
-  
-  console.log(`🖥️  Modo: ${options.headless ? 'Sin interfaz (headless)' : 'Con interfaz gráfica'}`);
-  console.log(`📝 Reporte: ${options.reportPath}`);
-  console.log('═════════════════════════════════════════════════\n');
-  
-  // Crear directorio para reportes si no existe
-  const reportDir = path.dirname(options.reportPath);
-  if (!fs.existsSync(reportDir)) {
-    fs.mkdirSync(reportDir, { recursive: true });
-  }
-  
-  // Modificar configuración del test según opciones
-  const testFilePath = path.join(__dirname, 'test-automation.js');
-  let testFileContent = fs.readFileSync(testFilePath, 'utf8');
-  
-  // Actualizar configuración en el archivo de prueba
-  testFileContent = testFileContent.replace(
-    /headless: false/,
-    `headless: ${options.headless}`
-  );
-  
-  if (options.module) {
-    // Crear un archivo temporal modificado para ejecutar solo el módulo especificado
-    const tempFilePath = path.join(__dirname, 'temp-test.js');
-    
-    // Modificar la función runTests para ejecutar solo el módulo especificado
-    testFileContent = testFileContent.replace(
-      /async function runTests\(\) {[\s\S]*?browser\.close\(\);/m,
-      `async function runTests() {
-  const browser = await chromium.launch({
-    headless: ${options.headless},
-    slowMo: config.slowMo,
-  });
-  
-  const context = await browser.newContext({
-    viewport: { width: 1280, height: 720 },
-    recordVideo: { dir: config.screenshotsDir },
-  });
-  
-  const page = await context.newPage();
-  
-  try {
-    // Test de autenticación siempre es necesario
-    await testAuthentication(page);
-    
-    // Ejecutar solo el módulo especificado
-    switch ('${options.module}') {
-      case 'Autenticación':
-        // Ya se ejecutó
-        break;
-      case 'APPCC':
-        await testAPPCCModule(page);
-        break;
-      case 'Inventario':
-        await testInventoryModule(page);
-        break;
-      case 'Transparencia':
-      case 'Portal de Transparencia':
-        await testTransparencyPortal(page);
-        break;
-      case 'WooCommerce':
-        await testWooCommerceIntegration(page);
-        break;
-      case 'Bancario':
-      case 'Integración Bancaria':
-        await testBankingIntegration(page);
-        break;
-      case 'E-Learning':
-        await testELearningPlatform(page);
-        break;
-      case 'Compras':
-        await testPurchasingModule(page);
-        break;
-      case 'CMS':
-        await testCMSModule(page);
-        break;
-      default:
-        console.error(\`Módulo "\${options.module}" no reconocido\`);
-        break;
-    }
-  } catch (error) {
-    console.error('Error en la ejecución de pruebas:', error);
-    await takeScreenshot(page, 'error-general');
-  } finally {
-    await context.close();
-    await browser.close();`
-    );
-    
-    fs.writeFileSync(tempFilePath, testFileContent);
-    
-    // Ejecutar el archivo temporal
-    const testProcess = spawn('node', [tempFilePath], { 
-      stdio: options.verbose ? 'inherit' : 'pipe'
-    });
-    
-    await new Promise((resolve) => {
-      testProcess.on('close', (code) => {
-        if (code !== 0 && !options.verbose) {
-          console.error(`Los tests terminaron con código de error: ${code}`);
-        }
-        
-        // Limpiar archivo temporal
-        try {
-          fs.unlinkSync(tempFilePath);
-        } catch (e) {
-          console.warn('No se pudo eliminar el archivo temporal de pruebas');
-        }
-        
-        resolve();
-      });
-      
-      if (!options.verbose) {
-        testProcess.stdout.on('data', (data) => {
-          process.stdout.write(data);
-        });
-        
-        testProcess.stderr.on('data', (data) => {
-          process.stderr.write(data);
-        });
-      }
-    });
-  } else {
-    // Ejecutar todos los tests normalmente
-    const testProcess = spawn('node', [testFilePath], { 
-      stdio: options.verbose ? 'inherit' : 'pipe'
-    });
-    
-    await new Promise((resolve) => {
-      testProcess.on('close', (code) => {
-        if (code !== 0 && !options.verbose) {
-          console.error(`Los tests terminaron con código de error: ${code}`);
-        }
-        resolve();
-      });
-      
-      if (!options.verbose) {
-        testProcess.stdout.on('data', (data) => {
-          process.stdout.write(data);
-        });
-        
-        testProcess.stderr.on('data', (data) => {
-          process.stderr.write(data);
-        });
-      }
-    });
-  }
-  
-  // Mostrar resumen si existe
-  if (fs.existsSync(options.reportPath)) {
-    try {
-      const report = JSON.parse(fs.readFileSync(options.reportPath, 'utf8'));
-      
-      console.log('\n\n═════════════════════════════════════════════════');
-      console.log('📊 RESUMEN DE RESULTADOS');
-      console.log('═════════════════════════════════════════════════');
-      console.log(`✅ Pruebas exitosas: ${report.summary.passed}`);
-      console.log(`❌ Pruebas fallidas: ${report.summary.failed}`);
-      console.log(`⚠️ Pruebas omitidas: ${report.summary.skipped}`);
-      console.log(`📊 Total ejecutadas: ${report.summary.total}`);
-      
-      if (report.summary.failed > 0) {
-        console.log('\n❌ FALLOS DETECTADOS:');
-        
-        for (const [moduleName, moduleData] of Object.entries(report.modules)) {
-          const failedTests = Object.entries(moduleData.tests)
-            .filter(([_, test]) => test.status === 'failed');
-          
-          if (failedTests.length > 0) {
-            console.log(`\n📋 Módulo: ${moduleName}`);
-            
-            failedTests.forEach(([testName, test]) => {
-              console.log(`  ❌ ${testName}: ${test.error}`);
-            });
-          }
-        }
-      }
-      
-      console.log('\n═════════════════════════════════════════════════');
-      console.log(`📁 Reporte detallado: ${options.reportPath}`);
-      console.log(`📷 Capturas de pantalla: ${path.dirname(options.reportPath)}`);
-      console.log('═════════════════════════════════════════════════\n');
-    } catch (e) {
-      console.error('Error al leer el reporte de resultados:', e);
-    }
-  }
+// Mostrar modo de uso si se especifica --help
+if (args.includes('--help')) {
+  console.log(`
+Uso: node ${path.basename(__filename)} [opciones] [archivo-de-test.spec.js]
+
+Opciones:
+  --show-report    Abre el informe HTML después de la ejecución
+  --verbose        Muestra información detallada durante la ejecución
+  --debug          Ejecuta las pruebas en modo debug
+  --help           Muestra esta ayuda
+
+Ejemplos:
+  node ${path.basename(__filename)}                      # Ejecuta todas las pruebas
+  node ${path.basename(__filename)} auth.spec.js         # Ejecuta solo las pruebas de autenticación
+  node ${path.basename(__filename)} --show-report        # Ejecuta todas las pruebas y muestra el informe
+  `);
+  process.exit(0);
 }
 
-// Ejecutar el programa
-checkDependencies();
-runTests().catch(console.error);
+// Ejecutar las pruebas
+runTests();
