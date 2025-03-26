@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Block } from './index';
+import { Block, BlockType } from './types';
 import { getYouTubeID, getVimeoID } from './utils';
 import DialogMediaSelector from '../media/DialogMediaSelector';
 import Animation from '../animations/animation';
@@ -37,19 +37,22 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
+// Definiciones de tipos para los bloques
 
-// Interfaces para los diferentes tipos de contenido de bloques
+// Imagen para galería
 interface GalleryImage {
   src: string;
   alt: string;
   caption?: string;
 }
 
+// Contenido de bloque de galería
 interface GalleryContent {
   images: GalleryImage[];
   layout?: 'grid' | 'masonry' | 'carousel';
 }
 
+// Contenido de bloque de botón
 interface ButtonContent {
   text: string;
   url: string;
@@ -59,6 +62,7 @@ interface ButtonContent {
   newTab?: boolean;
 }
 
+// Contenido de bloque de cita
 interface QuoteContent {
   text: string;
   author?: string;
@@ -67,6 +71,7 @@ interface QuoteContent {
   style?: 'default' | 'large' | 'bordered';
 }
 
+// Celda de tabla
 interface TableCell {
   content: string;
   header?: boolean;
@@ -75,6 +80,7 @@ interface TableCell {
   align?: 'left' | 'center' | 'right';
 }
 
+// Contenido de bloque de tabla
 interface TableContent {
   rows: TableCell[][];
   caption?: string;
@@ -83,6 +89,7 @@ interface TableContent {
   striped?: boolean;
 }
 
+// Contenido de bloque de video
 interface VideoContent {
   src: string;
   type: 'youtube' | 'vimeo' | 'file';
@@ -93,6 +100,30 @@ interface VideoContent {
   poster?: string;
   aspectRatio?: '16:9' | '4:3' | '1:1' | '9:16';
 }
+
+// Definimos los componentes a renderizar dinámicamente
+// De momento, el gallery-block es el único que tenemos implementado
+
+// Componente para renderizar encabezados con diferentes niveles
+interface RenderHeadingProps {
+  text: string;
+  level: 'h1' | 'h2' | 'h3' | 'h4';
+}
+
+const RenderHeading: React.FC<RenderHeadingProps> = ({ text, level }) => {
+  switch (level) {
+    case 'h1':
+      return <h1 className="text-4xl font-bold">{text}</h1>;
+    case 'h2':
+      return <h2 className="text-3xl font-bold">{text}</h2>;
+    case 'h3':
+      return <h3 className="text-2xl font-bold">{text}</h3>;
+    case 'h4':
+      return <h4 className="text-xl font-bold">{text}</h4>;
+    default:
+      return <h2 className="text-3xl font-bold">{text}</h2>;
+  }
+};
 
 interface BlockContainerProps {
   block: Block;
@@ -238,35 +269,64 @@ const BlockContainer: React.FC<BlockContainerProps> = ({
         );
         
       case 'gallery':
-        // Utilizamos el componente GalleryBlock para manejar este tipo de bloque
+        // Utilizamos un método alternativo para permitir que el componente
+        // maneje la edición de la galería de manera más avanzada
+        const handleUpdateGallery = (updatedBlock: any) => {
+          // Actualizar todo el bloque, manteniendo el ID original
+          updateBlock(block.id, updatedBlock.content, { 
+            animation: updatedBlock.animation 
+          });
+        };
+        
         return (
           <div className="w-full">
-            <React.Suspense fallback={
-              <div className="border rounded-md p-6 space-y-4">
-                <div className="animate-pulse flex space-x-4">
-                  <div className="flex-1 space-y-4 py-1">
-                    <div className="h-4 bg-muted rounded w-3/4"></div>
-                    <div className="space-y-2">
-                      <div className="h-4 bg-muted rounded"></div>
-                      <div className="h-4 bg-muted rounded"></div>
+            {!readOnly ? (
+              <React.Suspense fallback={
+                <div className="border rounded-md p-6 space-y-4">
+                  <div className="animate-pulse flex space-x-4">
+                    <div className="flex-1 space-y-4 py-1">
+                      <div className="h-4 bg-muted rounded w-3/4"></div>
+                      <div className="space-y-2">
+                        <div className="h-4 bg-muted rounded"></div>
+                        <div className="h-4 bg-muted rounded"></div>
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            }>
-              <div className="dynamic-import-wrapper">
-                {(() => {
-                  const GalleryBlock = React.lazy(() => import('./blocks/gallery-block'));
-                  return (
-                    <GalleryBlock 
-                      block={block} 
-                      onChange={handleBlockChange} 
-                      editable={!readOnly} 
-                    />
-                  );
-                })()}
-              </div>
-            </React.Suspense>
+              }>
+                <div className="dynamic-import-wrapper">
+                  {(() => {
+                    const GalleryBlock = React.lazy(() => import('./blocks/gallery-block'));
+                    return (
+                      <GalleryBlock 
+                        block={block} 
+                        onChange={handleUpdateGallery} 
+                        editable={true} 
+                      />
+                    );
+                  })()}
+                </div>
+              </React.Suspense>
+            ) : (
+              <React.Suspense fallback={
+                <div className="h-40 bg-muted/30 flex items-center justify-center rounded-md">
+                  <p className="text-muted-foreground">Cargando galería...</p>
+                </div>
+              }>
+                <div className="dynamic-import-wrapper">
+                  {(() => {
+                    const GalleryBlock = React.lazy(() => import('./blocks/gallery-block'));
+                    return (
+                      <GalleryBlock 
+                        block={block} 
+                        onChange={() => {}} 
+                        editable={false} 
+                      />
+                    );
+                  })()}
+                </div>
+              </React.Suspense>
+            )}
           </div>
         );
 
@@ -1746,21 +1806,6 @@ const BlockContainer: React.FC<BlockContainerProps> = ({
   );
 };
 
-// Componente para renderizar títulos según el nivel
-
-const RenderHeading = ({ text, level }: { text: string; level: string }) => {
-  switch (level) {
-    case 'h1':
-      return <h1 className="text-3xl font-bold">{text}</h1>;
-    case 'h2':
-      return <h2 className="text-2xl font-bold">{text}</h2>;
-    case 'h3':
-      return <h3 className="text-xl font-bold">{text}</h3>;
-    case 'h4':
-      return <h4 className="text-lg font-bold">{text}</h4>;
-    default:
-      return <h2 className="text-2xl font-bold">{text}</h2>;
-  }
-};
+// Esta sección ya está implementada arriba
 
 export default BlockContainer;

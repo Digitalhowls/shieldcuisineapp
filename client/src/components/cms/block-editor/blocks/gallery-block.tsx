@@ -1,126 +1,104 @@
 import React, { useState } from 'react';
-import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { GalleryContent, Block } from '../types';
 import { Button } from '@/components/ui/button';
-import { Image, Plus, Trash2 } from 'lucide-react';
-import { GalleryContent, GalleryImage, Block } from '../types';
+import { Input } from '@/components/ui/input';
+import {
+  Card,
+  CardContent,
+} from '@/components/ui/card';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import DialogMediaSelector from '../../media/DialogMediaSelector';
 import { Gallery } from '../../gallery';
-import { GalleryViewType } from '../../gallery/index';
+import { X } from 'lucide-react';
 
 interface GalleryBlockProps {
   block: Block;
-  onChange: (updatedBlock: Block) => void;
-  editable?: boolean;
+  onChange: (block: Block) => void;
+  editable: boolean;
 }
 
-interface GalleryBlockEditorProps {
-  content: GalleryContent;
-  onChange: (content: GalleryContent) => void;
-}
-
-// Componente para seleccionar/editar imágenes individuales
-const ImageSelector: React.FC<{
-  image: GalleryImage;
-  onChange: (updatedImage: GalleryImage) => void;
-  onRemove: () => void;
-}> = ({ image, onChange, onRemove }) => {
-  return (
-    <div className="relative border rounded-md overflow-hidden group">
-      <img 
-        src={image.src} 
-        alt={image.alt} 
-        className="w-full h-48 object-cover"
-      />
-      
-      <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-end">
-        <div className="p-3 w-full">
-          <div className="flex gap-2 mb-2">
-            <input
-              type="text"
-              value={image.alt || ''}
-              onChange={(e) => onChange({ ...image, alt: e.target.value })}
-              placeholder="Texto alternativo"
-              className="flex-1 px-3 py-1 text-sm rounded border border-gray-300 bg-white"
-            />
-            <Button 
-              size="icon" 
-              variant="destructive" 
-              onClick={onRemove}
-              className="h-8 w-8"
-            >
-              <Trash2 className="h-4 w-4" />
-            </Button>
-          </div>
-          
-          <input
-            type="text"
-            value={image.caption || ''}
-            onChange={(e) => onChange({ ...image, caption: e.target.value })}
-            placeholder="Pie de foto (opcional)"
-            className="w-full px-3 py-1 text-sm rounded border border-gray-300 bg-white"
-          />
-        </div>
-      </div>
-    </div>
-  );
-};
-
-// Editor para el bloque de galería
-const GalleryBlockEditor: React.FC<GalleryBlockEditorProps> = ({ content, onChange }) => {
-  const [newImageUrl, setNewImageUrl] = useState('');
+const GalleryBlock: React.FC<GalleryBlockProps> = ({ 
+  block, 
+  onChange, 
+  editable 
+}) => {
+  const content = block.content as GalleryContent;
   
-  const addImage = () => {
-    if (!newImageUrl.trim()) return;
+  const handleAddImage = (image: { url: string, title?: string }) => {
+    const newImages = [
+      ...(content.images || []),
+      {
+        src: image.url,
+        alt: image.title || '',
+        caption: ''
+      }
+    ];
     
-    const newImage: GalleryImage = {
-      src: newImageUrl,
-      alt: ''
+    onChange({
+      ...block,
+      content: {
+        ...content,
+        images: newImages
+      }
+    });
+  };
+  
+  const handleRemoveImage = (index: number) => {
+    const newImages = [...content.images];
+    newImages.splice(index, 1);
+    
+    onChange({
+      ...block,
+      content: {
+        ...content,
+        images: newImages
+      }
+    });
+  };
+  
+  const handleUpdateImage = (index: number, key: string, value: string) => {
+    const newImages = [...content.images];
+    newImages[index] = {
+      ...newImages[index],
+      [key]: value
     };
     
     onChange({
-      ...content,
-      images: [...content.images, newImage]
+      ...block,
+      content: {
+        ...content,
+        images: newImages
+      }
     });
-    
-    setNewImageUrl('');
   };
   
-  const removeImage = (index: number) => {
-    const updatedImages = [...content.images];
-    updatedImages.splice(index, 1);
+  const handleLayoutChange = (layout: string) => {
     onChange({
-      ...content,
-      images: updatedImages
+      ...block,
+      content: {
+        ...content,
+        layout: layout as 'grid' | 'masonry' | 'carousel'
+      }
     });
   };
   
-  const updateImage = (index: number, updatedImage: GalleryImage) => {
-    const updatedImages = [...content.images];
-    updatedImages[index] = updatedImage;
-    onChange({
-      ...content,
-      images: updatedImages
-    });
-  };
-  
-  const updateLayout = (layout: 'grid' | 'masonry' | 'carousel') => {
-    onChange({
-      ...content,
-      layout
-    });
-  };
-  
-  return (
-    <div className="space-y-4">
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <Label htmlFor="gallery-layout">Tipo de visualización</Label>
-          <Select 
-            value={content.layout || 'grid'} 
-            onValueChange={(value) => updateLayout(value as 'grid' | 'masonry' | 'carousel')}
+  if (editable) {
+    return (
+      <div className="space-y-4">
+        <div className="flex justify-between items-center">
+          <h3 className="font-medium">Galería de imágenes</h3>
+          <Select
+            value={content.layout || 'grid'}
+            onValueChange={handleLayoutChange}
           >
-            <SelectTrigger id="gallery-layout">
-              <SelectValue placeholder="Seleccionar tipo" />
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="Seleccionar vista" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="grid">Cuadrícula</SelectItem>
@@ -130,97 +108,90 @@ const GalleryBlockEditor: React.FC<GalleryBlockEditorProps> = ({ content, onChan
           </Select>
         </div>
         
-        <div className="flex items-end gap-2">
-          <div className="flex-1">
-            <Label htmlFor="new-image-url">Añadir imagen</Label>
-            <input
-              id="new-image-url"
-              type="text"
-              value={newImageUrl}
-              onChange={(e) => setNewImageUrl(e.target.value)}
-              placeholder="URL de la imagen"
-              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+          {content.images && content.images.map((image, index) => (
+            <Card key={image.src + index} className="overflow-hidden">
+              <div className="relative h-32 bg-background">
+                <img 
+                  src={image.src}
+                  alt={image.alt}
+                  className="absolute inset-0 w-full h-full object-cover"
+                />
+                <Button 
+                  variant="destructive" 
+                  size="icon" 
+                  className="absolute top-1 right-1 w-6 h-6"
+                  onClick={() => handleRemoveImage(index)}
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+              <CardContent className="p-3 space-y-2">
+                <Input
+                  placeholder="Texto alternativo"
+                  value={image.alt || ''}
+                  onChange={(e) => handleUpdateImage(index, 'alt', e.target.value)}
+                  className="text-xs h-7"
+                />
+                <Input
+                  placeholder="Título (opcional)"
+                  value={image.caption || ''}
+                  onChange={(e) => handleUpdateImage(index, 'caption', e.target.value)}
+                  className="text-xs h-7"
+                />
+              </CardContent>
+            </Card>
+          ))}
+          
+          <Card className="border-dashed flex items-center justify-center h-[170px]">
+            <DialogMediaSelector
+              title="Añadir imagen a la galería"
+              description="Selecciona una imagen de la biblioteca de medios"
+              defaultTab="image"
+              allowedTypes={['image']}
+              trigger={
+                <Button variant="ghost">Añadir imagen</Button>
+              }
+              onSelect={handleAddImage}
             />
-          </div>
-          <Button onClick={addImage} size="icon">
-            <Plus className="h-4 w-4" />
-          </Button>
+          </Card>
         </div>
-      </div>
-      
-      <div className="border rounded-md p-3 bg-muted/50">
-        <h4 className="font-medium mb-2 flex items-center">
-          <Image className="h-4 w-4 mr-2" />
-          Imágenes ({content.images.length})
-        </h4>
         
-        {content.images.length === 0 ? (
-          <div className="text-center p-6 text-muted-foreground">
-            Agrega imágenes para crear tu galería
-          </div>
-        ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-            {content.images.map((image, index) => (
-              <ImageSelector
-                key={index}
-                image={image}
-                onChange={(updatedImage) => updateImage(index, updatedImage)}
-                onRemove={() => removeImage(index)}
-              />
-            ))}
+        {content.images && content.images.length > 0 && content.layout && (
+          <div className="border rounded-lg p-4 mt-4">
+            <p className="text-sm font-medium mb-3">Vista previa</p>
+            <Gallery 
+              images={content.images} 
+              viewType={content.layout}
+              // Opciones específicas para cada tipo de vista
+              showDots={true}
+              showArrows={true}
+              columns={3}
+              gap="medium"
+            />
           </div>
         )}
       </div>
-      
-      {content.images.length > 0 && (
-        <div>
-          <h4 className="font-medium mb-2">Vista previa</h4>
-          <div className="border rounded-md p-4">
-            <Gallery
-              images={content.images}
-              viewType={(content.layout || 'grid') as GalleryViewType}
-              columns={3}
-              showDots={true}
-              showArrows={true}
-            />
-          </div>
-        </div>
-      )}
-    </div>
-  );
-};
-
-// Bloque de galería (modo visualización y edición)
-const GalleryBlock: React.FC<GalleryBlockProps> = ({ block, onChange, editable = false }) => {
-  const content = block.content as GalleryContent;
-  
-  if (editable) {
+    );
+  } else {
+    // Modo de visualización - sólo mostrar la galería
     return (
-      <GalleryBlockEditor
-        content={content}
-        onChange={(updatedContent) => {
-          onChange({
-            ...block,
-            content: updatedContent
-          });
-        }}
-      />
+      <div className="gallery-block">
+        {content.images && content.images.length > 0 && (
+          <Gallery 
+            images={content.images} 
+            viewType={content.layout || 'grid'}
+            showDots={true}
+            showArrows={true}
+            autoplay={true}
+            autoplayInterval={5000}
+            columns={3}
+            gap="medium"
+          />
+        )}
+      </div>
     );
   }
-  
-  if (!content.images || content.images.length === 0) {
-    return <div className="text-muted-foreground text-center p-4">Galería sin imágenes</div>;
-  }
-  
-  return (
-    <Gallery
-      images={content.images}
-      viewType={(content.layout || 'grid') as GalleryViewType}
-      columns={3}
-      showDots={true}
-      showArrows={true}
-    />
-  );
 };
 
 export default GalleryBlock;
