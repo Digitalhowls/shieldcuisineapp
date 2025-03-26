@@ -311,7 +311,7 @@ export default function AdminModule() {
               {/* Redirección por defecto al dashboard */}
               {() => {
                 window.location.href = "/admin/dashboard";
-                return null;
+                return <div>Redirigiendo...</div>;
               }}
             </Route>
           </Switch>

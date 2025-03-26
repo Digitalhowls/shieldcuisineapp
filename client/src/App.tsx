@@ -11,7 +11,6 @@ import AppccModule from "./pages/appcc";
 import AlmacenModule from "./pages/almacen";
 import TransparenciaModule from "./pages/transparencia";
 import ClientePortal from "@/pages/cliente";
-import AdminModule from "@/pages/admin";
 import BancaModule from "./pages/banca";
 import FormacionModule from "./pages/formacion";
 import NotificacionesPage from "./pages/configuracion/notificaciones";
@@ -25,6 +24,10 @@ import AnimationPlayground from "./pages/cms/animation-playground";
 import AnimatedBlocksDemo from "./pages/cms/animated-blocks-demo";
 import GalleryDemo from "./pages/cms/gallery-demo";
 
+// Nuevos módulos de interfaz dual
+import AdminModule from "./pages/admin"; // Panel de administración
+import ClientModule from "./pages/client"; // Panel de cliente
+
 // Páginas públicas
 import PublicIndex from "@/pages/public/index";
 import BlogPage from "@/pages/public/blog";
@@ -35,7 +38,29 @@ import ShopModulesPage from "@/pages/public/shop-modules";
 function AppRouter() {
   return (
     <Switch>
-      {/* Rutas protegidas (requieren autenticación) */}
+      {/* Rutas con doble interfaz */}
+      <ProtectedRoute 
+        path="/admin" 
+        component={AdminModule} 
+        allowedRoles={['admin']}
+      />
+      <ProtectedRoute 
+        path="/admin/:rest*" 
+        component={AdminModule}
+        allowedRoles={['admin']}
+      />
+      <ProtectedRoute 
+        path="/client" 
+        component={ClientModule}
+        allowedRoles={['company_admin', 'location_manager', 'area_supervisor', 'employee']}
+      />
+      <ProtectedRoute 
+        path="/client/:rest*" 
+        component={ClientModule}
+        allowedRoles={['company_admin', 'location_manager', 'area_supervisor', 'employee']}
+      />
+
+      {/* Rutas protegidas antiguas (temporal, se migrarán a la nueva estructura) */}
       <ProtectedRoute path="/" component={HomePage} />
       <ProtectedRoute path="/appcc" component={AppccModule} />
       <ProtectedRoute path="/appcc/:rest*" component={AppccModule} />
@@ -43,8 +68,6 @@ function AppRouter() {
       <ProtectedRoute path="/almacen/:rest*" component={AlmacenModule} />
       <ProtectedRoute path="/transparencia" component={TransparenciaModule} />
       <ProtectedRoute path="/transparencia/:rest*" component={TransparenciaModule} />
-      <ProtectedRoute path="/admin" component={AdminModule} />
-      <ProtectedRoute path="/admin/:rest*" component={AdminModule} />
       <ProtectedRoute path="/banca" component={BancaModule} />
       <ProtectedRoute path="/banca/:rest*" component={BancaModule} />
       <ProtectedRoute path="/formacion" component={FormacionModule} />

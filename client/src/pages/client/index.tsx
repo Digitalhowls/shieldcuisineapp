@@ -187,7 +187,7 @@ export default function ClientModule() {
               {/* Redirección por defecto al dashboard */}
               {() => {
                 window.location.href = "/client/dashboard";
-                return null;
+                return <div>Redirigiendo...</div>;
               }}
             </Route>
           </Switch>
