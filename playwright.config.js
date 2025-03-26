@@ -1,10 +1,10 @@
 // @ts-check
-const { defineConfig, devices } = require('@playwright/test');
+import { defineConfig, devices } from '@playwright/test';
 
 /**
  * @see https://playwright.dev/docs/test-configuration
  */
-module.exports = defineConfig({
+export default defineConfig({
   testDir: './tests',
   timeout: 30 * 1000,
   expect: {
@@ -15,15 +15,18 @@ module.exports = defineConfig({
   retries: process.env.CI ? 2 : 0,
   workers: process.env.CI ? 1 : undefined,
   reporter: [
-    ['html', { outputFolder: 'test-results/html-report' }],
-    ['json', { outputFile: 'test-results/test-results.json' }]
+    ['html', { outputFolder: 'playwright-report' }],
+    ['json', { outputFile: 'playwright-report/test-results.json' }]
   ],
   use: {
     actionTimeout: 0,
-    baseURL: 'http://localhost:3000',
+    baseURL: 'http://localhost:5000',
     trace: 'on-first-retry',
     headless: true,
     screenshot: 'only-on-failure',
+    launchOptions: {
+      executablePath: process.env.PLAYWRIGHT_CHROME_EXECUTABLE_PATH || 'google-chrome-stable',
+    }
   },
   projects: [
     {

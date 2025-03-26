@@ -1,0 +1,183 @@
+{
+  "config": {
+    "configFile": "/home/runner/workspace/playwright.config.js",
+    "rootDir": "/home/runner/workspace/tests",
+    "forbidOnly": false,
+    "fullyParallel": true,
+    "globalSetup": null,
+    "globalTeardown": null,
+    "globalTimeout": 0,
+    "grep": {},
+    "grepInvert": null,
+    "maxFailures": 0,
+    "metadata": {
+      "actualWorkers": 2
+    },
+    "preserveOutput": "always",
+    "reporter": [
+      [
+        "html",
+        {
+          "outputFolder": "test-results/html-report"
+        }
+      ],
+      [
+        "json",
+        {
+          "outputFile": "test-results/test-results.json"
+        }
+      ]
+    ],
+    "reportSlowTests": {
+      "max": 5,
+      "threshold": 300000
+    },
+    "quiet": false,
+    "projects": [
+      {
+        "outputDir": "/home/runner/workspace/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 2
+        },
+        "id": "chromium",
+        "name": "chromium",
+        "testDir": "/home/runner/workspace/tests",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.spec.js"
+        ],
+        "timeout": 30000
+      }
+    ],
+    "shard": null,
+    "updateSnapshots": "missing",
+    "updateSourceMethod": "patch",
+    "version": "1.51.1",
+    "workers": 4,
+    "webServer": null
+  },
+  "suites": [
+    {
+      "title": "basic-navigation.spec.js",
+      "file": "basic-navigation.spec.js",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Navegación básica",
+          "file": "basic-navigation.spec.js",
+          "line": 5,
+          "column": 6,
+          "specs": [
+            {
+              "title": "debe acceder a la página principal y mostrar el formulario de login",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "failed",
+                      "duration": 14,
+                      "error": {
+                        "message": "Error: browserType.launch: Executable doesn't exist at /home/runner/workspace/.cache/ms-playwright/chromium_headless_shell-1161/chrome-linux/headless_shell\n╔═════════════════════════════════════════════════════════════════════════╗\n║ Looks like Playwright Test or Playwright was just installed or updated. ║\n║ Please run the following command to download new browsers:              ║\n║                                                                         ║\n║     npx playwright install                                              ║\n║                                                                         ║\n║ <3 Playwright Team                                                      ║\n╚═════════════════════════════════════════════════════════════════════════╝",
+                        "stack": "Error: browserType.launch: Executable doesn't exist at /home/runner/workspace/.cache/ms-playwright/chromium_headless_shell-1161/chrome-linux/headless_shell\n╔═════════════════════════════════════════════════════════════════════════╗\n║ Looks like Playwright Test or Playwright was just installed or updated. ║\n║ Please run the following command to download new browsers:              ║\n║                                                                         ║\n║     npx playwright install                                              ║\n║                                                                         ║\n║ <3 Playwright Team                                                      ║\n╚═════════════════════════════════════════════════════════════════════════╝"
+                      },
+                      "errors": [
+                        {
+                          "message": "Error: browserType.launch: Executable doesn't exist at /home/runner/workspace/.cache/ms-playwright/chromium_headless_shell-1161/chrome-linux/headless_shell\n╔═════════════════════════════════════════════════════════════════════════╗\n║ Looks like Playwright Test or Playwright was just installed or updated. ║\n║ Please run the following command to download new browsers:              ║\n║                                                                         ║\n║     npx playwright install                                              ║\n║                                                                         ║\n║ <3 Playwright Team                                                      ║\n╚═════════════════════════════════════════════════════════════════════════╝"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-03-26T15:01:12.575Z",
+                      "attachments": [
+                        {
+                          "name": "_prompt-0",
+                          "contentType": "text/markdown",
+                          "body": "IyBJbnN0cnVjdGlvbnMKCi0gRm9sbG93aW5nIFBsYXl3cmlnaHQgdGVzdCBmYWlsZWQuCi0gRXhwbGFpbiB3aHksIGJlIGNvbmNpc2UsIHJlc3BlY3QgUGxheXdyaWdodCBiZXN0IHByYWN0aWNlcy4KLSBQcm92aWRlIGEgc25pcHBldCBvZiBjb2RlIHdpdGggdGhlIGZpeCwgaWYgcG9zc2libGUuCgojIFRlc3QgaW5mbwoKLSBOYW1lOiBOYXZlZ2FjacOzbiBiw6FzaWNhID4+IGRlYmUgYWNjZWRlciBhIGxhIHDDoWdpbmEgcHJpbmNpcGFsIHkgbW9zdHJhciBlbCBmb3JtdWxhcmlvIGRlIGxvZ2luCi0gTG9jYXRpb246IC9ob21lL3J1bm5lci93b3Jrc3BhY2UvdGVzdHMvYmFzaWMtbmF2aWdhdGlvbi5zcGVjLmpzOjY6MwoKIyBFcnJvciBkZXRhaWxzCgpgYGAKRXJyb3I6IGJyb3dzZXJUeXBlLmxhdW5jaDogRXhlY3V0YWJsZSBkb2Vzbid0IGV4aXN0IGF0IC9ob21lL3J1bm5lci93b3Jrc3BhY2UvLmNhY2hlL21zLXBsYXl3cmlnaHQvY2hyb21pdW1faGVhZGxlc3Nfc2hlbGwtMTE2MS9jaHJvbWUtbGludXgvaGVhZGxlc3Nfc2hlbGwK4pWU4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWQ4pWXCuKVkSBMb29rcyBsaWtlIFBsYXl3cmlnaHQgVGVzdCBvciBQbGF5d3JpZ2h0IHdhcyBqdXN0IGluc3RhbGxlZCBvciB1cGRhdGVkLiDilZEK4pWRIFBsZWFzZSBydW4gdGhlIGZvbGxvd2luZyBjb21tYW5kIHRvIGRvd25sb2FkIG5ldyBicm93c2VyczogICAgICAgICAgICAgIOKVkQrilZEgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg4pWRCuKVkSAgICAgbnB4IHBsYXl3cmlnaHQgaW5zdGFsbCAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICDilZEK4pWRICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIOKVkQrilZEgPDMgUGxheXdyaWdodCBUZWFtICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg4pWRCuKVmuKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVnQpgYGAKCiMgVGVzdCBzb3VyY2UKCmBgYHRzCiAgIDEgfCAvLyBAdHMtY2hlY2sKICAgMiB8IGltcG9ydCB7IHRlc3QsIGV4cGVjdCB9IGZyb20gJ0BwbGF5d3JpZ2h0L3Rlc3QnOwogICAzIHwKICAgNCB8IC8vIFBydWViYSBkZSBuYXZlZ2FjacOzbiBiw6FzaWNhIHBhcmEgdmVyaWZpY2FyIGVsIGFjY2VzbyBhIGxhcyBww6FnaW5hcyBwcmluY2lwYWxlcwogICA1IHwgdGVzdC5kZXNjcmliZSgnTmF2ZWdhY2nDs24gYsOhc2ljYScsICgpID0+IHsKPiAgNiB8ICAgdGVzdCgnZGViZSBhY2NlZGVyIGEgbGEgcMOhZ2luYSBwcmluY2lwYWwgeSBtb3N0cmFyIGVsIGZvcm11bGFyaW8gZGUgbG9naW4nLCBhc3luYyAoeyBwYWdlIH0pID0+IHsKICAgICB8ICAgXiBFcnJvcjogYnJvd3NlclR5cGUubGF1bmNoOiBFeGVjdXRhYmxlIGRvZXNuJ3QgZXhpc3QgYXQgL2hvbWUvcnVubmVyL3dvcmtzcGFjZS8uY2FjaGUvbXMtcGxheXdyaWdodC9jaHJvbWl1bV9oZWFkbGVzc19zaGVsbC0xMTYxL2Nocm9tZS1saW51eC9oZWFkbGVzc19zaGVsbAogICA3IHwgICAgIC8vIFZpc2l0YXIgbGEgcMOhZ2luYSBwcmluY2lwYWwKICAgOCB8ICAgICBhd2FpdCBwYWdlLmdvdG8oJy8nKTsKICAgOSB8ICAgICAKICAxMCB8ICAgICAvLyBFbCBzaXN0ZW1hIGRlYmUgcmVkaXJpZ2lyIGFsIHVzdWFyaW8gbm8gYXV0ZW50aWNhZG8gYSAvYXV0aAogIDExIHwgICAgIGF3YWl0IGV4cGVjdChwYWdlKS50b0hhdmVVUkwoLy4qXC9hdXRoLyk7CiAgMTIgfCAgICAgCiAgMTMgfCAgICAgLy8gVmVyaWZpY2FyIHF1ZSBlbCBmb3JtdWxhcmlvIGRlIGxvZ2luIGVzdMOhIHByZXNlbnRlCiAgMTQgfCAgICAgYXdhaXQgZXhwZWN0KHBhZ2UubG9jYXRvcigndGV4dD1JbmljaWFyIHNlc2nDs24nKSkudG9CZVZpc2libGUoKTsKICAxNSB8ICAgICBhd2FpdCBleHBlY3QocGFnZS5sb2NhdG9yKCdmb3JtJykpLnRvQmVWaXNpYmxlKCk7CiAgMTYgfCAgIH0pOwogIDE3IHwKICAxOCB8ICAgdGVzdCgnZGViZSBtb3N0cmFyIGFtYm9zIGZvcm11bGFyaW9zIGRlIGxvZ2luIHkgcmVnaXN0cm8nLCBhc3luYyAoeyBwYWdlIH0pID0+IHsKICAxOSB8ICAgICAvLyBWaXNpdGFyIGxhIHDDoWdpbmEgZGUgYXV0ZW50aWNhY2nDs24gZGlyZWN0YW1lbnRlCiAgMjAgfCAgICAgYXdhaXQgcGFnZS5nb3RvKCcvYXV0aCcpOwogIDIxIHwgICAgIAogIDIyIHwgICAgIC8vIFZlcmlmaWNhciBxdWUgZWwgZm9ybXVsYXJpbyBkZSBsb2dpbiBlc3TDoSBwcmVzZW50ZQogIDIzIHwgICAgIGF3YWl0IGV4cGVjdChwYWdlLmxvY2F0b3IoJ3RleHQ9SW5pY2lhciBzZXNpw7NuJykpLnRvQmVWaXNpYmxlKCk7CiAgMjQgfCAgICAgCiAgMjUgfCAgICAgLy8gVmVyaWZpY2FyIHF1ZSBleGlzdGUgdW4gYm90w7NuIG8gZW5sYWNlIHBhcmEgY2FtYmlhciBhIHJlZ2lzdHJvCiAgMjYgfCAgICAgY29uc3QgcmVnaXN0cm9CdG4gPSBwYWdlLmxvY2F0b3IoJ3RleHQ9UmVnaXN0cm8nKTsKICAyNyB8ICAgICBhd2FpdCBleHBlY3QocmVnaXN0cm9CdG4pLnRvQmVWaXNpYmxlKCk7CiAgMjggfCAgICAgCiAgMjkgfCAgICAgLy8gSGFjZXIgY2xpYyBlbiBlbCBib3TDs24gZGUgcmVnaXN0cm8gc2kgZXN0w6EgZGlzcG9uaWJsZQogIDMwIHwgICAgIHRyeSB7CiAgMzEgfCAgICAgICBhd2FpdCByZWdpc3Ryb0J0bi5jbGljaygpOwogIDMyIHwgICAgICAgLy8gRXNwZXJhciBhIHF1ZSBlbCBmb3JtdWxhcmlvIGRlIHJlZ2lzdHJvIHNlYSB2aXNpYmxlCiAgMzMgfCAgICAgICBhd2FpdCBleHBlY3QocGFnZS5sb2NhdG9yKCd0ZXh0PUNyZWFyIGN1ZW50YScpKS50b0JlVmlzaWJsZSgpOwogIDM0IHwgICAgIH0gY2F0Y2ggKGUpIHsKICAzNSB8ICAgICAgIGNvbnNvbGUubG9nKCdBdmlzbzogTm8gc2UgcHVkbyBoYWNlciBjbGljIGVuIGVsIGJvdMOzbiBkZSByZWdpc3RybyBvIG5vIGVzdMOhIHByZXNlbnRlJyk7CiAgMzYgfCAgICAgfQogIDM3IHwgICB9KTsKICAzOCB8IH0pOwpgYGA="
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "eabc20d7ea87caaa56ed-9abe46ced9e96f719b49",
+              "file": "basic-navigation.spec.js",
+              "line": 6,
+              "column": 3
+            },
+            {
+              "title": "debe mostrar ambos formularios de login y registro",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 1,
+                      "parallelIndex": 1,
+                      "status": "failed",
+                      "duration": 10,
+                      "error": {
+                        "message": "Error: browserType.launch: Executable doesn't exist at /home/runner/workspace/.cache/ms-playwright/chromium_headless_shell-1161/chrome-linux/headless_shell\n╔═════════════════════════════════════════════════════════════════════════╗\n║ Looks like Playwright Test or Playwright was just installed or updated. ║\n║ Please run the following command to download new browsers:              ║\n║                                                                         ║\n║     npx playwright install                                              ║\n║                                                                         ║\n║ <3 Playwright Team                                                      ║\n╚═════════════════════════════════════════════════════════════════════════╝",
+                        "stack": "Error: browserType.launch: Executable doesn't exist at /home/runner/workspace/.cache/ms-playwright/chromium_headless_shell-1161/chrome-linux/headless_shell\n╔═════════════════════════════════════════════════════════════════════════╗\n║ Looks like Playwright Test or Playwright was just installed or updated. ║\n║ Please run the following command to download new browsers:              ║\n║                                                                         ║\n║     npx playwright install                                              ║\n║                                                                         ║\n║ <3 Playwright Team                                                      ║\n╚═════════════════════════════════════════════════════════════════════════╝"
+                      },
+                      "errors": [
+                        {
+                          "message": "Error: browserType.launch: Executable doesn't exist at /home/runner/workspace/.cache/ms-playwright/chromium_headless_shell-1161/chrome-linux/headless_shell\n╔═════════════════════════════════════════════════════════════════════════╗\n║ Looks like Playwright Test or Playwright was just installed or updated. ║\n║ Please run the following command to download new browsers:              ║\n║                                                                         ║\n║     npx playwright install                                              ║\n║                                                                         ║\n║ <3 Playwright Team                                                      ║\n╚═════════════════════════════════════════════════════════════════════════╝"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-03-26T15:01:12.629Z",
+                      "attachments": [
+                        {
+                          "name": "_prompt-0",
+                          "contentType": "text/markdown",
+                          "body": "IyBJbnN0cnVjdGlvbnMKCi0gRm9sbG93aW5nIFBsYXl3cmlnaHQgdGVzdCBmYWlsZWQuCi0gRXhwbGFpbiB3aHksIGJlIGNvbmNpc2UsIHJlc3BlY3QgUGxheXdyaWdodCBiZXN0IHByYWN0aWNlcy4KLSBQcm92aWRlIGEgc25pcHBldCBvZiBjb2RlIHdpdGggdGhlIGZpeCwgaWYgcG9zc2libGUuCgojIFRlc3QgaW5mbwoKLSBOYW1lOiBOYXZlZ2FjacOzbiBiw6FzaWNhID4+IGRlYmUgbW9zdHJhciBhbWJvcyBmb3JtdWxhcmlvcyBkZSBsb2dpbiB5IHJlZ2lzdHJvCi0gTG9jYXRpb246IC9ob21lL3J1bm5lci93b3Jrc3BhY2UvdGVzdHMvYmFzaWMtbmF2aWdhdGlvbi5zcGVjLmpzOjE4OjMKCiMgRXJyb3IgZGV0YWlscwoKYGBgCkVycm9yOiBicm93c2VyVHlwZS5sYXVuY2g6IEV4ZWN1dGFibGUgZG9lc24ndCBleGlzdCBhdCAvaG9tZS9ydW5uZXIvd29ya3NwYWNlLy5jYWNoZS9tcy1wbGF5d3JpZ2h0L2Nocm9taXVtX2hlYWRsZXNzX3NoZWxsLTExNjEvY2hyb21lLWxpbnV4L2hlYWRsZXNzX3NoZWxsCuKVlOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVkOKVlwrilZEgTG9va3MgbGlrZSBQbGF5d3JpZ2h0IFRlc3Qgb3IgUGxheXdyaWdodCB3YXMganVzdCBpbnN0YWxsZWQgb3IgdXBkYXRlZC4g4pWRCuKVkSBQbGVhc2UgcnVuIHRoZSBmb2xsb3dpbmcgY29tbWFuZCB0byBkb3dubG9hZCBuZXcgYnJvd3NlcnM6ICAgICAgICAgICAgICDilZEK4pWRICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIOKVkQrilZEgICAgIG5weCBwbGF5d3JpZ2h0IGluc3RhbGwgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg4pWRCuKVkSAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICDilZEK4pWRIDwzIFBsYXl3cmlnaHQgVGVhbSAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIOKVkQrilZrilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZDilZ0KYGBgCgojIFRlc3Qgc291cmNlCgpgYGB0cwogICAxIHwgLy8gQHRzLWNoZWNrCiAgIDIgfCBpbXBvcnQgeyB0ZXN0LCBleHBlY3QgfSBmcm9tICdAcGxheXdyaWdodC90ZXN0JzsKICAgMyB8CiAgIDQgfCAvLyBQcnVlYmEgZGUgbmF2ZWdhY2nDs24gYsOhc2ljYSBwYXJhIHZlcmlmaWNhciBlbCBhY2Nlc28gYSBsYXMgcMOhZ2luYXMgcHJpbmNpcGFsZXMKICAgNSB8IHRlc3QuZGVzY3JpYmUoJ05hdmVnYWNpw7NuIGLDoXNpY2EnLCAoKSA9PiB7CiAgIDYgfCAgIHRlc3QoJ2RlYmUgYWNjZWRlciBhIGxhIHDDoWdpbmEgcHJpbmNpcGFsIHkgbW9zdHJhciBlbCBmb3JtdWxhcmlvIGRlIGxvZ2luJywgYXN5bmMgKHsgcGFnZSB9KSA9PiB7CiAgIDcgfCAgICAgLy8gVmlzaXRhciBsYSBww6FnaW5hIHByaW5jaXBhbAogICA4IHwgICAgIGF3YWl0IHBhZ2UuZ290bygnLycpOwogICA5IHwgICAgIAogIDEwIHwgICAgIC8vIEVsIHNpc3RlbWEgZGViZSByZWRpcmlnaXIgYWwgdXN1YXJpbyBubyBhdXRlbnRpY2FkbyBhIC9hdXRoCiAgMTEgfCAgICAgYXdhaXQgZXhwZWN0KHBhZ2UpLnRvSGF2ZVVSTCgvLipcL2F1dGgvKTsKICAxMiB8ICAgICAKICAxMyB8ICAgICAvLyBWZXJpZmljYXIgcXVlIGVsIGZvcm11bGFyaW8gZGUgbG9naW4gZXN0w6EgcHJlc2VudGUKICAxNCB8ICAgICBhd2FpdCBleHBlY3QocGFnZS5sb2NhdG9yKCd0ZXh0PUluaWNpYXIgc2VzacOzbicpKS50b0JlVmlzaWJsZSgpOwogIDE1IHwgICAgIGF3YWl0IGV4cGVjdChwYWdlLmxvY2F0b3IoJ2Zvcm0nKSkudG9CZVZpc2libGUoKTsKICAxNiB8ICAgfSk7CiAgMTcgfAo+IDE4IHwgICB0ZXN0KCdkZWJlIG1vc3RyYXIgYW1ib3MgZm9ybXVsYXJpb3MgZGUgbG9naW4geSByZWdpc3RybycsIGFzeW5jICh7IHBhZ2UgfSkgPT4gewogICAgIHwgICBeIEVycm9yOiBicm93c2VyVHlwZS5sYXVuY2g6IEV4ZWN1dGFibGUgZG9lc24ndCBleGlzdCBhdCAvaG9tZS9ydW5uZXIvd29ya3NwYWNlLy5jYWNoZS9tcy1wbGF5d3JpZ2h0L2Nocm9taXVtX2hlYWRsZXNzX3NoZWxsLTExNjEvY2hyb21lLWxpbnV4L2hlYWRsZXNzX3NoZWxsCiAgMTkgfCAgICAgLy8gVmlzaXRhciBsYSBww6FnaW5hIGRlIGF1dGVudGljYWNpw7NuIGRpcmVjdGFtZW50ZQogIDIwIHwgICAgIGF3YWl0IHBhZ2UuZ290bygnL2F1dGgnKTsKICAyMSB8ICAgICAKICAyMiB8ICAgICAvLyBWZXJpZmljYXIgcXVlIGVsIGZvcm11bGFyaW8gZGUgbG9naW4gZXN0w6EgcHJlc2VudGUKICAyMyB8ICAgICBhd2FpdCBleHBlY3QocGFnZS5sb2NhdG9yKCd0ZXh0PUluaWNpYXIgc2VzacOzbicpKS50b0JlVmlzaWJsZSgpOwogIDI0IHwgICAgIAogIDI1IHwgICAgIC8vIFZlcmlmaWNhciBxdWUgZXhpc3RlIHVuIGJvdMOzbiBvIGVubGFjZSBwYXJhIGNhbWJpYXIgYSByZWdpc3RybwogIDI2IHwgICAgIGNvbnN0IHJlZ2lzdHJvQnRuID0gcGFnZS5sb2NhdG9yKCd0ZXh0PVJlZ2lzdHJvJyk7CiAgMjcgfCAgICAgYXdhaXQgZXhwZWN0KHJlZ2lzdHJvQnRuKS50b0JlVmlzaWJsZSgpOwogIDI4IHwgICAgIAogIDI5IHwgICAgIC8vIEhhY2VyIGNsaWMgZW4gZWwgYm90w7NuIGRlIHJlZ2lzdHJvIHNpIGVzdMOhIGRpc3BvbmlibGUKICAzMCB8ICAgICB0cnkgewogIDMxIHwgICAgICAgYXdhaXQgcmVnaXN0cm9CdG4uY2xpY2soKTsKICAzMiB8ICAgICAgIC8vIEVzcGVyYXIgYSBxdWUgZWwgZm9ybXVsYXJpbyBkZSByZWdpc3RybyBzZWEgdmlzaWJsZQogIDMzIHwgICAgICAgYXdhaXQgZXhwZWN0KHBhZ2UubG9jYXRvcigndGV4dD1DcmVhciBjdWVudGEnKSkudG9CZVZpc2libGUoKTsKICAzNCB8ICAgICB9IGNhdGNoIChlKSB7CiAgMzUgfCAgICAgICBjb25zb2xlLmxvZygnQXZpc286IE5vIHNlIHB1ZG8gaGFjZXIgY2xpYyBlbiBlbCBib3TDs24gZGUgcmVnaXN0cm8gbyBubyBlc3TDoSBwcmVzZW50ZScpOwogIDM2IHwgICAgIH0KICAzNyB8ICAgfSk7CiAgMzggfCB9KTsKYGBg"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "eabc20d7ea87caaa56ed-ebfd44837ccddc6ca316",
+              "file": "basic-navigation.spec.js",
+              "line": 18,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "stats": {
+    "startTime": "2025-03-26T15:01:11.626Z",
+    "duration": 1081.228,
+    "expected": 0,
+    "skipped": 0,
+    "unexpected": 2,
+    "flaky": 0
+  }
+}

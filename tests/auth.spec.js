@@ -1,5 +1,5 @@
 // @ts-check
-const { test, expect } = require('@playwright/test');
+import { test, expect } from '@playwright/test';
 
 // Prueba de autenticación y acceso a páginas protegidas
 test.describe('Autenticación', () => {
