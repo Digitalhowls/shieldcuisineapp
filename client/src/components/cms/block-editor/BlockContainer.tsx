@@ -1453,6 +1453,332 @@ const BlockContainer: React.FC<BlockContainerProps> = ({
             )}
           </div>
         );
+        
+      case 'contact-form':
+        return (
+          <div className="w-full">
+            {!readOnly ? (
+              <div className="space-y-4">
+                <div className="flex flex-col space-y-3">
+                  <div>
+                    <label className="text-sm font-medium mb-1 block">Título del formulario</label>
+                    <Input
+                      value={block.content.title || ''}
+                      onChange={(e) => handleContentChange({ title: e.target.value })}
+                      placeholder="Formulario de contacto"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="text-sm font-medium mb-1 block">Descripción</label>
+                    <Textarea
+                      value={block.content.description || ''}
+                      onChange={(e) => handleContentChange({ description: e.target.value })}
+                      placeholder="Completa el siguiente formulario para contactar con nosotros."
+                      className="resize-y"
+                    />
+                  </div>
+                  
+                  <div>
+                    <div className="flex justify-between items-center mb-2">
+                      <label className="text-sm font-medium">Campos del formulario</label>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          const fields = [...(block.content.fields || [])];
+                          fields.push({
+                            name: `field_${fields.length + 1}`,
+                            label: `Campo ${fields.length + 1}`,
+                            type: 'text',
+                            required: false,
+                            options: []
+                          });
+                          handleContentChange({ fields });
+                        }}
+                      >
+                        <Plus className="h-4 w-4 mr-2" />
+                        Añadir campo
+                      </Button>
+                    </div>
+                    
+                    {(block.content.fields || []).length === 0 ? (
+                      <div className="border-2 border-dashed rounded-md p-4 flex flex-col items-center justify-center">
+                        <p className="text-muted-foreground mb-2">No hay campos en el formulario</p>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            handleContentChange({
+                              fields: [
+                                { name: 'name', label: 'Nombre', type: 'text', required: true },
+                                { name: 'email', label: 'Email', type: 'email', required: true },
+                                { name: 'message', label: 'Mensaje', type: 'textarea', required: true }
+                              ]
+                            });
+                          }}
+                        >
+                          Usar plantilla básica
+                        </Button>
+                      </div>
+                    ) : (
+                      <div className="space-y-4">
+                        {(block.content.fields || []).map((field: any, idx: number) => (
+                          <div key={idx} className="border rounded-md p-3 space-y-3 relative">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="absolute right-2 top-2 h-6 w-6 text-destructive"
+                              onClick={() => {
+                                const fields = [...(block.content.fields || [])];
+                                fields.splice(idx, 1);
+                                handleContentChange({ fields });
+                              }}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                            
+                            <div className="grid grid-cols-2 gap-4 mt-4">
+                              <div>
+                                <label className="text-xs font-medium mb-1 block">ID del campo</label>
+                                <Input
+                                  value={field.name || ''}
+                                  onChange={(e) => {
+                                    const fields = [...(block.content.fields || [])];
+                                    fields[idx] = { ...fields[idx], name: e.target.value };
+                                    handleContentChange({ fields });
+                                  }}
+                                  placeholder="nombre_campo"
+                                />
+                              </div>
+                              <div>
+                                <label className="text-xs font-medium mb-1 block">Etiqueta visible</label>
+                                <Input
+                                  value={field.label || ''}
+                                  onChange={(e) => {
+                                    const fields = [...(block.content.fields || [])];
+                                    fields[idx] = { ...fields[idx], label: e.target.value };
+                                    handleContentChange({ fields });
+                                  }}
+                                  placeholder="Etiqueta del campo"
+                                />
+                              </div>
+                            </div>
+                            
+                            <div className="grid grid-cols-2 gap-4">
+                              <div>
+                                <label className="text-xs font-medium mb-1 block">Tipo de campo</label>
+                                <Select
+                                  value={field.type || 'text'}
+                                  onValueChange={(value) => {
+                                    const fields = [...(block.content.fields || [])];
+                                    fields[idx] = { ...fields[idx], type: value };
+                                    handleContentChange({ fields });
+                                  }}
+                                >
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Seleccione un tipo" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="text">Texto</SelectItem>
+                                    <SelectItem value="email">Email</SelectItem>
+                                    <SelectItem value="tel">Teléfono</SelectItem>
+                                    <SelectItem value="number">Número</SelectItem>
+                                    <SelectItem value="date">Fecha</SelectItem>
+                                    <SelectItem value="textarea">Área de texto</SelectItem>
+                                    <SelectItem value="select">Desplegable</SelectItem>
+                                    <SelectItem value="checkbox">Casilla de verificación</SelectItem>
+                                    <SelectItem value="radio">Botón de radio</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                              <div className="flex items-center">
+                                <div className="flex items-center space-x-2 mt-4">
+                                  <Switch
+                                    id={`required-${field.name}-${block.id}`}
+                                    checked={field.required || false}
+                                    onCheckedChange={(checked) => {
+                                      const fields = [...(block.content.fields || [])];
+                                      fields[idx] = { ...fields[idx], required: checked };
+                                      handleContentChange({ fields });
+                                    }}
+                                  />
+                                  <Label htmlFor={`required-${field.name}-${block.id}`}>Obligatorio</Label>
+                                </div>
+                              </div>
+                            </div>
+                            
+                            {(field.type === 'select' || field.type === 'radio') && (
+                              <div>
+                                <label className="text-xs font-medium mb-1 block">Opciones</label>
+                                <div className="space-y-2">
+                                  {(field.options || []).map((option: string, optIdx: number) => (
+                                    <div key={optIdx} className="flex items-center space-x-2">
+                                      <Input
+                                        value={option}
+                                        onChange={(e) => {
+                                          const fields = [...(block.content.fields || [])];
+                                          const options = [...(fields[idx].options || [])];
+                                          options[optIdx] = e.target.value;
+                                          fields[idx] = { ...fields[idx], options };
+                                          handleContentChange({ fields });
+                                        }}
+                                        placeholder={`Opción ${optIdx + 1}`}
+                                        className="flex-1"
+                                      />
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-8 w-8 text-destructive"
+                                        onClick={() => {
+                                          const fields = [...(block.content.fields || [])];
+                                          const options = [...(fields[idx].options || [])];
+                                          options.splice(optIdx, 1);
+                                          fields[idx] = { ...fields[idx], options };
+                                          handleContentChange({ fields });
+                                        }}
+                                      >
+                                        <Trash2 className="h-4 w-4" />
+                                      </Button>
+                                    </div>
+                                  ))}
+                                  
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="mt-1"
+                                    onClick={() => {
+                                      const fields = [...(block.content.fields || [])];
+                                      const options = [...(fields[idx].options || []), ''];
+                                      fields[idx] = { ...fields[idx], options };
+                                      handleContentChange({ fields });
+                                    }}
+                                  >
+                                    <Plus className="h-4 w-4 mr-2" />
+                                    Añadir opción
+                                  </Button>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-sm font-medium mb-1 block">Texto del botón</label>
+                      <Input
+                        value={block.content.submitText || 'Enviar'}
+                        onChange={(e) => handleContentChange({ submitText: e.target.value })}
+                        placeholder="Enviar"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium mb-1 block">Email de destino</label>
+                      <Input
+                        value={block.content.email || ''}
+                        onChange={(e) => handleContentChange({ email: e.target.value })}
+                        placeholder="contacto@ejemplo.com"
+                      />
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Donde se enviarán las respuestas del formulario
+                      </p>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center space-x-2">
+                    <Switch
+                      id={`showSuccess-${block.id}`}
+                      checked={block.content.showSuccess !== false}
+                      onCheckedChange={(checked) => handleContentChange({ showSuccess: checked })}
+                    />
+                    <Label htmlFor={`showSuccess-${block.id}`}>Mostrar mensaje de éxito</Label>
+                  </div>
+                  
+                  {block.content.showSuccess !== false && (
+                    <div>
+                      <label className="text-sm font-medium mb-1 block">Mensaje de éxito</label>
+                      <Input
+                        value={block.content.successMessage || 'Gracias por tu mensaje. Te responderemos lo antes posible.'}
+                        onChange={(e) => handleContentChange({ successMessage: e.target.value })}
+                        placeholder="Mensaje enviado correctamente"
+                      />
+                    </div>
+                  )}
+                </div>
+              </div>
+            ) : (
+              <div className="border rounded-md p-6 space-y-4">
+                {block.content.title && (
+                  <h3 className="text-xl font-bold">{block.content.title}</h3>
+                )}
+                {block.content.description && (
+                  <p className="text-muted-foreground">{block.content.description}</p>
+                )}
+                
+                <div className="space-y-4">
+                  {(block.content.fields || []).map((field: any, idx: number) => (
+                    <div key={idx} className="space-y-2">
+                      <label className="text-sm font-medium">{field.label}{field.required ? ' *' : ''}</label>
+                      
+                      {field.type === 'textarea' ? (
+                        <Textarea 
+                          disabled={readOnly} 
+                          placeholder={field.label}
+                          className="w-full"
+                        />
+                      ) : field.type === 'select' ? (
+                        <Select disabled={readOnly}>
+                          <SelectTrigger>
+                            <SelectValue placeholder={`Seleccionar ${field.label.toLowerCase()}`} />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {(field.options || []).map((option: string, optIdx: number) => (
+                              <SelectItem key={optIdx} value={option}>{option}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      ) : field.type === 'checkbox' ? (
+                        <div className="flex items-center space-x-2">
+                          <Switch id={`form-${field.name}-${block.id}`} disabled={readOnly} />
+                          <Label htmlFor={`form-${field.name}-${block.id}`}>{field.label}</Label>
+                        </div>
+                      ) : field.type === 'radio' ? (
+                        <div className="space-y-2">
+                          {(field.options || []).map((option: string, optIdx: number) => (
+                            <div key={optIdx} className="flex items-center space-x-2">
+                              <input
+                                type="radio"
+                                disabled={readOnly}
+                                id={`${field.name}-${optIdx}-${block.id}`}
+                                name={field.name}
+                                className="h-4 w-4"
+                              />
+                              <label htmlFor={`${field.name}-${optIdx}-${block.id}`}>{option}</label>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <Input 
+                          type={field.type} 
+                          disabled={readOnly} 
+                          placeholder={field.label}
+                          className="w-full"
+                        />
+                      )}
+                    </div>
+                  ))}
+                </div>
+                
+                <Button disabled={readOnly} className="mt-4">
+                  {block.content.submitText || 'Enviar'}
+                </Button>
+              </div>
+            )}
+          </div>
+        );
 
       default:
         return (
