@@ -1,281 +1,298 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import { Link, useLocation } from "wouter";
+import {
+  BarChart3,
+  Users,
+  ClipboardList,
+  ShoppingBag,
+  Store,
+  LayoutDashboard,
+  Book,
+  BriefcaseBusiness,
+  Building2,
+  Building,
+  Settings,
+  PieChart,
+  Menu,
+  X,
+  CreditCard,
+  LogOut,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/use-auth";
-import { NavigationItem } from "@/types";
-import { ShieldCheck } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
-interface SidebarProps {
-  isOpen: boolean;
-  onClose: () => void;
+interface NavItemProps {
+  href: string;
+  icon: React.ReactNode;
+  label: string;
+  active?: boolean;
+  onClick?: () => void;
 }
 
-export default function Sidebar({ isOpen, onClose }: SidebarProps) {
-  const [location] = useLocation();
-  const { user, logoutMutation } = useAuth();
-  
-  // Sample navigation items (would normally come from a context/state)
-  const [selectedLocation, setSelectedLocation] = useState("Restaurante El Jardín - Sede Central");
-  
-  // Verificar si el usuario es administrador
-  const isAdmin = user?.role === "admin";
-  
-  const mainModules: NavigationItem[] = [
-    {
-      path: "/appcc",
-      label: "APPCC y Cumplimiento",
-      icon: "fas fa-clipboard-check",
-      isActive: location.startsWith("/appcc"),
-      children: [
-        { 
-          path: "/appcc/dashboard", 
-          label: "Dashboard", 
-          icon: "",
-          isActive: location === "/appcc" || location === "/appcc/dashboard"
-        },
-        { 
-          path: "/appcc/templates", 
-          label: "Plantillas", 
-          icon: "",
-          isActive: location === "/appcc/templates"
-        },
-        { 
-          path: "/appcc/daily-controls", 
-          label: "Controles Diarios", 
-          icon: "",
-          isActive: location === "/appcc/daily-controls"
-        },
-        { 
-          path: "/appcc/records", 
-          label: "Registros", 
-          icon: "",
-          isActive: location === "/appcc/records"
-        },
-        { 
-          path: "/appcc/reports", 
-          label: "Informes", 
-          icon: "",
-          isActive: location === "/appcc/reports"
-        }
-      ]
-    },
-    {
-      path: "/almacen",
-      label: "Almacén y Trazabilidad",
-      icon: "fas fa-warehouse",
-      isActive: location.startsWith("/almacen"),
-      children: [
-        { 
-          path: "/almacen", 
-          label: "Dashboard", 
-          icon: "",
-          isActive: location === "/almacen" || location === "/almacen/dashboard"
-        },
-        { 
-          path: "/almacen/inventory", 
-          label: "Inventario", 
-          icon: "",
-          isActive: location === "/almacen/inventory"
-        },
-        { 
-          path: "/almacen/movements", 
-          label: "Movimientos", 
-          icon: "",
-          isActive: location === "/almacen/movements"
-        },
-        { 
-          path: "/almacen/suppliers", 
-          label: "Proveedores", 
-          icon: "",
-          isActive: location === "/almacen/suppliers"
-        }
-      ]
-    },
-    {
-      path: "/tpv",
-      label: "TPV",
-      icon: "fas fa-cash-register",
-      isActive: location.startsWith("/tpv")
-    },
-    {
-      path: "/facturas",
-      label: "Facturación",
-      icon: "fas fa-file-invoice-dollar",
-      isActive: location.startsWith("/facturas")
-    },
-    {
-      path: "/escandallos",
-      label: "Escandallos y Fichas",
-      icon: "fas fa-utensils",
-      isActive: location.startsWith("/escandallos")
-    },
-    {
-      path: "/transparencia",
-      label: "Portales de Transparencia",
-      icon: "fas fa-globe",
-      isActive: location.startsWith("/transparencia")
-    }
-  ];
-  
-  const configModules: NavigationItem[] = [
-    // Módulo de administración (solo para admin)
-    ...(isAdmin ? [{
-      path: "/admin",
-      label: "Administración",
-      icon: "fas fa-building",
-      isActive: location.startsWith("/admin")
-    }] : []),
-    {
-      path: "/settings",
-      label: "Ajustes",
-      icon: "fas fa-cog",
-      isActive: location.startsWith("/settings")
-    },
-    {
-      path: "/users",
-      label: "Usuarios y Permisos",
-      icon: "fas fa-users",
-      isActive: location.startsWith("/users")
-    }
-  ];
+const NavItem: React.FC<NavItemProps> = ({
+  href,
+  icon,
+  label,
+  active,
+  onClick,
+}) => {
+  return (
+    <Link href={href}>
+      <a
+        className={cn(
+          "flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors",
+          active
+            ? "bg-primary text-primary-foreground"
+            : "hover:bg-gray-100 dark:hover:bg-gray-800"
+        )}
+        onClick={onClick}
+      >
+        {icon}
+        <span>{label}</span>
+      </a>
+    </Link>
+  );
+};
 
-  const handleLogout = () => {
-    logoutMutation.mutate();
+const Sidebar: React.FC = () => {
+  const [location] = useLocation();
+  const { logoutMutation } = useAuth();
+  const [isOpen, setIsOpen] = useState(false);
+
+  const toggleSidebar = () => {
+    setIsOpen(!isOpen);
   };
 
   return (
     <>
-      {/* Mobile Backdrop */}
-      <div 
-        className={cn(
-          "lg:hidden fixed inset-0 bg-neutral-800 bg-opacity-50 z-10 transition-opacity duration-300",
-          isOpen ? "opacity-100" : "opacity-0 pointer-events-none"
-        )} 
-        onClick={onClose}
-      />
-      
+      {/* Mobile sidebar toggle */}
+      <button
+        className="fixed z-50 bottom-4 right-4 md:hidden bg-primary text-white p-3 rounded-full shadow-lg"
+        onClick={toggleSidebar}
+      >
+        {isOpen ? <X size={24} /> : <Menu size={24} />}
+      </button>
+
       {/* Sidebar */}
-      <div 
+      <div
         className={cn(
-          "bg-white w-64 h-full shadow-md flex-shrink-0 fixed lg:static z-20 transition-transform duration-300",
-          isOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
+          "flex flex-col w-64 bg-background border-r h-screen overflow-y-auto transition-transform duration-300 ease-in-out",
+          isOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
         )}
       >
-        <div className="flex flex-col h-full">
-          {/* Logo */}
-          <div className="p-4 border-b border-neutral-100 flex items-center justify-between">
-            <Link href="/">
-              <div className="flex items-center cursor-pointer">
-                <div className="w-10 h-10 rounded-md bg-primary flex items-center justify-center mr-2 transition-all duration-300 hover:shadow-md">
-                  <ShieldCheck className="h-6 w-6 text-white" />
-                </div>
-                <div className="flex flex-col">
-                  <span className="text-xl font-bold text-neutral-800">ShieldCuisine</span>
-                  <span className="text-xs text-neutral-500">Seguridad Alimentaria</span>
-                </div>
-              </div>
-            </Link>
-            <button onClick={onClose} className="lg:hidden text-neutral-500">
-              <i className="fas fa-times"></i>
-            </button>
-          </div>
-          
-          {/* Company/Location Selector */}
-          <div className="px-4 py-3 border-b border-neutral-100">
-            <div className="relative">
-              <select 
-                className="block w-full p-2 border border-neutral-200 rounded-md text-sm bg-neutral-50"
-                value={selectedLocation}
-                onChange={(e) => setSelectedLocation(e.target.value)}
-              >
-                <option>Restaurante El Jardín - Sede Central</option>
-                <option>Restaurante El Jardín - Sucursal Norte</option>
-                <option>Catering Eventos S.L.</option>
-              </select>
+        <div className="p-4 border-b">
+          <h2 className="text-xl font-bold">ShieldCuisine</h2>
+        </div>
+
+        <div className="flex-1 py-4 space-y-1 px-3">
+          <NavItem
+            href="/"
+            icon={<LayoutDashboard size={20} />}
+            label="Dashboard"
+            active={location === "/"}
+            onClick={() => setIsOpen(false)}
+          />
+
+          <div className="py-2">
+            <h3 className="px-3 text-xs font-semibold text-gray-500">APPCC</h3>
+            <div className="mt-1 space-y-1">
+              <NavItem
+                href="/appcc/dashboard"
+                icon={<BarChart3 size={20} />}
+                label="Resumen"
+                active={location === "/appcc/dashboard"}
+                onClick={() => setIsOpen(false)}
+              />
+              <NavItem
+                href="/appcc/daily-controls"
+                icon={<ClipboardList size={20} />}
+                label="Controles Diarios"
+                active={location === "/appcc/daily-controls"}
+                onClick={() => setIsOpen(false)}
+              />
+              <NavItem
+                href="/appcc/templates"
+                icon={<ClipboardList size={20} />}
+                label="Plantillas"
+                active={location === "/appcc/templates"}
+                onClick={() => setIsOpen(false)}
+              />
+              <NavItem
+                href="/appcc/records"
+                icon={<ClipboardList size={20} />}
+                label="Registros"
+                active={location === "/appcc/records"}
+                onClick={() => setIsOpen(false)}
+              />
+              <NavItem
+                href="/appcc/reports"
+                icon={<PieChart size={20} />}
+                label="Informes"
+                active={location === "/appcc/reports"}
+                onClick={() => setIsOpen(false)}
+              />
             </div>
           </div>
-          
-          {/* Navigation Items */}
-          <nav className="flex-1 py-4 overflow-y-auto">
-            <h3 className="px-4 text-xs font-semibold text-neutral-400 uppercase tracking-wider mb-2">Módulos Principales</h3>
-            
-            {mainModules.map((module) => (
-              <div key={module.path}>
-                <Link href={module.path}>
-                  <div
-                    className={cn(
-                      "flex items-center pl-4 pr-4 py-3 text-neutral-700 hover:bg-neutral-50 cursor-pointer",
-                      module.isActive && "sidebar-item active"
-                    )}
-                  >
-                    <i className={cn(module.icon, "w-5 mr-3", module.isActive ? "text-primary" : "text-neutral-500")}></i>
-                    <span>{module.label}</span>
-                  </div>
-                </Link>
-                
-                {/* Submenu items */}
-                {module.children && module.isActive && (
-                  <div>
-                    {module.children.map((child) => (
-                      <Link 
-                        key={child.path}
-                        href={child.path}
-                      >
-                        <div className={cn(
-                          "flex items-center pl-8 pr-4 py-2 text-neutral-600 hover:bg-neutral-50 cursor-pointer",
-                          child.isActive && "bg-neutral-50 text-primary"
-                        )}>
-                          {child.icon && <i className={cn(child.icon, "w-5 text-neutral-500 mr-3")}></i>}
-                          <span>{child.label}</span>
-                        </div>
-                      </Link>
-                    ))}
-                  </div>
-                )}
-              </div>
-            ))}
-            
-            <h3 className="px-4 mt-6 text-xs font-semibold text-neutral-400 uppercase tracking-wider mb-2">Configuración</h3>
-            
-            {configModules.map((module) => (
-              <Link 
-                key={module.path} 
-                href={module.path}
-              >
-                <div className={cn(
-                  "flex items-center pl-4 pr-4 py-3 text-neutral-600 hover:bg-neutral-50 cursor-pointer",
-                  module.isActive && "sidebar-item active"
-                )}>
-                  <i className={cn(module.icon, "w-5 mr-3", module.isActive ? "text-primary" : "text-neutral-500")}></i>
-                  <span>{module.label}</span>
-                </div>
-              </Link>
-            ))}
-          </nav>
-          
-          {/* User Profile */}
-          <div className="border-t border-neutral-100 p-4">
-            <div className="flex items-center">
-              <div className="w-8 h-8 rounded-full bg-neutral-200 flex items-center justify-center">
-                <i className="fas fa-user text-neutral-500"></i>
-              </div>
-              <div className="ml-3 truncate">
-                <p className="text-sm font-medium text-neutral-800">{user?.name || "Usuario"}</p>
-                <p className="text-xs text-neutral-500">{user?.role || "Empleado"}</p>
-              </div>
-              <div className="ml-auto">
-                <button 
-                  className="text-neutral-500 hover:text-neutral-700"
-                  onClick={handleLogout}
-                  disabled={logoutMutation.isPending}
-                >
-                  <i className="fas fa-sign-out-alt"></i>
-                </button>
-              </div>
+
+          <div className="py-2">
+            <h3 className="px-3 text-xs font-semibold text-gray-500">
+              Inventario
+            </h3>
+            <div className="mt-1 space-y-1">
+              <NavItem
+                href="/almacen/dashboard"
+                icon={<Store size={20} />}
+                label="Almacén"
+                active={location === "/almacen/dashboard"}
+                onClick={() => setIsOpen(false)}
+              />
+              <NavItem
+                href="/almacen/productos"
+                icon={<ShoppingBag size={20} />}
+                label="Productos"
+                active={location === "/almacen/productos"}
+                onClick={() => setIsOpen(false)}
+              />
+              <NavItem
+                href="/almacen/woocommerce"
+                icon={<Store size={20} />}
+                label="WooCommerce"
+                active={location === "/almacen/woocommerce"}
+                onClick={() => setIsOpen(false)}
+              />
             </div>
           </div>
+
+          <div className="py-2">
+            <h3 className="px-3 text-xs font-semibold text-gray-500">Compras</h3>
+            <div className="mt-1 space-y-1">
+              <NavItem
+                href="/compras"
+                icon={<ShoppingBag size={20} />}
+                label="Órdenes de Compra"
+                active={location === "/compras"}
+                onClick={() => setIsOpen(false)}
+              />
+              <NavItem
+                href="/compras/analisis"
+                icon={<BarChart3 size={20} />}
+                label="Análisis IA"
+                active={location === "/compras/analisis"}
+                onClick={() => setIsOpen(false)}
+              />
+            </div>
+          </div>
+
+          <div className="py-2">
+            <h3 className="px-3 text-xs font-semibold text-gray-500">Banca</h3>
+            <div className="mt-1 space-y-1">
+              <NavItem
+                href="/banca/dashboard"
+                icon={<CreditCard size={20} />}
+                label="Dashboard"
+                active={location === "/banca/dashboard"}
+                onClick={() => setIsOpen(false)}
+              />
+              <NavItem
+                href="/banca/cuentas"
+                icon={<CreditCard size={20} />}
+                label="Cuentas"
+                active={location === "/banca/cuentas"}
+                onClick={() => setIsOpen(false)}
+              />
+              <NavItem
+                href="/banca/transacciones"
+                icon={<CreditCard size={20} />}
+                label="Transacciones"
+                active={location === "/banca/transacciones"}
+                onClick={() => setIsOpen(false)}
+              />
+            </div>
+          </div>
+
+          <div className="py-2">
+            <h3 className="px-3 text-xs font-semibold text-gray-500">
+              Formación
+            </h3>
+            <div className="mt-1 space-y-1">
+              <NavItem
+                href="/formacion/dashboard"
+                icon={<Book size={20} />}
+                label="Dashboard"
+                active={location === "/formacion/dashboard"}
+                onClick={() => setIsOpen(false)}
+              />
+              <NavItem
+                href="/formacion/cursos"
+                icon={<Book size={20} />}
+                label="Catálogo"
+                active={location === "/formacion/cursos"}
+                onClick={() => setIsOpen(false)}
+              />
+              <NavItem
+                href="/formacion/mis-cursos"
+                icon={<Book size={20} />}
+                label="Mis Cursos"
+                active={location === "/formacion/mis-cursos"}
+                onClick={() => setIsOpen(false)}
+              />
+            </div>
+          </div>
+
+          <div className="py-2">
+            <h3 className="px-3 text-xs font-semibold text-gray-500">
+              Administración
+            </h3>
+            <div className="mt-1 space-y-1">
+              <NavItem
+                href="/admin/clientes"
+                icon={<BriefcaseBusiness size={20} />}
+                label="Empresas"
+                active={location === "/admin/clientes"}
+                onClick={() => setIsOpen(false)}
+              />
+              <NavItem
+                href="/admin/locations"
+                icon={<Building2 size={20} />}
+                label="Localizaciones"
+                active={location === "/admin/locations"}
+                onClick={() => setIsOpen(false)}
+              />
+              <NavItem
+                href="/admin/almacenes"
+                icon={<Building size={20} />}
+                label="Almacenes"
+                active={location === "/admin/almacenes"}
+                onClick={() => setIsOpen(false)}
+              />
+              <NavItem
+                href="/admin/usuarios"
+                icon={<Users size={20} />}
+                label="Usuarios"
+                active={location === "/admin/usuarios"}
+                onClick={() => setIsOpen(false)}
+              />
+            </div>
+          </div>
+        </div>
+
+        <div className="p-4 border-t">
+          <Button
+            variant="secondary"
+            className="w-full"
+            onClick={() => {
+              logoutMutation.mutate();
+              setIsOpen(false);
+            }}
+          >
+            <LogOut size={16} className="mr-2" />
+            Cerrar Sesión
+          </Button>
         </div>
       </div>
     </>
   );
-}
+};
+
+export default Sidebar;

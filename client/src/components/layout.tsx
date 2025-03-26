@@ -1,42 +1,50 @@
-import React, { ReactNode, useState } from "react";
+import React, { ReactNode } from "react";
 import Sidebar from "./sidebar";
-import Topbar from "./topbar";
+import { useAuth } from "@/hooks/use-auth";
 import { useLocation } from "wouter";
+import { Loader2 } from "lucide-react";
 
 interface LayoutProps {
   children: ReactNode;
   title?: string;
-  tabs?: { id: string; label: string; path: string }[];
+  description?: string;
 }
 
-export function Layout({ children, title = "ShieldCuisine", tabs = [] }: LayoutProps) {
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+export default function Layout({ children, title, description }: LayoutProps) {
+  const { user, isLoading } = useAuth();
   const [location] = useLocation();
-  
-  // Determinar el título de la página según la ruta actual
-  const getModuleTitle = () => {
-    if (location.startsWith('/compras')) return 'Gestión de Compras';
-    if (location.startsWith('/appcc')) return 'APPCC y Cumplimiento';
-    if (location.startsWith('/almacen')) return 'Almacén y Trazabilidad';
-    if (location.startsWith('/formacion')) return 'Formación y E-Learning';
-    if (location.startsWith('/banca')) return 'Integración Bancaria';
-    if (location.startsWith('/transparencia')) return 'Portal de Transparencia';
-    return title;
-  };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <Loader2 className="h-8 w-8 animate-spin text-border" />
+      </div>
+    );
+  }
+
+  if (!user && !location.startsWith("/auth")) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <Loader2 className="h-8 w-8 animate-spin text-border" />
+      </div>
+    );
+  }
+
+  if (location.startsWith("/auth")) {
+    return <>{children}</>;
+  }
 
   return (
-    <div className="flex flex-col min-h-screen">
-      <Topbar 
-        title={getModuleTitle()} 
-        onMenuToggle={() => setIsSidebarOpen(!isSidebarOpen)}
-        tabs={tabs}
-      />
-      <div className="flex flex-1">
-        <Sidebar 
-          isOpen={isSidebarOpen} 
-          onClose={() => setIsSidebarOpen(false)} 
-        />
-        <main className="flex-1 bg-background overflow-auto">
+    <div className="flex h-screen overflow-hidden">
+      <Sidebar />
+      <div className="flex-1 flex flex-col overflow-y-auto">
+        <main className="flex-1 p-6">
+          {(title || description) && (
+            <div className="mb-6">
+              {title && <h1 className="text-2xl font-bold">{title}</h1>}
+              {description && <p className="text-gray-500">{description}</p>}
+            </div>
+          )}
           {children}
         </main>
       </div>

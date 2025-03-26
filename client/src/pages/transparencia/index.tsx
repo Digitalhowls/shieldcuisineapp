@@ -47,7 +47,7 @@ function TransparenciaSelector({ isSidebarOpen, setIsSidebarOpen }: {
       />
       
       <div className="flex flex-1 overflow-hidden">
-        <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
+        <Sidebar />
         
         <main className="flex-1 overflow-y-auto">
           <PortalSelector />
@@ -108,7 +108,7 @@ function CompanyPortal({
           onMenuToggle={() => setIsSidebarOpen(!isSidebarOpen)}
         />
         <div className="flex flex-1 overflow-hidden">
-          <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
+          <Sidebar />
           <main className="flex-1 overflow-y-auto p-8 flex items-center justify-center">
             <div className="animate-spin h-8 w-8 border-b-2 border-primary rounded-full"></div>
           </main>
@@ -126,7 +126,7 @@ function CompanyPortal({
           onMenuToggle={() => setIsSidebarOpen(!isSidebarOpen)}
         />
         <div className="flex flex-1 overflow-hidden">
-          <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
+          <Sidebar />
           <main className="flex-1 overflow-y-auto p-8">
             <Alert variant="destructive" className="max-w-2xl mx-auto">
               <AlertCircle className="h-4 w-4" />
@@ -159,7 +159,7 @@ function CompanyPortal({
       />
       
       <div className="flex flex-1 overflow-hidden">
-        <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
+        <Sidebar />
         
         <main className="flex-1 overflow-y-auto">
           <Switch>

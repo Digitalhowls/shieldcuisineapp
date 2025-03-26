@@ -31,7 +31,7 @@ export default function AlmacenModule() {
   
   return (
     <div className="flex h-screen overflow-hidden">
-      <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+      <Sidebar />
       
       <div className="flex-1 flex flex-col overflow-hidden">
         <TopBar 
