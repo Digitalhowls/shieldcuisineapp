@@ -12,6 +12,7 @@ import { registerWooCommerceRoutes } from "./routes/woocommerce";
 import { registerBankingRoutes } from "./routes/banking";
 import { registerELearningRoutes } from "./routes/e-learning";
 import { registerNotificationRoutes } from "./routes/notifications";
+import { registerPurchasingRoutes } from "./routes/purchasing";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Setup auth routes
@@ -197,6 +198,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Registrar rutas para el sistema de notificaciones
   registerNotificationRoutes(app);
+  
+  // Registrar rutas para el módulo de compras
+  registerPurchasingRoutes(app);
 
   const httpServer = createServer(app);
   return httpServer;
