@@ -1,904 +1,316 @@
-import React, { useState } from 'react';
-import { useQuery, useMutation } from '@tanstack/react-query';
-import { useToast } from '@/hooks/use-toast';
-import { Layout } from '@/components/layout';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel } from '@/components/ui/form';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { DatePicker } from '@/components/ui/date-picker';
-import { Button } from '@/components/ui/button';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import * as z from 'zod';
-import { apiRequest } from '@/lib/queryClient';
+import React, { useState } from "react";
+import { useMutation } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
+import { Layout } from "@/components/layout";
+import { Card } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Button } from "@/components/ui/button";
+import { DatePicker } from "@/components/ui/date-picker";
+import { Separator } from "@/components/ui/separator";
+import { useToast } from "@/hooks/use-toast";
 import { 
   BarChart, 
-  Bar, 
-  AreaChart, 
-  Area, 
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip, 
-  ResponsiveContainer, 
-  PieChart, 
-  Pie, 
-  Cell 
-} from 'recharts';
-import { Loader2, AlertTriangle, LineChart, TrendingUp, ShoppingBag, FileBarChart } from 'lucide-react';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Skeleton } from '@/components/ui/skeleton';
+  LineChart, 
+  PieChart,
+  TrendingUp, 
+  TrendingDown, 
+  AlertTriangle, 
+  CheckCircle, 
+  AreaChart,
+  CalendarRange,
+} from "lucide-react";
+import { format, subMonths, subDays, startOfMonth, endOfMonth } from "date-fns";
+import { es } from "date-fns/locale";
 
-// Esquema de validación para el formulario
-const analysisFormSchema = z.object({
-  analysisType: z.enum(['supplier_performance', 'expense_trends', 'inventory_optimization', 'future_needs'], {
-    required_error: 'Por favor selecciona un tipo de análisis.',
-  }),
-  timeframe: z.enum(['last_month', 'last_quarter', 'last_year', 'custom'], {
-    required_error: 'Por favor selecciona un período de tiempo.',
-  }),
-  customStartDate: z.date().optional(),
-  customEndDate: z.date().optional(),
-  supplierId: z.string().optional(),
-  warehouseId: z.string().optional(),
-});
+interface AnalysisRequest {
+  analysisType: string;
+  timeframe: string;
+  companyId: number;
+  customStartDate?: string;
+  customEndDate?: string;
+}
 
-// Colores para gráficos
-const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d'];
+interface AnalysisResponse {
+  analysis: string;
+  insights: string[];
+  recommendations: string[];
+  dataPoints?: any;
+  charts?: any;
+}
 
-export default function AnalisisCompras() {
+const PurchaseAnalysis = () => {
   const { toast } = useToast();
-  const [activeTab, setActiveTab] = useState('supplier_performance');
-  const [analysisResult, setAnalysisResult] = useState<any>(null);
+  const [activeTab, setActiveTab] = useState("supplier_performance");
+  const [timeframe, setTimeframe] = useState("last_month");
+  const [customStartDate, setCustomStartDate] = useState<Date>(subMonths(new Date(), 1));
+  const [customEndDate, setCustomEndDate] = useState<Date>(new Date());
+  const [analysisData, setAnalysisData] = useState<AnalysisResponse | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
 
-  // Consulta para obtener proveedores
-  const { data: suppliers, isLoading: isLoadingSuppliers } = useQuery({
-    queryKey: ['/api/suppliers'],
-  });
-
-  // Consulta para obtener almacenes
-  const { data: warehouses, isLoading: isLoadingWarehouses } = useQuery({
-    queryKey: ['/api/warehouses'],
-  });
-
-  // Configurar el formulario
-  const form = useForm<z.infer<typeof analysisFormSchema>>({
-    resolver: zodResolver(analysisFormSchema),
-    defaultValues: {
-      analysisType: 'supplier_performance',
-      timeframe: 'last_month',
-    },
-    mode: 'onChange',
-  });
-
-  // Observar cambios en el tipo de análisis para actualizar la pestaña activa
-  React.useEffect(() => {
-    const subscription = form.watch((value, { name }) => {
-      if (name === 'analysisType' && value.analysisType) {
-        setActiveTab(value.analysisType as string);
-      }
-    });
-    return () => subscription.unsubscribe();
-  }, [form.watch]);
-
-  // Mutación para enviar la solicitud de análisis
   const analysisMutation = useMutation({
-    mutationFn: async (data: z.infer<typeof analysisFormSchema>) => {
-      // Convertir IDs de string a number donde sea necesario
-      const formattedData = {
-        ...data,
-        supplierId: data.supplierId ? parseInt(data.supplierId, 10) : undefined,
-        warehouseId: data.warehouseId ? parseInt(data.warehouseId, 10) : undefined,
-        // Formatear fechas para envío a la API
-        customStartDate: data.customStartDate ? data.customStartDate.toISOString().split('T')[0] : undefined,
-        customEndDate: data.customEndDate ? data.customEndDate.toISOString().split('T')[0] : undefined,
-      };
-      
-      const response = await apiRequest('POST', '/api/purchase-analysis', formattedData);
-      return await response.json();
+    mutationFn: async (data: AnalysisRequest) => {
+      const response = await apiRequest("POST", "/api/purchase-analysis", data);
+      return response.json();
     },
-    onSuccess: (data) => {
-      setAnalysisResult(data);
-      toast({
-        title: 'Análisis completado',
-        description: 'El análisis de compras ha sido generado correctamente.',
-      });
+    onSuccess: (data: AnalysisResponse) => {
+      setAnalysisData(data);
+      setIsLoading(false);
     },
     onError: (error: Error) => {
       toast({
-        title: 'Error en el análisis',
-        description: `No se pudo completar el análisis: ${error.message}`,
-        variant: 'destructive',
+        title: "Error al obtener análisis",
+        description: error.message,
+        variant: "destructive",
       });
+      setIsLoading(false);
     },
   });
 
-  // Manejar envío del formulario
-  function onSubmit(values: z.infer<typeof analysisFormSchema>) {
-    // Validar fechas personalizadas si el período es personalizado
-    if (values.timeframe === 'custom') {
-      if (!values.customStartDate || !values.customEndDate) {
-        toast({
-          title: 'Fechas requeridas',
-          description: 'Para análisis personalizados, debes seleccionar fechas de inicio y fin.',
-          variant: 'destructive',
-        });
-        return;
-      }
-    }
+  const performAnalysis = () => {
+    setIsLoading(true);
+    setAnalysisData(null);
     
-    analysisMutation.mutate(values);
-  }
+    const request: AnalysisRequest = {
+      analysisType: activeTab,
+      timeframe: timeframe,
+      companyId: 1, // TODO: Get from context or store
+    };
 
-  // Renderizar gráficos según el tipo de análisis y los datos disponibles
-  const renderCharts = () => {
-    if (!analysisResult || !analysisResult.dataPoints) return null;
-    
-    switch (activeTab) {
-      case 'supplier_performance':
-        if (!Array.isArray(analysisResult.dataPoints)) return null;
-        return (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Monto Total por Proveedor</CardTitle>
-                <CardDescription>Comparación de gasto total por proveedor</CardDescription>
-              </CardHeader>
-              <CardContent className="h-[300px]">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={analysisResult.dataPoints}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="name" />
-                    <YAxis />
-                    <Tooltip />
-                    <Bar dataKey="totalAmount" fill="#8884d8" name="Monto Total" />
-                  </BarChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
-            
-            <Card>
-              <CardHeader>
-                <CardTitle>Cantidad de Órdenes por Proveedor</CardTitle>
-                <CardDescription>Distribución de órdenes por proveedor</CardDescription>
-              </CardHeader>
-              <CardContent className="h-[300px]">
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={analysisResult.dataPoints}
-                      cx="50%"
-                      cy="50%"
-                      labelLine={false}
-                      label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                      outerRadius={80}
-                      fill="#8884d8"
-                      dataKey="ordersCount"
-                    >
-                      {analysisResult.dataPoints.map((entry: any, index: number) => (
-                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                      ))}
-                    </Pie>
-                    <Tooltip />
-                  </PieChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
-          </div>
-        );
-        
-      case 'expense_trends':
-        if (!analysisResult.dataPoints.monthlyExpenses) return null;
-        
-        // Convertir datos de objeto a array para gráficos
-        const monthlyData = Object.entries(analysisResult.dataPoints.monthlyExpenses).map(([month, amount]) => ({
-          month,
-          amount,
-        }));
-        
-        const categoryData = Object.entries(analysisResult.dataPoints.categoryExpenses || {}).map(([category, amount]) => ({
-          category,
-          amount,
-        }));
-        
-        return (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Gastos Mensuales</CardTitle>
-                <CardDescription>Evolución de gastos a lo largo del tiempo</CardDescription>
-              </CardHeader>
-              <CardContent className="h-[300px]">
-                <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart data={monthlyData}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="month" />
-                    <YAxis />
-                    <Tooltip />
-                    <Area type="monotone" dataKey="amount" stroke="#8884d8" fill="#8884d8" name="Monto" />
-                  </AreaChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
-            
-            <Card>
-              <CardHeader>
-                <CardTitle>Gastos por Categoría</CardTitle>
-                <CardDescription>Distribución de gastos por categoría de producto</CardDescription>
-              </CardHeader>
-              <CardContent className="h-[300px]">
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={categoryData}
-                      cx="50%"
-                      cy="50%"
-                      labelLine={false}
-                      label={({ category, percent }) => `${category}: ${(percent * 100).toFixed(0)}%`}
-                      outerRadius={80}
-                      fill="#8884d8"
-                      dataKey="amount"
-                      nameKey="category"
-                    >
-                      {categoryData.map((entry: any, index: number) => (
-                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                      ))}
-                    </Pie>
-                    <Tooltip />
-                  </PieChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
-          </div>
-        );
-        
-      case 'inventory_optimization':
-      case 'future_needs':
-        if (!Array.isArray(analysisResult.dataPoints)) return null;
-        
-        return (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Rotación de Inventario</CardTitle>
-                <CardDescription>Tasa de rotación por producto</CardDescription>
-              </CardHeader>
-              <CardContent className="h-[300px]">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={analysisResult.dataPoints}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="name" />
-                    <YAxis />
-                    <Tooltip />
-                    <Bar dataKey="turnoverRate" fill="#82ca9d" name="Tasa de Rotación" />
-                  </BarChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
-            
-            <Card>
-              <CardHeader>
-                <CardTitle>Stock Actual vs. Promedio de Compra</CardTitle>
-                <CardDescription>Comparación de niveles actuales y demanda</CardDescription>
-              </CardHeader>
-              <CardContent className="h-[300px]">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={analysisResult.dataPoints}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="name" />
-                    <YAxis />
-                    <Tooltip />
-                    <Bar dataKey="currentStock" fill="#8884d8" name="Stock Actual" />
-                    <Bar dataKey="averageMonthlyQuantity" fill="#82ca9d" name="Promedio Mensual" />
-                  </BarChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
-          </div>
-        );
-        
+    if (timeframe === "custom") {
+      request.customStartDate = format(customStartDate, "yyyy-MM-dd");
+      request.customEndDate = format(customEndDate, "yyyy-MM-dd");
+    }
+
+    analysisMutation.mutate(request);
+  };
+
+  const getTimeframeLabel = () => {
+    switch (timeframe) {
+      case "last_month":
+        return "Último mes";
+      case "last_quarter":
+        return "Último trimestre";
+      case "last_year":
+        return "Último año";
+      case "custom":
+        return `${format(customStartDate, "dd/MM/yyyy")} - ${format(customEndDate, "dd/MM/yyyy")}`;
       default:
-        return null;
+        return "Período de tiempo";
     }
   };
 
-  // Renderizar sección de resultados del análisis
-  const renderAnalysisResults = () => {
-    if (analysisMutation.isPending) {
-      return (
-        <div className="mt-8">
-          <div className="flex items-center justify-center p-12">
-            <div className="text-center">
-              <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto mb-4" />
-              <h3 className="text-lg font-semibold">Generando análisis con IA...</h3>
-              <p className="text-muted-foreground mt-2">
-                Estamos procesando los datos y generando insights inteligentes.
-                <br />Esto puede tomar unos momentos.
-              </p>
-            </div>
-          </div>
-        </div>
-      );
-    }
-
-    if (analysisMutation.isError) {
-      return (
-        <Alert variant="destructive" className="mt-8">
-          <AlertTriangle className="h-4 w-4" />
-          <AlertTitle>Error en el análisis</AlertTitle>
-          <AlertDescription>
-            No se pudo completar el análisis. {analysisMutation.error.message}
-          </AlertDescription>
-        </Alert>
-      );
-    }
-
-    if (!analysisResult) return null;
-
-    return (
-      <div className="mt-8 space-y-8">
-        <Card>
-          <CardHeader>
-            <CardTitle>Análisis de Datos</CardTitle>
-            <CardDescription>
-              Resultados generados mediante IA basados en datos de compras
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <div>
-              <h3 className="text-lg font-semibold mb-2">Resumen del análisis</h3>
-              <p className="text-muted-foreground whitespace-pre-line">{analysisResult.analysis}</p>
-            </div>
-
-            {analysisResult.insights && analysisResult.insights.length > 0 && (
-              <div>
-                <h3 className="text-lg font-semibold mb-2">Insights clave</h3>
-                <ul className="space-y-2 list-disc list-inside">
-                  {analysisResult.insights.map((insight: string, index: number) => (
-                    <li key={index} className="text-muted-foreground">{insight}</li>
-                  ))}
-                </ul>
-              </div>
-            )}
-
-            {analysisResult.recommendations && analysisResult.recommendations.length > 0 && (
-              <div>
-                <h3 className="text-lg font-semibold mb-2">Recomendaciones</h3>
-                <ul className="space-y-2 list-disc list-inside">
-                  {analysisResult.recommendations.map((recommendation: string, index: number) => (
-                    <li key={index} className="text-muted-foreground">{recommendation}</li>
-                  ))}
-                </ul>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {renderCharts()}
-      </div>
-    );
+  const renderInsightIcon = (index: number) => {
+    const icons = [
+      <TrendingUp key="trend-up" className="text-green-500" />,
+      <TrendingDown key="trend-down" className="text-amber-500" />,
+      <AlertTriangle key="alert" className="text-red-500" />,
+      <CheckCircle key="check" className="text-blue-500" />,
+      <AreaChart key="chart" className="text-purple-500" />
+    ];
+    return icons[index % icons.length];
   };
 
   return (
     <Layout>
-      <div className="container mx-auto p-6">
-        <div className="flex items-center justify-between mb-6">
+      <div className="container mx-auto py-8 px-4">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight">Análisis de Compras</h1>
-            <p className="text-muted-foreground">
-              Analiza tendencias, optimiza inventario y mejora decisiones de compra con inteligencia artificial
+            <h1 className="text-3xl font-bold">Análisis de Compras</h1>
+            <p className="text-gray-500 mt-1">
+              Analiza tendencias y patrones en tus compras con inteligencia artificial
             </p>
           </div>
-          <FileBarChart className="h-10 w-10 text-primary" />
+          <Button 
+            onClick={performAnalysis} 
+            disabled={isLoading}
+            className="mt-4 md:mt-0"
+          >
+            {isLoading ? "Analizando..." : "Analizar"}
+          </Button>
         </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Configuración del Análisis</CardTitle>
-            <CardDescription>
-              Selecciona el tipo de análisis y período de tiempo para generar insights
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-              <TabsList className="grid grid-cols-2 md:grid-cols-4 mb-6">
-                <TabsTrigger value="supplier_performance" onClick={() => form.setValue('analysisType', 'supplier_performance')}>
-                  <ShoppingBag className="mr-2 h-4 w-4" />
-                  <span className="hidden sm:inline">Rendimiento de Proveedores</span>
-                  <span className="sm:hidden">Proveedores</span>
-                </TabsTrigger>
-                <TabsTrigger value="expense_trends" onClick={() => form.setValue('analysisType', 'expense_trends')}>
-                  <TrendingUp className="mr-2 h-4 w-4" />
-                  <span className="hidden sm:inline">Tendencias de Gastos</span>
-                  <span className="sm:hidden">Gastos</span>
-                </TabsTrigger>
-                <TabsTrigger value="inventory_optimization" onClick={() => form.setValue('analysisType', 'inventory_optimization')}>
-                  <LineChart className="mr-2 h-4 w-4" />
-                  <span className="hidden sm:inline">Optimización de Inventario</span>
-                  <span className="sm:hidden">Inventario</span>
-                </TabsTrigger>
-                <TabsTrigger value="future_needs" onClick={() => form.setValue('analysisType', 'future_needs')}>
-                  <FileBarChart className="mr-2 h-4 w-4" />
-                  <span className="hidden sm:inline">Predicción de Necesidades</span>
-                  <span className="sm:hidden">Predicción</span>
-                </TabsTrigger>
-              </TabsList>
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
+          {/* Filtros */}
+          <div className="md:col-span-3 space-y-6">
+            <Card className="p-4">
+              <h2 className="text-xl font-semibold mb-4">Filtros de Análisis</h2>
+              <div className="space-y-4">
+                <div>
+                  <h3 className="text-sm font-medium mb-2">Tipo de Análisis</h3>
+                  <Tabs 
+                    value={activeTab} 
+                    onValueChange={setActiveTab}
+                    className="w-full"
+                  >
+                    <TabsList className="grid grid-cols-2 w-full mb-2">
+                      <TabsTrigger value="supplier_performance">Proveedores</TabsTrigger>
+                      <TabsTrigger value="expense_trends">Gastos</TabsTrigger>
+                    </TabsList>
+                    <TabsList className="grid grid-cols-2 w-full">
+                      <TabsTrigger value="inventory_optimization">Inventario</TabsTrigger>
+                      <TabsTrigger value="future_needs">Predicción</TabsTrigger>
+                    </TabsList>
+                  </Tabs>
+                </div>
 
-              <TabsContent value="supplier_performance" className="mt-0">
-                <Form {...form}>
-                  <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                      <FormField
-                        control={form.control}
-                        name="timeframe"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Período de Análisis</FormLabel>
-                            <Select 
-                              onValueChange={field.onChange} 
-                              defaultValue={field.value}
-                            >
-                              <FormControl>
-                                <SelectTrigger>
-                                  <SelectValue placeholder="Seleccionar período" />
-                                </SelectTrigger>
-                              </FormControl>
-                              <SelectContent>
-                                <SelectItem value="last_month">Último mes</SelectItem>
-                                <SelectItem value="last_quarter">Último trimestre</SelectItem>
-                                <SelectItem value="last_year">Último año</SelectItem>
-                                <SelectItem value="custom">Personalizado</SelectItem>
-                              </SelectContent>
-                            </Select>
-                            <FormDescription>
-                              Período de tiempo para el análisis
-                            </FormDescription>
-                          </FormItem>
-                        )}
-                      />
+                <Separator />
 
-                      {form.watch('timeframe') === 'custom' && (
-                        <>
-                          <FormField
-                            control={form.control}
-                            name="customStartDate"
-                            render={({ field }) => (
-                              <FormItem className="flex flex-col">
-                                <FormLabel>Fecha Inicio</FormLabel>
-                                <DatePicker 
-                                  date={field.value} 
-                                  setDate={field.onChange}
-                                  disabled={(date) => date > new Date()}
-                                />
-                                <FormDescription>
-                                  Inicio del período de análisis
-                                </FormDescription>
-                              </FormItem>
-                            )}
-                          />
+                <div>
+                  <h3 className="text-sm font-medium mb-2">Período de Tiempo</h3>
+                  <Tabs 
+                    value={timeframe} 
+                    onValueChange={setTimeframe}
+                    className="w-full"
+                  >
+                    <TabsList className="grid grid-cols-2 w-full mb-2">
+                      <TabsTrigger value="last_month">Último Mes</TabsTrigger>
+                      <TabsTrigger value="last_quarter">Último Trimestre</TabsTrigger>
+                    </TabsList>
+                    <TabsList className="grid grid-cols-2 w-full">
+                      <TabsTrigger value="last_year">Último Año</TabsTrigger>
+                      <TabsTrigger value="custom">Personalizado</TabsTrigger>
+                    </TabsList>
+                  </Tabs>
+                </div>
 
-                          <FormField
-                            control={form.control}
-                            name="customEndDate"
-                            render={({ field }) => (
-                              <FormItem className="flex flex-col">
-                                <FormLabel>Fecha Fin</FormLabel>
-                                <DatePicker 
-                                  date={field.value} 
-                                  setDate={field.onChange}
-                                  disabled={(date) => {
-                                    const startDate = form.getValues('customStartDate');
-                                    return date > new Date() || (startDate && date < startDate);
-                                  }}
-                                />
-                                <FormDescription>
-                                  Fin del período de análisis
-                                </FormDescription>
-                              </FormItem>
-                            )}
-                          />
-                        </>
-                      )}
-
-                      <FormField
-                        control={form.control}
-                        name="supplierId"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Proveedor (Opcional)</FormLabel>
-                            <Select 
-                              onValueChange={field.onChange} 
-                              defaultValue={field.value}
-                            >
-                              <FormControl>
-                                <SelectTrigger>
-                                  <SelectValue placeholder="Todos los proveedores" />
-                                </SelectTrigger>
-                              </FormControl>
-                              <SelectContent>
-                                <SelectItem value="">Todos los proveedores</SelectItem>
-                                {isLoadingSuppliers ? (
-                                  <SelectItem value="" disabled>Cargando proveedores...</SelectItem>
-                                ) : (
-                                  suppliers?.map((supplier: any) => (
-                                    <SelectItem key={supplier.id} value={supplier.id.toString()}>
-                                      {supplier.name}
-                                    </SelectItem>
-                                  ))
-                                )}
-                              </SelectContent>
-                            </Select>
-                            <FormDescription>
-                              Filtrar análisis por proveedor específico
-                            </FormDescription>
-                          </FormItem>
-                        )}
+                {timeframe === "custom" && (
+                  <div className="space-y-3 pt-2">
+                    <div>
+                      <h3 className="text-sm font-medium mb-2">Fecha Inicio</h3>
+                      <DatePicker 
+                        date={customStartDate} 
+                        onSelect={(date) => date && setCustomStartDate(date)}
                       />
                     </div>
-
-                    <Button 
-                      type="submit" 
-                      className="w-full md:w-auto"
-                      disabled={analysisMutation.isPending || !form.formState.isValid}
-                    >
-                      {analysisMutation.isPending && (
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      )}
-                      Generar Análisis
-                    </Button>
-                  </form>
-                </Form>
-              </TabsContent>
-
-              <TabsContent value="expense_trends" className="mt-0">
-                <Form {...form}>
-                  <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                      <FormField
-                        control={form.control}
-                        name="timeframe"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Período de Análisis</FormLabel>
-                            <Select 
-                              onValueChange={field.onChange} 
-                              defaultValue={field.value}
-                            >
-                              <FormControl>
-                                <SelectTrigger>
-                                  <SelectValue placeholder="Seleccionar período" />
-                                </SelectTrigger>
-                              </FormControl>
-                              <SelectContent>
-                                <SelectItem value="last_month">Último mes</SelectItem>
-                                <SelectItem value="last_quarter">Último trimestre</SelectItem>
-                                <SelectItem value="last_year">Último año</SelectItem>
-                                <SelectItem value="custom">Personalizado</SelectItem>
-                              </SelectContent>
-                            </Select>
-                            <FormDescription>
-                              Período de tiempo para el análisis
-                            </FormDescription>
-                          </FormItem>
-                        )}
-                      />
-
-                      {form.watch('timeframe') === 'custom' && (
-                        <>
-                          <FormField
-                            control={form.control}
-                            name="customStartDate"
-                            render={({ field }) => (
-                              <FormItem className="flex flex-col">
-                                <FormLabel>Fecha Inicio</FormLabel>
-                                <DatePicker 
-                                  date={field.value} 
-                                  setDate={field.onChange}
-                                  disabled={(date) => date > new Date()}
-                                />
-                                <FormDescription>
-                                  Inicio del período de análisis
-                                </FormDescription>
-                              </FormItem>
-                            )}
-                          />
-
-                          <FormField
-                            control={form.control}
-                            name="customEndDate"
-                            render={({ field }) => (
-                              <FormItem className="flex flex-col">
-                                <FormLabel>Fecha Fin</FormLabel>
-                                <DatePicker 
-                                  date={field.value} 
-                                  setDate={field.onChange}
-                                  disabled={(date) => {
-                                    const startDate = form.getValues('customStartDate');
-                                    return date > new Date() || (startDate && date < startDate);
-                                  }}
-                                />
-                                <FormDescription>
-                                  Fin del período de análisis
-                                </FormDescription>
-                              </FormItem>
-                            )}
-                          />
-                        </>
-                      )}
-                    </div>
-
-                    <Button 
-                      type="submit" 
-                      className="w-full md:w-auto"
-                      disabled={analysisMutation.isPending || !form.formState.isValid}
-                    >
-                      {analysisMutation.isPending && (
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      )}
-                      Generar Análisis
-                    </Button>
-                  </form>
-                </Form>
-              </TabsContent>
-
-              <TabsContent value="inventory_optimization" className="mt-0">
-                <Form {...form}>
-                  <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                      <FormField
-                        control={form.control}
-                        name="timeframe"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Período de Análisis</FormLabel>
-                            <Select 
-                              onValueChange={field.onChange} 
-                              defaultValue={field.value}
-                            >
-                              <FormControl>
-                                <SelectTrigger>
-                                  <SelectValue placeholder="Seleccionar período" />
-                                </SelectTrigger>
-                              </FormControl>
-                              <SelectContent>
-                                <SelectItem value="last_month">Último mes</SelectItem>
-                                <SelectItem value="last_quarter">Último trimestre</SelectItem>
-                                <SelectItem value="last_year">Último año</SelectItem>
-                                <SelectItem value="custom">Personalizado</SelectItem>
-                              </SelectContent>
-                            </Select>
-                            <FormDescription>
-                              Período de tiempo para el análisis
-                            </FormDescription>
-                          </FormItem>
-                        )}
-                      />
-
-                      {form.watch('timeframe') === 'custom' && (
-                        <>
-                          <FormField
-                            control={form.control}
-                            name="customStartDate"
-                            render={({ field }) => (
-                              <FormItem className="flex flex-col">
-                                <FormLabel>Fecha Inicio</FormLabel>
-                                <DatePicker 
-                                  date={field.value} 
-                                  setDate={field.onChange}
-                                  disabled={(date) => date > new Date()}
-                                />
-                                <FormDescription>
-                                  Inicio del período de análisis
-                                </FormDescription>
-                              </FormItem>
-                            )}
-                          />
-
-                          <FormField
-                            control={form.control}
-                            name="customEndDate"
-                            render={({ field }) => (
-                              <FormItem className="flex flex-col">
-                                <FormLabel>Fecha Fin</FormLabel>
-                                <DatePicker 
-                                  date={field.value} 
-                                  setDate={field.onChange}
-                                  disabled={(date) => {
-                                    const startDate = form.getValues('customStartDate');
-                                    return date > new Date() || (startDate && date < startDate);
-                                  }}
-                                />
-                                <FormDescription>
-                                  Fin del período de análisis
-                                </FormDescription>
-                              </FormItem>
-                            )}
-                          />
-                        </>
-                      )}
-
-                      <FormField
-                        control={form.control}
-                        name="warehouseId"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Almacén (Opcional)</FormLabel>
-                            <Select 
-                              onValueChange={field.onChange} 
-                              defaultValue={field.value}
-                            >
-                              <FormControl>
-                                <SelectTrigger>
-                                  <SelectValue placeholder="Todos los almacenes" />
-                                </SelectTrigger>
-                              </FormControl>
-                              <SelectContent>
-                                <SelectItem value="">Todos los almacenes</SelectItem>
-                                {isLoadingWarehouses ? (
-                                  <SelectItem value="" disabled>Cargando almacenes...</SelectItem>
-                                ) : (
-                                  warehouses?.map((warehouse: any) => (
-                                    <SelectItem key={warehouse.id} value={warehouse.id.toString()}>
-                                      {warehouse.name}
-                                    </SelectItem>
-                                  ))
-                                )}
-                              </SelectContent>
-                            </Select>
-                            <FormDescription>
-                              Filtrar análisis por almacén específico
-                            </FormDescription>
-                          </FormItem>
-                        )}
+                    <div>
+                      <h3 className="text-sm font-medium mb-2">Fecha Fin</h3>
+                      <DatePicker 
+                        date={customEndDate} 
+                        onSelect={(date) => date && setCustomEndDate(date)}
                       />
                     </div>
+                  </div>
+                )}
 
-                    <Button 
-                      type="submit" 
-                      className="w-full md:w-auto"
-                      disabled={analysisMutation.isPending || !form.formState.isValid}
-                    >
-                      {analysisMutation.isPending && (
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      )}
-                      Generar Análisis
-                    </Button>
-                  </form>
-                </Form>
-              </TabsContent>
+                <Separator />
 
-              <TabsContent value="future_needs" className="mt-0">
-                <Form {...form}>
-                  <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                      <FormField
-                        control={form.control}
-                        name="timeframe"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Período de Análisis</FormLabel>
-                            <Select 
-                              onValueChange={field.onChange} 
-                              defaultValue={field.value}
-                            >
-                              <FormControl>
-                                <SelectTrigger>
-                                  <SelectValue placeholder="Seleccionar período" />
-                                </SelectTrigger>
-                              </FormControl>
-                              <SelectContent>
-                                <SelectItem value="last_month">Último mes</SelectItem>
-                                <SelectItem value="last_quarter">Último trimestre</SelectItem>
-                                <SelectItem value="last_year">Último año</SelectItem>
-                                <SelectItem value="custom">Personalizado</SelectItem>
-                              </SelectContent>
-                            </Select>
-                            <FormDescription>
-                              Período histórico para basar las predicciones
-                            </FormDescription>
-                          </FormItem>
-                        )}
-                      />
+                <div className="flex items-center">
+                  <CalendarRange className="mr-2 h-4 w-4 text-gray-500" />
+                  <span className="text-sm text-gray-500">{getTimeframeLabel()}</span>
+                </div>
+              </div>
+            </Card>
 
-                      {form.watch('timeframe') === 'custom' && (
-                        <>
-                          <FormField
-                            control={form.control}
-                            name="customStartDate"
-                            render={({ field }) => (
-                              <FormItem className="flex flex-col">
-                                <FormLabel>Fecha Inicio</FormLabel>
-                                <DatePicker 
-                                  date={field.value} 
-                                  setDate={field.onChange}
-                                  disabled={(date) => date > new Date()}
-                                />
-                                <FormDescription>
-                                  Inicio del período de análisis
-                                </FormDescription>
-                              </FormItem>
-                            )}
-                          />
-
-                          <FormField
-                            control={form.control}
-                            name="customEndDate"
-                            render={({ field }) => (
-                              <FormItem className="flex flex-col">
-                                <FormLabel>Fecha Fin</FormLabel>
-                                <DatePicker 
-                                  date={field.value} 
-                                  setDate={field.onChange}
-                                  disabled={(date) => {
-                                    const startDate = form.getValues('customStartDate');
-                                    return date > new Date() || (startDate && date < startDate);
-                                  }}
-                                />
-                                <FormDescription>
-                                  Fin del período de análisis
-                                </FormDescription>
-                              </FormItem>
-                            )}
-                          />
-                        </>
-                      )}
-
-                      <FormField
-                        control={form.control}
-                        name="warehouseId"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Almacén (Opcional)</FormLabel>
-                            <Select 
-                              onValueChange={field.onChange} 
-                              defaultValue={field.value}
-                            >
-                              <FormControl>
-                                <SelectTrigger>
-                                  <SelectValue placeholder="Todos los almacenes" />
-                                </SelectTrigger>
-                              </FormControl>
-                              <SelectContent>
-                                <SelectItem value="">Todos los almacenes</SelectItem>
-                                {isLoadingWarehouses ? (
-                                  <SelectItem value="" disabled>Cargando almacenes...</SelectItem>
-                                ) : (
-                                  warehouses?.map((warehouse: any) => (
-                                    <SelectItem key={warehouse.id} value={warehouse.id.toString()}>
-                                      {warehouse.name}
-                                    </SelectItem>
-                                  ))
-                                )}
-                              </SelectContent>
-                            </Select>
-                            <FormDescription>
-                              Filtrar predicciones por almacén específico
-                            </FormDescription>
-                          </FormItem>
-                        )}
-                      />
+            {analysisData && (
+              <Card className="p-4">
+                <h2 className="text-xl font-semibold mb-4">Recomendaciones</h2>
+                <div className="space-y-3">
+                  {analysisData.recommendations.map((recommendation, index) => (
+                    <div key={index} className="p-3 bg-muted rounded-md text-sm">
+                      {recommendation}
                     </div>
+                  ))}
+                </div>
+              </Card>
+            )}
+          </div>
 
-                    <Button 
-                      type="submit" 
-                      className="w-full md:w-auto"
-                      disabled={analysisMutation.isPending || !form.formState.isValid}
-                    >
-                      {analysisMutation.isPending && (
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      )}
-                      Generar Análisis
-                    </Button>
-                  </form>
-                </Form>
-              </TabsContent>
-            </Tabs>
-          </CardContent>
-        </Card>
+          {/* Resultados del análisis */}
+          <div className="md:col-span-9">
+            {isLoading ? (
+              <Card className="p-8 text-center">
+                <div className="flex flex-col items-center justify-center h-64">
+                  <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary mb-4"></div>
+                  <p className="text-lg text-gray-500">Analizando datos de compras...</p>
+                  <p className="text-sm text-gray-400 mt-2">
+                    Esto puede tardar unos segundos mientras nuestra IA procesa la información
+                  </p>
+                </div>
+              </Card>
+            ) : analysisData ? (
+              <div className="space-y-6">
+                {/* Resumen */}
+                <Card className="p-6">
+                  <h2 className="text-xl font-semibold mb-4">Resumen de Análisis</h2>
+                  <p className="text-gray-700 whitespace-pre-line">{analysisData.analysis}</p>
+                </Card>
 
-        {renderAnalysisResults()}
+                {/* Insights */}
+                <Card className="p-6">
+                  <h2 className="text-xl font-semibold mb-4">Hallazgos Clave</h2>
+                  <div className="grid grid-cols-1 gap-4">
+                    {analysisData.insights.map((insight, index) => (
+                      <div key={index} className="flex items-start p-3 bg-muted rounded-md">
+                        <div className="mr-3 mt-1">{renderInsightIcon(index)}</div>
+                        <p className="text-gray-700">{insight}</p>
+                      </div>
+                    ))}
+                  </div>
+                </Card>
+
+                {/* Visualización según el tipo */}
+                <Card className="p-6">
+                  <h2 className="text-xl font-semibold mb-4">
+                    {activeTab === "supplier_performance" && "Rendimiento de Proveedores"}
+                    {activeTab === "expense_trends" && "Tendencias de Gastos"}
+                    {activeTab === "inventory_optimization" && "Optimización de Inventario"}
+                    {activeTab === "future_needs" && "Predicción de Necesidades Futuras"}
+                  </h2>
+                  
+                  {/* Aquí iría la visualización específica para cada tipo de análisis */}
+                  {/* Por ahora, simplemente mostramos iconos ilustrativos */}
+                  <div className="bg-muted p-6 rounded-md flex justify-center">
+                    {activeTab === "supplier_performance" && (
+                      <div className="flex flex-col items-center">
+                        <BarChart className="h-24 w-24 text-primary mb-4" />
+                        <p className="text-gray-500 text-center">
+                          Datos de rendimiento de proveedores visualizados con gráficos de barras
+                        </p>
+                      </div>
+                    )}
+                    {activeTab === "expense_trends" && (
+                      <div className="flex flex-col items-center">
+                        <LineChart className="h-24 w-24 text-primary mb-4" />
+                        <p className="text-gray-500 text-center">
+                          Tendencias de gastos visualizadas con gráficos de líneas
+                        </p>
+                      </div>
+                    )}
+                    {activeTab === "inventory_optimization" && (
+                      <div className="flex flex-col items-center">
+                        <PieChart className="h-24 w-24 text-primary mb-4" />
+                        <p className="text-gray-500 text-center">
+                          Oportunidades de optimización visualizadas con gráficos circulares
+                        </p>
+                      </div>
+                    )}
+                    {activeTab === "future_needs" && (
+                      <div className="flex flex-col items-center">
+                        <AreaChart className="h-24 w-24 text-primary mb-4" />
+                        <p className="text-gray-500 text-center">
+                          Predicciones de necesidades futuras visualizadas con gráficos de área
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </Card>
+              </div>
+            ) : (
+              <Card className="p-8 text-center">
+                <div className="flex flex-col items-center justify-center h-64">
+                  <BarChart className="h-16 w-16 text-gray-300 mb-4" />
+                  <p className="text-lg text-gray-500">Selecciona los filtros y haz clic en "Analizar"</p>
+                  <p className="text-sm text-gray-400 mt-2">
+                    Nuestro sistema de IA analizará los datos según los parámetros seleccionados
+                  </p>
+                </div>
+              </Card>
+            )}
+          </div>
+        </div>
       </div>
     </Layout>
   );
-}
+};
+
+export default PurchaseAnalysis;
