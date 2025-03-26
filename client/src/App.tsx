@@ -20,6 +20,7 @@ import ComprasIndex from "./pages/compras";
 import ComprasNueva from "./pages/compras/nueva";
 import ComprasDetalle from "./pages/compras/[id]";
 import ComprasAnalisis from "./pages/compras/analisis";
+import CMSModule from "./pages/cms";
 
 function AppRouter() {
   return (
@@ -44,6 +45,8 @@ function AppRouter() {
       <ProtectedRoute path="/compras/nueva" component={ComprasNueva} />
       <ProtectedRoute path="/compras/analisis" component={ComprasAnalisis} />
       <ProtectedRoute path="/compras/:id" component={ComprasDetalle} />
+      <ProtectedRoute path="/cms" component={CMSModule} />
+      <ProtectedRoute path="/cms/:rest*" component={CMSModule} />
       
       {/* Rutas públicas */}
       <Route path="/auth" component={AuthPage} />

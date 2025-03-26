@@ -17,6 +17,11 @@ import {
   X,
   CreditCard,
   LogOut,
+  Globe,
+  FileEdit,
+  ImageIcon,
+  Palette,
+  Database,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/use-auth";
@@ -235,6 +240,49 @@ const Sidebar: React.FC = () => {
                 icon={<Book size={20} />}
                 label="Mis Cursos"
                 active={location === "/formacion/mis-cursos"}
+                onClick={() => setIsOpen(false)}
+              />
+            </div>
+          </div>
+
+          <div className="py-2">
+            <h3 className="px-3 text-xs font-semibold text-gray-500">
+              CMS
+            </h3>
+            <div className="mt-1 space-y-1">
+              <NavItem
+                href="/cms/paginas"
+                icon={<Globe size={20} />}
+                label="Páginas"
+                active={location === "/cms/paginas"}
+                onClick={() => setIsOpen(false)}
+              />
+              <NavItem
+                href="/cms/blog"
+                icon={<FileEdit size={20} />}
+                label="Blog"
+                active={location === "/cms/blog"}
+                onClick={() => setIsOpen(false)}
+              />
+              <NavItem
+                href="/cms/media"
+                icon={<ImageIcon size={20} />}
+                label="Media"
+                active={location === "/cms/media"}
+                onClick={() => setIsOpen(false)}
+              />
+              <NavItem
+                href="/cms/branding"
+                icon={<Palette size={20} />}
+                label="Branding"
+                active={location === "/cms/branding"}
+                onClick={() => setIsOpen(false)}
+              />
+              <NavItem
+                href="/cms/api"
+                icon={<Database size={20} />}
+                label="API"
+                active={location === "/cms/api"}
                 onClick={() => setIsOpen(false)}
               />
             </div>
