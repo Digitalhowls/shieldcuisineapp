@@ -74,6 +74,17 @@ interface TableContent {
   striped?: boolean;
 }
 
+interface VideoContent {
+  src: string;
+  type: 'youtube' | 'vimeo' | 'file';
+  title?: string;
+  autoplay?: boolean;
+  loop?: boolean;
+  muted?: boolean;
+  poster?: string;
+  aspectRatio?: '16:9' | '4:3' | '1:1' | '9:16';
+}
+
 interface BlockContainerProps {
   block: Block;
   index: number;
@@ -808,6 +819,201 @@ const BlockContainer: React.FC<BlockContainerProps> = ({
           </div>
         );
 
+      case 'video':
+        return (
+          <div className="w-full space-y-4">
+            {!readOnly ? (
+              <>
+                <div className="flex flex-col space-y-3">
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium mb-1 block">URL del vídeo</label>
+                    <Input
+                      value={block.content.src || ''}
+                      onChange={(e) => handleContentChange({ src: e.target.value })}
+                      placeholder="https://www.youtube.com/watch?v=VIDEO_ID o https://vimeo.com/VIDEO_ID"
+                    />
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-sm font-medium mb-1 block">Tipo de vídeo</label>
+                      <Select
+                        value={block.content.type || 'youtube'}
+                        onValueChange={(value) => handleContentChange({ type: value })}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Seleccione el tipo" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="youtube">YouTube</SelectItem>
+                          <SelectItem value="vimeo">Vimeo</SelectItem>
+                          <SelectItem value="file">Archivo de vídeo</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium mb-1 block">Relación de aspecto</label>
+                      <Select
+                        value={block.content.aspectRatio || '16:9'}
+                        onValueChange={(value) => handleContentChange({ aspectRatio: value })}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Seleccione la relación" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="16:9">16:9 (Panorámico)</SelectItem>
+                          <SelectItem value="4:3">4:3 (Estándar)</SelectItem>
+                          <SelectItem value="1:1">1:1 (Cuadrado)</SelectItem>
+                          <SelectItem value="9:16">9:16 (Vertical)</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <label className="text-sm font-medium mb-1 block">Título del vídeo</label>
+                    <Input
+                      value={block.content.title || ''}
+                      onChange={(e) => handleContentChange({ title: e.target.value })}
+                      placeholder="Título descriptivo del vídeo (opcional)"
+                    />
+                  </div>
+                  
+                  <div className="grid grid-cols-3 gap-4">
+                    <div className="flex items-center">
+                      <input
+                        type="checkbox"
+                        checked={block.content.autoplay || false}
+                        onChange={(e) => handleContentChange({ autoplay: e.target.checked })}
+                        id={`autoplay-${block.id}`}
+                        className="mr-2"
+                      />
+                      <label htmlFor={`autoplay-${block.id}`} className="text-sm">
+                        Reproducción automática
+                      </label>
+                    </div>
+                    <div className="flex items-center">
+                      <input
+                        type="checkbox"
+                        checked={block.content.loop || false}
+                        onChange={(e) => handleContentChange({ loop: e.target.checked })}
+                        id={`loop-${block.id}`}
+                        className="mr-2"
+                      />
+                      <label htmlFor={`loop-${block.id}`} className="text-sm">
+                        Repetir
+                      </label>
+                    </div>
+                    <div className="flex items-center">
+                      <input
+                        type="checkbox"
+                        checked={block.content.muted || false}
+                        onChange={(e) => handleContentChange({ muted: e.target.checked })}
+                        id={`muted-${block.id}`}
+                        className="mr-2"
+                      />
+                      <label htmlFor={`muted-${block.id}`} className="text-sm">
+                        Silenciado
+                      </label>
+                    </div>
+                  </div>
+                  
+                  {block.content.type === 'file' && (
+                    <div>
+                      <label className="text-sm font-medium mb-1 block">Imagen de previsualización</label>
+                      <Input
+                        value={block.content.poster || ''}
+                        onChange={(e) => handleContentChange({ poster: e.target.value })}
+                        placeholder="URL de la imagen de previsualización"
+                      />
+                    </div>
+                  )}
+                </div>
+                
+                {block.content.src && (
+                  <div className="mt-4 border rounded-md p-2">
+                    <p className="text-sm font-medium mb-2">Vista previa:</p>
+                    <div className={`relative overflow-hidden ${
+                      block.content.aspectRatio === '16:9' ? 'aspect-video' :
+                      block.content.aspectRatio === '4:3' ? 'aspect-[4/3]' :
+                      block.content.aspectRatio === '1:1' ? 'aspect-square' :
+                      'aspect-[9/16]'
+                    }`}>
+                      {block.content.type === 'youtube' && (
+                        <div className="absolute inset-0 bg-muted/30 flex items-center justify-center">
+                          <p className="text-muted-foreground text-sm">Vista previa de YouTube no disponible en el editor</p>
+                        </div>
+                      )}
+                      {block.content.type === 'vimeo' && (
+                        <div className="absolute inset-0 bg-muted/30 flex items-center justify-center">
+                          <p className="text-muted-foreground text-sm">Vista previa de Vimeo no disponible en el editor</p>
+                        </div>
+                      )}
+                      {block.content.type === 'file' && (
+                        <div className="absolute inset-0 bg-muted/30 flex items-center justify-center">
+                          {block.content.poster ? (
+                            <img 
+                              src={block.content.poster} 
+                              alt={block.content.title || "Vista previa"} 
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <p className="text-muted-foreground text-sm">Vista previa no disponible</p>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </>
+            ) : (
+              <div>
+                {block.content.title && (
+                  <h4 className="mb-2 font-medium">{block.content.title}</h4>
+                )}
+                <div className={`relative overflow-hidden ${
+                  block.content.aspectRatio === '16:9' ? 'aspect-video' :
+                  block.content.aspectRatio === '4:3' ? 'aspect-[4/3]' :
+                  block.content.aspectRatio === '1:1' ? 'aspect-square' :
+                  'aspect-[9/16]'
+                }`}>
+                  {block.content.type === 'youtube' && block.content.src && (
+                    <iframe
+                      src={`https://www.youtube.com/embed/${getYouTubeID(block.content.src)}?autoplay=${block.content.autoplay ? 1 : 0}&mute=${block.content.muted ? 1 : 0}&loop=${block.content.loop ? 1 : 0}`}
+                      title={block.content.title || "YouTube video"}
+                      className="absolute top-0 left-0 w-full h-full border-0"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                      allowFullScreen
+                    ></iframe>
+                  )}
+                  
+                  {block.content.type === 'vimeo' && block.content.src && (
+                    <iframe
+                      src={`https://player.vimeo.com/video/${getVimeoID(block.content.src)}?autoplay=${block.content.autoplay ? 1 : 0}&muted=${block.content.muted ? 1 : 0}&loop=${block.content.loop ? 1 : 0}`}
+                      title={block.content.title || "Vimeo video"}
+                      className="absolute top-0 left-0 w-full h-full border-0"
+                      allow="autoplay; fullscreen; picture-in-picture"
+                      allowFullScreen
+                    ></iframe>
+                  )}
+                  
+                  {block.content.type === 'file' && block.content.src && (
+                    <video
+                      src={block.content.src}
+                      poster={block.content.poster}
+                      controls
+                      autoPlay={block.content.autoplay}
+                      loop={block.content.loop}
+                      muted={block.content.muted}
+                      className="absolute top-0 left-0 w-full h-full object-cover"
+                    ></video>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        );
+
       default:
         return (
           <div className="p-4 border rounded-md bg-muted/20">
@@ -866,6 +1072,59 @@ const BlockContainer: React.FC<BlockContainerProps> = ({
 };
 
 // Componente para renderizar títulos según el nivel
+// Función para extraer el ID de un video de YouTube
+function getYouTubeID(url: string): string {
+  if (!url) return '';
+  
+  // Maneja formatos posibles:
+  // - https://www.youtube.com/watch?v=VIDEO_ID
+  // - https://youtu.be/VIDEO_ID
+  // - https://www.youtube.com/embed/VIDEO_ID
+  let videoId = '';
+  
+  try {
+    if (url.includes('youtube.com/watch')) {
+      const urlParams = new URL(url).searchParams;
+      videoId = urlParams.get('v') || '';
+    } else if (url.includes('youtu.be/')) {
+      videoId = url.split('youtu.be/')[1]?.split('?')[0] || '';
+    } else if (url.includes('youtube.com/embed/')) {
+      videoId = url.split('youtube.com/embed/')[1]?.split('?')[0] || '';
+    }
+    
+    return videoId.split('&')[0]; // Eliminar parámetros adicionales
+  } catch (error) {
+    return '';
+  }
+}
+
+// Función para extraer el ID de un video de Vimeo
+function getVimeoID(url: string): string {
+  if (!url) return '';
+  
+  // Maneja formatos posibles:
+  // - https://vimeo.com/VIDEO_ID
+  // - https://player.vimeo.com/video/VIDEO_ID
+  let videoId = '';
+  
+  try {
+    if (url.includes('vimeo.com/')) {
+      const segments = url.split('/');
+      // Encontrar el segmento que representa el ID (normalmente el último o el penúltimo)
+      for (let i = segments.length - 1; i >= 0; i--) {
+        if (segments[i] && segments[i].match(/^\d+$/)) {
+          videoId = segments[i];
+          break;
+        }
+      }
+    }
+    
+    return videoId;
+  } catch (error) {
+    return '';
+  }
+}
+
 const RenderHeading = ({ text, level }: { text: string; level: string }) => {
   switch (level) {
     case 'h1':
