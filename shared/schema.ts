@@ -20,8 +20,14 @@ export const notificationTypeEnum = pgEnum('notification_type', [
   'banking', // Alertas bancarias (nuevas transacciones, etc)
   'system', // Notificaciones del sistema
   'security', // Alertas de seguridad
-  'purchasing' // Notificaciones relacionadas con compras
+  'purchasing', // Notificaciones relacionadas con compras
+  'cms' // Notificaciones del CMS (nuevas publicaciones, comentarios, etc)
 ]);
+
+// Enums para CMS
+export const contentStatusEnum = pgEnum('content_status', ['draft', 'scheduled', 'published', 'archived']);
+export const contentVisibilityEnum = pgEnum('content_visibility', ['public', 'private', 'internal']);
+export const contentTypeEnum = pgEnum('content_type', ['page', 'blog_post', 'course_page', 'landing_page']);
 
 // Tables
 export const users = pgTable("users", {

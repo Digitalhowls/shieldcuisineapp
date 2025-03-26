@@ -1,0 +1,227 @@
+¡Perfecto! Aquí tienes el Prompt completo y detallado del MÓDULO 16 – CMS & Constructor Web, listo para ser añadido al Prompt Maestro para Replit Agent.
+
+Este bloque está estructurado con todo lo necesario para que Replit Agent pueda construirlo de forma autónoma, coherente, elegante, rápida y profundamente integrado con el resto de ShieldCuisine.
+
+⸻
+
+🧩 MÓDULO 16 – CMS & Constructor Web
+
+⸻
+
+🧠 Objetivo general:
+
+Diseñar e implementar un módulo CMS (Content Management System) completo y moderno, que permita a los clientes de ShieldCuisine gestionar su propio sitio web, blog, páginas públicas, contenido formativo, branding e integración con otros módulos, sin depender de WordPress ni de servicios externos.
+
+Este módulo debe ser visualmente potente, muy rápido (optimizado para SEO y carga móvil), completamente integrado con el ecosistema ShieldCuisine, y permitir integración por API externa si se desea.
+
+⸻
+
+🧱 ESTRUCTURA FUNCIONAL DEL CMS
+
+⸻
+
+1️⃣ Constructor de Páginas Públicas
+
+📌 Funcionalidad:
+	•	Editor visual moderno (tipo bloques drag & drop).
+	•	Posibilidad de crear:
+	•	Páginas estándar (home, contacto, quiénes somos, etc.)
+	•	Landings específicas (campañas, promociones, productos, cursos)
+	•	Elementos disponibles en la construcción:
+	•	Títulos, párrafos, listas, separadores, citas
+	•	Imágenes, vídeos, galerías, sliders
+	•	Botones con enlaces
+	•	Formularios de contacto
+	•	Iconos y bloques HTML embebido
+	•	Bloques dinámicos: cursos, noticias, productos
+
+🧩 Otras características:
+	•	Reordenamiento de bloques por drag & drop.
+	•	Edición responsiva para móvil/tablet.
+	•	Soporte multilenguaje (inicialmente en español, preparado para ampliar).
+	•	Control de publicación:
+	•	Estado: borrador / programado / publicado
+	•	Visibilidad: pública / privada / interna (solo empleados o usuarios con acceso)
+
+🔗 Conexiones:
+	•	Integración con Branding (logo, colores, tipografía).
+	•	Dominio personalizado o subdominio (empresa.shieldcuisine.app).
+
+⸻
+
+2️⃣ Blog Corporativo / Noticias
+
+📌 Funcionalidad:
+	•	Crear entradas de blog con:
+	•	Título, resumen, contenido, categoría, etiquetas
+	•	Imagen destacada
+	•	Estado de publicación
+	•	Autor, fecha, visibilidad
+	•	Editor de contenido enriquecido:
+	•	Soporte Markdown y visual
+	•	Multibloque
+	•	Inserción de multimedia (vídeo, audio, PDF, imagen)
+
+🧩 SEO nativo:
+	•	Slug personalizable
+	•	Metadatos SEO (meta title, description, keywords)
+	•	Open Graph (imagen social, título, descripción)
+	•	Schema.org para artículos (BlogPosting)
+	•	Sitemap.xml autogenerado
+
+🔗 Enlaces:
+	•	Desde el módulo de cursos (se puede publicar un curso como entrada de blog).
+	•	Desde el módulo de avisos/notificaciones (destacar artículo como banner).
+
+⸻
+
+3️⃣ Publicación de Cursos como Contenido Público
+
+📌 Funcionalidad:
+	•	Cada curso creado desde el módulo 12 (Formación y Cursos Online) puede:
+	•	Generar automáticamente una página pública de presentación
+	•	Publicarse como entrada de blog con ficha técnica
+	•	Tener una landing page con CTA (comprar / acceder / registrarse)
+	•	Contenido mostrado:
+	•	Imagen de portada
+	•	Nombre del curso, duración, nivel, resumen
+	•	Módulos y temario
+	•	Instructores
+	•	Botón de acceso o inscripción
+
+🎯 Casos de visibilidad:
+	•	Público general (blog abierto)
+	•	Solo empleados de la empresa
+	•	Solo usuarios registrados con acceso activo al curso
+	•	Protegido por token o clave de acceso
+
+🔗 Conexiones:
+	•	Con el módulo 12 (Cursos)
+	•	Con el módulo 4 (Facturación), si los cursos son de pago
+	•	Con el módulo 13 (Notificaciones), para avisos de apertura/actualización
+
+⸻
+
+4️⃣ Branding y Personalización
+
+📌 Funcionalidad:
+	•	Cada cliente podrá personalizar:
+	•	Logotipo
+	•	Favicon
+	•	Paleta de colores (primario, secundario, fondo, texto)
+	•	Tipografía (de Google Fonts)
+	•	Dominio personalizado o subdominio
+
+🌐 Publicación:
+	•	Subdominios: cliente.shieldcuisine.app
+	•	Posibilidad de conectar dominio propio con configuración DNS
+
+🧩 Edición visual:
+	•	Vista previa en tiempo real
+	•	Configuración aplicada automáticamente a blog, páginas y cursos
+
+⸻
+
+5️⃣ Media Manager (Gestor de Medios)
+
+📌 Funcionalidad:
+	•	Subida y gestión de imágenes, PDFs, audios, vídeos
+	•	Organización por carpetas o etiquetas
+	•	Búsqueda rápida y filtrado
+	•	Visualización en cuadrícula o lista
+	•	Formato aceptado: JPEG, PNG, WebP, SVG, PDF, MP4, MP3
+	•	Conversión automática a WebP
+	•	Redimensionamiento y compresión automática
+
+⸻
+
+6️⃣ Experiencia de Usuario
+
+🎨 UI / UX:
+	•	Inspirado en herramientas como Notion, Webflow, Framer
+	•	Navegación fluida, sin recargas
+	•	Vista previa en tiempo real
+	•	Panel de edición responsivo (móvil / tablet / escritorio)
+	•	Soporte modo oscuro
+	•	Accesibilidad garantizada (WCAG AA mínimo)
+
+⸻
+
+⚙️ API DE GESTIÓN DE CONTENIDO (Opcional, activable)
+
+🔐 Seguridad:
+	•	Acceso mediante token JWT o API Key por empresa
+	•	Permisos por rol (solo editores, administradores)
+	•	Rate limit configurable
+
+📡 Endpoints sugeridos:
+
+Método	Endpoint	Descripción
+GET	/api/pages	Listar páginas
+POST	/api/pages	Crear nueva página
+GET	/api/pages/:id	Obtener página
+PUT	/api/pages/:id	Editar página
+DELETE	/api/pages/:id	Eliminar página
+GET	/api/blog	Listar entradas del blog
+POST	/api/blog	Crear entrada
+GET	/api/blog/:id	Obtener entrada
+PUT	/api/blog/:id	Editar entrada
+DELETE	/api/blog/:id	Eliminar entrada
+POST	/api/media/upload	Subir archivo
+GET	/api/media	Listar archivos
+
+
+
+⸻
+
+🧩 Webhooks opcionales:
+	•	Nuevo contenido publicado
+	•	Curso disponible
+	•	Entrada modificada
+	•	Formulario de contacto recibido
+
+⸻
+
+🔐 Permisos y seguridad del módulo
+	•	Solo usuarios con rol Administrador o Editor Web pueden crear o editar contenido
+	•	Cada acción debe registrar:
+	•	ID del usuario
+	•	Fecha y hora
+	•	IP y localización
+	•	Autenticación mediante token seguro (JWT)
+	•	Protección contra XSS / CSRF / File Injection
+
+⸻
+
+🚀 Tecnologías recomendadas para este módulo
+	•	Frontend: React o Next.js
+	•	Editor: TipTap / Editor.js / custom block system
+	•	Backend: Node.js + Express o NestJS
+	•	Base de datos: PostgreSQL
+	•	Media: Almacenamiento externo (AWS S3, Supabase o Cloudinary)
+	•	SEO SSR/SSG: Next.js para rutas públicas
+
+⸻
+
+📊 Monetización recomendada
+
+Versión	Incluye	Precio sugerido
+CMS Básico	Páginas + blog + branding	15 €/mes
+CMS Pro	+ Cursos públicos + dominio propio + API + SEO avanzado	29 €/mes
+CMS White Label (para consultoras)	Full branding y sin ShieldCuisine visible	49–99 €/mes
+
+
+
+⸻
+
+✅ Replit Agent debe:
+	1.	Construir el módulo CMS desde cero como parte del ecosistema ShieldCuisine.
+	2.	Integrarlo con los módulos de cursos, transparencia, avisos y facturación.
+	3.	Aplicar tecnologías modernas y patrón de diseño limpio.
+	4.	Crear el panel visual, API de gestión y rutas públicas SSR para SEO.
+	5.	Incluir medidas de seguridad, sistema de roles y configuración por empresa.
+	6.	Documentar los endpoints de la API en OpenAPI/Swagger.
+
+⸻
+
+¿Deseas ahora que prepare este bloque en formato .md, .json, .docx o que lo incluya directamente en el Prompt Maestro completo final que estás preparando para subir a Replit por partes?
