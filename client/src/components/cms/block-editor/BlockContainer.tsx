@@ -830,7 +830,24 @@ const BlockContainer: React.FC<BlockContainerProps> = ({
                     <label className="text-sm font-medium mb-1 block">URL del vídeo</label>
                     <Input
                       value={block.content.src || ''}
-                      onChange={(e) => handleContentChange({ src: e.target.value })}
+                      onChange={(e) => {
+                        const url = e.target.value;
+                        // Detectar automáticamente el tipo de video
+                        let type = block.content.type || 'youtube';
+                        
+                        if (url.includes('youtube.com') || url.includes('youtu.be')) {
+                          type = 'youtube';
+                        } else if (url.includes('vimeo.com')) {
+                          type = 'vimeo';
+                        } else if (url.match(/\.(mp4|webm|ogg)$/i)) {
+                          type = 'file';
+                        }
+                        
+                        handleContentChange({ 
+                          src: url,
+                          type: type
+                        });
+                      }}
                       placeholder="https://www.youtube.com/watch?v=VIDEO_ID o https://vimeo.com/VIDEO_ID"
                     />
                   </div>
@@ -941,25 +958,62 @@ const BlockContainer: React.FC<BlockContainerProps> = ({
                       'aspect-[9/16]'
                     }`}>
                       {block.content.type === 'youtube' && (
-                        <div className="absolute inset-0 bg-muted/30 flex items-center justify-center">
-                          <p className="text-muted-foreground text-sm">Vista previa de YouTube no disponible en el editor</p>
+                        <div className="absolute inset-0 bg-muted/30 flex flex-col items-center justify-center p-4">
+                          {getYouTubeID(block.content.src) ? (
+                            <>
+                              <p className="text-sm font-medium mb-2">YouTube: ID {getYouTubeID(block.content.src)}</p>
+                              <div className="flex space-x-2 text-xs">
+                                {block.content.autoplay && <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded-full">Autoplay</span>}
+                                {block.content.loop && <span className="px-2 py-1 bg-green-100 text-green-800 rounded-full">Loop</span>}
+                                {block.content.muted && <span className="px-2 py-1 bg-yellow-100 text-yellow-800 rounded-full">Muted</span>}
+                              </div>
+                            </>
+                          ) : (
+                            <p className="text-muted-foreground text-sm">ID de YouTube no detectado</p>
+                          )}
                         </div>
                       )}
                       {block.content.type === 'vimeo' && (
-                        <div className="absolute inset-0 bg-muted/30 flex items-center justify-center">
-                          <p className="text-muted-foreground text-sm">Vista previa de Vimeo no disponible en el editor</p>
+                        <div className="absolute inset-0 bg-muted/30 flex flex-col items-center justify-center p-4">
+                          {getVimeoID(block.content.src) ? (
+                            <>
+                              <p className="text-sm font-medium mb-2">Vimeo: ID {getVimeoID(block.content.src)}</p>
+                              <div className="flex space-x-2 text-xs">
+                                {block.content.autoplay && <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded-full">Autoplay</span>}
+                                {block.content.loop && <span className="px-2 py-1 bg-green-100 text-green-800 rounded-full">Loop</span>}
+                                {block.content.muted && <span className="px-2 py-1 bg-yellow-100 text-yellow-800 rounded-full">Muted</span>}
+                              </div>
+                            </>
+                          ) : (
+                            <p className="text-muted-foreground text-sm">ID de Vimeo no detectado</p>
+                          )}
                         </div>
                       )}
                       {block.content.type === 'file' && (
-                        <div className="absolute inset-0 bg-muted/30 flex items-center justify-center">
+                        <div className="absolute inset-0 bg-muted/30 flex flex-col items-center justify-center p-4">
                           {block.content.poster ? (
-                            <img 
-                              src={block.content.poster} 
-                              alt={block.content.title || "Vista previa"} 
-                              className="w-full h-full object-cover"
-                            />
+                            <>
+                              <img 
+                                src={block.content.poster} 
+                                alt={block.content.title || "Vista previa"} 
+                                className="w-full h-full object-cover absolute inset-0"
+                              />
+                              <div className="z-10 bg-background/70 px-3 py-1 rounded-md">
+                                <p className="text-sm font-medium">Archivo con poster</p>
+                              </div>
+                            </>
+                          ) : block.content.src ? (
+                            <>
+                              <p className="text-sm font-medium mb-2">Archivo de vídeo</p>
+                              <p className="text-xs mb-2 max-w-full truncate">{block.content.src}</p>
+                              <div className="flex space-x-2 text-xs">
+                                {block.content.autoplay && <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded-full">Autoplay</span>}
+                                {block.content.loop && <span className="px-2 py-1 bg-green-100 text-green-800 rounded-full">Loop</span>}
+                                {block.content.muted && <span className="px-2 py-1 bg-yellow-100 text-yellow-800 rounded-full">Muted</span>}
+                              </div>
+                            </>
                           ) : (
-                            <p className="text-muted-foreground text-sm">Vista previa no disponible</p>
+                            <p className="text-muted-foreground text-sm">Archivo de vídeo no especificado</p>
                           )}
                         </div>
                       )}
@@ -980,7 +1034,7 @@ const BlockContainer: React.FC<BlockContainerProps> = ({
                 }`}>
                   {block.content.type === 'youtube' && block.content.src && (
                     <iframe
-                      src={`https://www.youtube.com/embed/${getYouTubeID(block.content.src)}?autoplay=${block.content.autoplay ? 1 : 0}&mute=${block.content.muted ? 1 : 0}&loop=${block.content.loop ? 1 : 0}`}
+                      src={`https://www.youtube.com/embed/${getYouTubeID(block.content.src)}?autoplay=${block.content.autoplay ? 1 : 0}&mute=${block.content.muted ? 1 : 0}${block.content.loop ? `&loop=1&playlist=${getYouTubeID(block.content.src)}` : ''}`}
                       title={block.content.title || "YouTube video"}
                       className="absolute top-0 left-0 w-full h-full border-0"
                       allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
