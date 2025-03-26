@@ -21,6 +21,7 @@ import ComprasNueva from "./pages/compras/nueva";
 import ComprasDetalle from "./pages/compras/[id]";
 import ComprasAnalisis from "./pages/compras/analisis";
 import CMSModule from "./pages/cms";
+import PublicPortal from "@/pages/public";
 
 function AppRouter() {
   return (
@@ -54,6 +55,10 @@ function AppRouter() {
       {/* Portal de cliente (acceso por token) */}
       <Route path="/cliente" component={ClientePortal} />
       <Route path="/cliente/:rest*" component={ClientePortal} />
+      
+      {/* Sitio público (generado por CMS) */}
+      <Route path="/public" component={PublicPortal} />
+      <Route path="/public/:rest*" component={PublicPortal} />
       
       {/* Fallback */}
       <Route component={NotFound} />
