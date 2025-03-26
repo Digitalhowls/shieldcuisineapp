@@ -1,90 +1,96 @@
-import React, { useState } from 'react';
-import { AnimationConfig } from '../animations/animation-utils';
+import React from 'react';
+import { AnimationConfig } from '../animations/animation-config';
 import AnimationSettings from '../animations/animation-settings';
-import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { PlayCircle } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
-
-// Tipo para la biblioteca de animación
-type AnimationLibrary = 'framer-motion' | 'react-spring' | 'gsap' | 'aos' | 'none';
+import { 
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
+import { 
+  Card, 
+  CardContent 
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Wand2 } from "lucide-react";
 
 interface AnimationBlockOptionsProps {
-  animationConfig: AnimationConfig;
-  animationLibrary: AnimationLibrary;
-  onChange: (config: AnimationConfig, library: AnimationLibrary) => void;
+  blockId: string;
+  animation?: Partial<AnimationConfig>;
+  onUpdate: (animation: Partial<AnimationConfig>) => void;
+  onRemove: () => void;
 }
 
 /**
- * Componente para configurar animaciones en bloques del CMS
+ * Panel de opciones de animación para bloques
  * 
- * Este componente proporciona una interfaz para añadir y configurar
- * animaciones para los bloques del editor.
+ * Este componente permite configurar las animaciones de un bloque
+ * en el editor CMS.
  */
 export const AnimationBlockOptions: React.FC<AnimationBlockOptionsProps> = ({
-  animationConfig,
-  animationLibrary,
-  onChange
+  blockId,
+  animation = {},
+  onUpdate,
+  onRemove
 }) => {
-  const [open, setOpen] = useState(false);
+  // Estado local para la configuración de animación
+  const [config, setConfig] = React.useState<Partial<AnimationConfig>>(
+    animation || {
+      effect: 'fadeIn',
+      duration: 'normal',
+      delay: 'none',
+      library: 'framer-motion'
+    }
+  );
   
-  // Determinar si hay animación configurada
-  const hasAnimation = animationConfig.effect && animationLibrary !== 'none';
+  // Actualizar configuración cuando cambian las props
+  React.useEffect(() => {
+    if (animation) {
+      setConfig(animation);
+    }
+  }, [animation]);
   
-  // Etiqueta descriptiva de la animación
-  const getAnimationLabel = () => {
-    if (!hasAnimation) return 'Sin animación';
-    return `${animationConfig.effect} (${animationLibrary})`;
+  // Manejar cambios en la configuración
+  const handleConfigChange = (newConfig: Partial<AnimationConfig>) => {
+    setConfig(newConfig);
+    onUpdate(newConfig);
+  };
+  
+  // Remover animación
+  const handleRemoveAnimation = () => {
+    onRemove();
   };
   
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button variant="ghost" size="sm" className="flex items-center gap-2">
-          <PlayCircle size={16} />
-          <span>Animación</span>
-          {hasAnimation && (
-            <Badge variant="outline" className="ml-2 text-xs font-normal">
-              {getAnimationLabel()}
-            </Badge>
-          )}
-        </Button>
-      </DialogTrigger>
-      
-      <DialogContent className="max-w-md sm:max-w-xl">
-        <DialogHeader>
-          <DialogTitle>Configuración de animación</DialogTitle>
-        </DialogHeader>
-        
-        <div className="py-4">
-          <AnimationSettings
-            config={animationConfig}
-            library={animationLibrary}
-            onChange={(newConfig, newLibrary) => {
-              onChange(newConfig, newLibrary);
-            }}
-          />
-        </div>
-        
-        <div className="flex justify-end gap-2 mt-4">
-          <Button
-            variant="outline"
-            onClick={() => {
-              onChange({ effect: undefined }, 'none');
-              setOpen(false);
-            }}
-          >
-            Quitar animación
-          </Button>
-          
-          <Button
-            onClick={() => setOpen(false)}
-          >
-            Aplicar
-          </Button>
-        </div>
-      </DialogContent>
-    </Dialog>
+    <Card className="mb-4">
+      <CardContent className="pt-4">
+        <Accordion type="single" collapsible defaultValue="animation-options">
+          <AccordionItem value="animation-options">
+            <AccordionTrigger className="py-2 text-sm font-medium flex items-center">
+              <Wand2 className="h-4 w-4 mr-2" />
+              Opciones de animación
+            </AccordionTrigger>
+            <AccordionContent className="pb-2">
+              <div className="space-y-4">
+                <AnimationSettings 
+                  value={config}
+                  onChange={handleConfigChange}
+                />
+                
+                <Button 
+                  variant="destructive" 
+                  size="sm" 
+                  onClick={handleRemoveAnimation}
+                  className="w-full"
+                >
+                  Eliminar animación
+                </Button>
+              </div>
+            </AccordionContent>
+          </AccordionItem>
+        </Accordion>
+      </CardContent>
+    </Card>
   );
 };
 

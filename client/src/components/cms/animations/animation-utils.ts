@@ -1,584 +1,487 @@
-// Tipo para la biblioteca de animación
-export type AnimationLibrary = 'framer-motion' | 'react-spring' | 'gsap' | 'aos' | 'none';
+import { 
+  AnimationConfig, 
+  AnimationEffect, 
+  AnimationLibrary,
+  AnimationDirection,
+  AnimationEasing,
+  AnimationDuration,
+  AnimationDelay,
+  getDurationValue,
+  getDelayValue
+} from './animation-config';
 
-// Tipo para los efectos de animación
-export type AnimationEffect = 
-  // Efectos de entrada
-  | 'fadeIn' | 'fadeInUp' | 'fadeInDown' | 'fadeInLeft' | 'fadeInRight'
-  | 'zoomIn' | 'zoomInUp' | 'zoomInDown'
-  | 'slideIn' | 'slideInUp' | 'slideInDown' | 'slideInLeft' | 'slideInRight'
-  | 'rotateIn' | 'rotateInX' | 'rotateInY'
+/**
+ * Transformar configuración genérica a propiedades específicas de Framer Motion
+ */
+export function getFramerMotionProps(config: Partial<AnimationConfig>) {
+  const {
+    effect = 'none',
+    duration = 'normal',
+    delay = 'none',
+    repeat = 0,
+    intensity = 1,
+    direction = 'none',
+    easing = 'ease'
+  } = config;
   
-  // Efectos de atención
-  | 'bounce' | 'pulse' | 'flash' | 'shake' | 'tada' | 'rubberBand' | 'jello'
-  
-  // Efectos de hover
-  | 'hoverPulse' | 'hoverBounce' | 'hoverGrow' | 'hoverShrink'
-  | 'hoverRotate' | 'hoverSpin' | 'hoverFlip'
-  
-  // Efectos de scroll
-  | 'scrollFadeIn' | 'scrollFadeUp' | 'scrollFadeDown' | 'scrollZoomIn' 
-  | 'scrollZoomOut' | 'scrollSlideUp' | 'scrollSlideDown' | 'scrollRotate';
-
-// Duración de la animación
-export type AnimationDuration = 'fast' | 'normal' | 'slow' | 'verySlow';
-
-// Retraso de la animación
-export type AnimationDelay = 'none' | 'small' | 'medium' | 'large';
-
-// Configuración de la animación
-export interface AnimationConfig {
-  effect?: AnimationEffect;
-  duration?: AnimationDuration;
-  delay?: AnimationDelay;
-  repeat?: boolean;
-  infinite?: boolean;
-  threshold?: number; // 0.0 - 1.0 para animaciones basadas en scroll
-}
-
-// Opciones de duración con etiquetas
-export const durationOptions = [
-  { value: 'fast', label: 'Rápido (300ms)' },
-  { value: 'normal', label: 'Normal (500ms)' },
-  { value: 'slow', label: 'Lento (800ms)' },
-  { value: 'verySlow', label: 'Muy lento (1200ms)' }
-];
-
-// Opciones de retraso con etiquetas
-export const delayOptions = [
-  { value: 'none', label: 'Sin retraso' },
-  { value: 'small', label: 'Pequeño (100ms)' },
-  { value: 'medium', label: 'Medio (300ms)' },
-  { value: 'large', label: 'Grande (500ms)' }
-];
-
-// Grupos de efectos de animación
-export const animationGroups = {
-  entrada: [
-    { value: 'fadeIn', label: 'Aparecer' },
-    { value: 'fadeInUp', label: 'Aparecer desde abajo' },
-    { value: 'fadeInDown', label: 'Aparecer desde arriba' },
-    { value: 'fadeInLeft', label: 'Aparecer desde izquierda' },
-    { value: 'fadeInRight', label: 'Aparecer desde derecha' },
-    { value: 'zoomIn', label: 'Zoom in' },
-    { value: 'zoomInUp', label: 'Zoom in desde abajo' },
-    { value: 'zoomInDown', label: 'Zoom in desde arriba' },
-    { value: 'slideIn', label: 'Deslizar' },
-    { value: 'slideInUp', label: 'Deslizar desde abajo' },
-    { value: 'slideInDown', label: 'Deslizar desde arriba' },
-    { value: 'slideInLeft', label: 'Deslizar desde izquierda' },
-    { value: 'slideInRight', label: 'Deslizar desde derecha' },
-    { value: 'rotateIn', label: 'Rotar' },
-    { value: 'rotateInX', label: 'Rotar en X' },
-    { value: 'rotateInY', label: 'Rotar en Y' }
-  ],
-  atencion: [
-    { value: 'bounce', label: 'Rebote' },
-    { value: 'pulse', label: 'Pulso' },
-    { value: 'flash', label: 'Flash' },
-    { value: 'shake', label: 'Agitar' },
-    { value: 'tada', label: 'Tada' },
-    { value: 'rubberBand', label: 'Elástico' },
-    { value: 'jello', label: 'Gelatina' }
-  ],
-  hover: [
-    { value: 'hoverPulse', label: 'Pulso' },
-    { value: 'hoverBounce', label: 'Rebote' },
-    { value: 'hoverGrow', label: 'Crecer' },
-    { value: 'hoverShrink', label: 'Reducir' },
-    { value: 'hoverRotate', label: 'Rotar' },
-    { value: 'hoverSpin', label: 'Girar' },
-    { value: 'hoverFlip', label: 'Voltear' }
-  ],
-  scroll: [
-    { value: 'scrollFadeIn', label: 'Aparecer' },
-    { value: 'scrollFadeUp', label: 'Aparecer desde abajo' },
-    { value: 'scrollFadeDown', label: 'Aparecer desde arriba' },
-    { value: 'scrollZoomIn', label: 'Zoom in' },
-    { value: 'scrollZoomOut', label: 'Zoom out' },
-    { value: 'scrollSlideUp', label: 'Deslizar hacia arriba' },
-    { value: 'scrollSlideDown', label: 'Deslizar hacia abajo' },
-    { value: 'scrollRotate', label: 'Rotar' }
-  ]
-};
-
-// Duración en milisegundos
-export function getDurationMs(duration?: AnimationDuration): number {
-  switch (duration) {
-    case 'fast': return 300;
-    case 'normal': return 500;
-    case 'slow': return 800;
-    case 'verySlow': return 1200;
-    default: return 500;
-  }
-}
-
-// Retraso en milisegundos
-export function getDelayMs(delay?: AnimationDelay): number {
-  switch (delay) {
-    case 'small': return 100;
-    case 'medium': return 300;
-    case 'large': return 500;
-    default: return 0;
-  }
-}
-
-// Convertir configuración a propiedades para Framer Motion
-export function getFramerMotionProps(config: AnimationConfig): any {
-  const { effect, duration, delay, repeat, infinite } = config;
-  const durationMs = getDurationMs(duration);
-  const delayMs = getDelayMs(delay);
-  
-  // Configuración base
-  const baseProps = {
+  // Valores default
+  const result: any = {
     initial: {},
     animate: {},
     transition: {
-      duration: durationMs / 1000,
-      delay: delayMs / 1000,
-      repeat: infinite ? Infinity : (repeat ? 1 : 0),
-      ease: 'easeOut'
-    },
-    whileHover: {},
-    whileTap: {}
+      duration: getDurationValue(duration) / 1000, // Convertir ms a segundos
+      delay: getDelayValue(delay) / 1000,
+      repeat: repeat,
+      ease: convertEasingToFramerMotion(easing)
+    }
   };
   
-  // Aplicar efecto específico
+  // Aplicar configuración de dirección
+  if (direction === 'reverse') {
+    const temp = result.initial;
+    result.initial = result.animate;
+    result.animate = temp;
+  } else if (direction === 'alternate') {
+    result.transition.yoyo = true;
+  } else if (direction === 'alternate-reverse') {
+    result.transition.yoyo = true;
+    const temp = result.initial;
+    result.initial = result.animate;
+    result.animate = temp;
+  }
+  
+  // Configurar animación según el efecto
   switch (effect) {
-    // Efectos de entrada
     case 'fadeIn':
-      baseProps.initial = { opacity: 0 };
-      baseProps.animate = { opacity: 1 };
+      result.initial = { opacity: 0 };
+      result.animate = { opacity: 1 };
       break;
-      
+    case 'fadeOut':
+      result.initial = { opacity: 1 };
+      result.animate = { opacity: 0 };
+      break;
     case 'fadeInUp':
-      baseProps.initial = { opacity: 0, y: 50 };
-      baseProps.animate = { opacity: 1, y: 0 };
+      result.initial = { opacity: 0, y: 20 * intensity };
+      result.animate = { opacity: 1, y: 0 };
       break;
-      
     case 'fadeInDown':
-      baseProps.initial = { opacity: 0, y: -50 };
-      baseProps.animate = { opacity: 1, y: 0 };
+      result.initial = { opacity: 0, y: -20 * intensity };
+      result.animate = { opacity: 1, y: 0 };
       break;
-      
     case 'fadeInLeft':
-      baseProps.initial = { opacity: 0, x: -50 };
-      baseProps.animate = { opacity: 1, x: 0 };
+      result.initial = { opacity: 0, x: -20 * intensity };
+      result.animate = { opacity: 1, x: 0 };
       break;
-      
     case 'fadeInRight':
-      baseProps.initial = { opacity: 0, x: 50 };
-      baseProps.animate = { opacity: 1, x: 0 };
+      result.initial = { opacity: 0, x: 20 * intensity };
+      result.animate = { opacity: 1, x: 0 };
       break;
-      
-    case 'zoomIn':
-      baseProps.initial = { opacity: 0, scale: 0.8 };
-      baseProps.animate = { opacity: 1, scale: 1 };
-      break;
-      
-    case 'zoomInUp':
-      baseProps.initial = { opacity: 0, scale: 0.8, y: 50 };
-      baseProps.animate = { opacity: 1, scale: 1, y: 0 };
-      break;
-      
-    case 'zoomInDown':
-      baseProps.initial = { opacity: 0, scale: 0.8, y: -50 };
-      baseProps.animate = { opacity: 1, scale: 1, y: 0 };
-      break;
-      
-    case 'slideIn':
-      baseProps.initial = { x: -100, opacity: 0 };
-      baseProps.animate = { x: 0, opacity: 1 };
-      break;
-      
     case 'slideInUp':
-      baseProps.initial = { y: 100, opacity: 0 };
-      baseProps.animate = { y: 0, opacity: 1 };
+      result.initial = { y: 50 * intensity };
+      result.animate = { y: 0 };
       break;
-      
     case 'slideInDown':
-      baseProps.initial = { y: -100, opacity: 0 };
-      baseProps.animate = { y: 0, opacity: 1 };
+      result.initial = { y: -50 * intensity };
+      result.animate = { y: 0 };
       break;
-      
     case 'slideInLeft':
-      baseProps.initial = { x: -100, opacity: 0 };
-      baseProps.animate = { x: 0, opacity: 1 };
+      result.initial = { x: -50 * intensity };
+      result.animate = { x: 0 };
       break;
-      
     case 'slideInRight':
-      baseProps.initial = { x: 100, opacity: 0 };
-      baseProps.animate = { x: 0, opacity: 1 };
+      result.initial = { x: 50 * intensity };
+      result.animate = { x: 0 };
       break;
-      
-    case 'rotateIn':
-      baseProps.initial = { rotate: -90, opacity: 0 };
-      baseProps.animate = { rotate: 0, opacity: 1 };
+    case 'zoomIn':
+      result.initial = { scale: 0.8 };
+      result.animate = { scale: 1 };
       break;
-      
-    case 'rotateInX':
-      baseProps.initial = { rotateX: -90, opacity: 0 };
-      baseProps.animate = { rotateX: 0, opacity: 1 };
+    case 'zoomOut':
+      result.initial = { scale: 1.2 };
+      result.animate = { scale: 1 };
       break;
-      
-    case 'rotateInY':
-      baseProps.initial = { rotateY: -90, opacity: 0 };
-      baseProps.animate = { rotateY: 0, opacity: 1 };
+    case 'zoomInUp':
+      result.initial = { scale: 0.8, y: 20 * intensity };
+      result.animate = { scale: 1, y: 0 };
       break;
-    
-    // Efectos de atención
-    case 'bounce':
-      baseProps.animate = { y: [0, -15, 0] };
-      baseProps.transition = {
-        ...baseProps.transition,
-        repeat: infinite ? Infinity : repeat ? 3 : 1,
-        repeatType: 'mirror',
-        ease: 'easeInOut'
-      };
+    case 'zoomInDown':
+      result.initial = { scale: 0.8, y: -20 * intensity };
+      result.animate = { scale: 1, y: 0 };
       break;
-      
     case 'pulse':
-      baseProps.animate = { scale: [1, 1.05, 1] };
-      baseProps.transition = {
-        ...baseProps.transition,
-        repeat: infinite ? Infinity : repeat ? 3 : 1,
-        repeatType: 'mirror',
-        ease: 'easeInOut'
-      };
+      result.animate = { scale: [1, 1.05 * intensity, 1] };
+      result.transition.times = [0, 0.5, 1];
       break;
-      
-    case 'flash':
-      baseProps.animate = { opacity: [1, 0, 1, 0, 1] };
-      baseProps.transition = {
-        ...baseProps.transition,
-        repeat: infinite ? Infinity : repeat ? 2 : 1,
-        ease: 'easeInOut'
-      };
+    case 'bounce':
+      result.animate = { y: [0, -10 * intensity, 0] };
+      result.transition.times = [0, 0.5, 1];
       break;
-      
     case 'shake':
-      baseProps.animate = { x: [0, -10, 10, -10, 10, -5, 5, 0] };
-      baseProps.transition = {
-        ...baseProps.transition,
-        repeat: infinite ? Infinity : repeat ? 1 : 0,
-        ease: 'easeInOut'
-      };
+      result.animate = { x: [0, -5 * intensity, 5 * intensity, -5 * intensity, 0] };
+      result.transition.times = [0, 0.25, 0.5, 0.75, 1];
       break;
-      
-    case 'tada':
-      baseProps.animate = {
-        scale: [1, 0.9, 1.1, 1.1, 1.1, 1.1, 1.1, 1.1, 1],
-        rotate: [0, -3, 3, -3, 3, -3, 3, -3, 0]
-      };
-      baseProps.transition = {
-        ...baseProps.transition,
-        repeat: infinite ? Infinity : repeat ? 1 : 0,
-        ease: 'easeInOut'
-      };
+    case 'flipX':
+      result.initial = { rotateX: 90 };
+      result.animate = { rotateX: 0 };
       break;
-      
-    case 'rubberBand':
-      baseProps.animate = {
-        scaleX: [1, 1.25, 0.75, 1.15, 0.95, 1.05, 1]
-      };
-      baseProps.transition = {
-        ...baseProps.transition,
-        repeat: infinite ? Infinity : repeat ? 1 : 0,
-        ease: 'easeInOut'
-      };
+    case 'flipY':
+      result.initial = { rotateY: 90 };
+      result.animate = { rotateY: 0 };
       break;
-      
-    case 'jello':
-      baseProps.animate = {
-        rotate: [0, 0, -5, 3, -3, 2, -1, 1, 0]
-      };
-      baseProps.transition = {
-        ...baseProps.transition,
-        repeat: infinite ? Infinity : repeat ? 1 : 0,
-        ease: 'easeInOut'
-      };
+    case 'rotate':
+      result.initial = { rotate: -90 };
+      result.animate = { rotate: 0 };
       break;
-      
-    // Efectos de hover
-    case 'hoverPulse':
-      baseProps.whileHover = { scale: 1.05 };
-      break;
-      
-    case 'hoverBounce':
-      baseProps.whileHover = { y: -10 };
-      break;
-      
-    case 'hoverGrow':
-      baseProps.whileHover = { scale: 1.1 };
-      break;
-      
-    case 'hoverShrink':
-      baseProps.whileHover = { scale: 0.95 };
-      break;
-      
-    case 'hoverRotate':
-      baseProps.whileHover = { rotate: 5 };
-      break;
-      
-    case 'hoverSpin':
-      baseProps.whileHover = { rotate: 360, transition: { duration: 0.5 } };
-      break;
-      
-    case 'hoverFlip':
-      baseProps.whileHover = { rotateY: 180, transition: { duration: 0.5 } };
-      break;
-      
-    // Efectos de scroll (se manejan de forma especial con useInView)
-    case 'scrollFadeIn':
-    case 'scrollFadeUp':
-    case 'scrollFadeDown':
-    case 'scrollZoomIn':
-    case 'scrollZoomOut':
-    case 'scrollSlideUp':
-    case 'scrollSlideDown':
-    case 'scrollRotate':
-      // Para estos efectos, la animación se configura en el componente
-      // usando useInView, por lo que retornamos los props base
-      break;
-      
+    case 'none':
     default:
-      // Sin efecto, no aplicar animación
+      result.initial = {};
+      result.animate = {};
       break;
   }
   
-  return baseProps;
+  return result;
 }
 
-// Convertir configuración a propiedades para React Spring
-export function getReactSpringProps(config: AnimationConfig): any {
-  const { effect, duration, delay, repeat, infinite } = config;
-  const durationMs = getDurationMs(duration);
-  const delayMs = getDelayMs(delay);
+/**
+ * Transformar configuración genérica a propiedades específicas de React Spring
+ */
+export function getReactSpringProps(config: Partial<AnimationConfig>) {
+  const {
+    effect = 'none',
+    duration = 'normal',
+    delay = 'none',
+    repeat = 0,
+    intensity = 1,
+    direction = 'none',
+    easing = 'ease'
+  } = config;
   
-  // Configuración base
-  const baseProps: any = {
+  // Valores default
+  const result: any = {
     from: {},
     to: {},
     config: {
-      tension: 170,
-      friction: 20,
-      duration: durationMs
+      duration: getDurationValue(duration),
+      delay: getDelayValue(delay),
+      easing: convertEasingToReactSpring(easing)
     },
-    delay: delayMs,
-    loop: infinite ? true : (repeat ? { reverse: true } : false)
+    reset: repeat > 0,
+    loop: repeat === -1 || repeat > 0 ? true : false,
+    reverse: direction === 'reverse' || direction === 'alternate-reverse'
   };
   
-  // Aplicar efecto específico
+  // Configurar animación según el efecto
   switch (effect) {
-    // Efectos de entrada
     case 'fadeIn':
-      baseProps.from = { opacity: 0 };
-      baseProps.to = { opacity: 1 };
+      result.from = { opacity: 0 };
+      result.to = { opacity: 1 };
       break;
-      
+    case 'fadeOut':
+      result.from = { opacity: 1 };
+      result.to = { opacity: 0 };
+      break;
     case 'fadeInUp':
-      baseProps.from = { opacity: 0, transform: 'translateY(50px)' };
-      baseProps.to = { opacity: 1, transform: 'translateY(0px)' };
+      result.from = { opacity: 0, transform: `translateY(${20 * intensity}px)` };
+      result.to = { opacity: 1, transform: 'translateY(0px)' };
       break;
-      
     case 'fadeInDown':
-      baseProps.from = { opacity: 0, transform: 'translateY(-50px)' };
-      baseProps.to = { opacity: 1, transform: 'translateY(0px)' };
+      result.from = { opacity: 0, transform: `translateY(${-20 * intensity}px)` };
+      result.to = { opacity: 1, transform: 'translateY(0px)' };
       break;
-      
     case 'fadeInLeft':
-      baseProps.from = { opacity: 0, transform: 'translateX(-50px)' };
-      baseProps.to = { opacity: 1, transform: 'translateX(0px)' };
+      result.from = { opacity: 0, transform: `translateX(${-20 * intensity}px)` };
+      result.to = { opacity: 1, transform: 'translateX(0px)' };
       break;
-      
     case 'fadeInRight':
-      baseProps.from = { opacity: 0, transform: 'translateX(50px)' };
-      baseProps.to = { opacity: 1, transform: 'translateX(0px)' };
+      result.from = { opacity: 0, transform: `translateX(${20 * intensity}px)` };
+      result.to = { opacity: 1, transform: 'translateX(0px)' };
       break;
-      
-    case 'zoomIn':
-      baseProps.from = { opacity: 0, transform: 'scale(0.8)' };
-      baseProps.to = { opacity: 1, transform: 'scale(1)' };
-      break;
-      
-    case 'zoomInUp':
-      baseProps.from = { opacity: 0, transform: 'translateY(50px) scale(0.8)' };
-      baseProps.to = { opacity: 1, transform: 'translateY(0px) scale(1)' };
-      break;
-      
-    case 'zoomInDown':
-      baseProps.from = { opacity: 0, transform: 'translateY(-50px) scale(0.8)' };
-      baseProps.to = { opacity: 1, transform: 'translateY(0px) scale(1)' };
-      break;
-      
-    // Efectos de atención
-    case 'bounce':
-      baseProps.from = { transform: 'translateY(0px)' };
-      baseProps.to = { transform: 'translateY(-15px)' };
-      baseProps.loop = { reverse: true };
-      break;
-      
-    case 'pulse':
-      baseProps.from = { transform: 'scale(1)' };
-      baseProps.to = { transform: 'scale(1.05)' };
-      baseProps.loop = { reverse: true };
-      break;
-      
-    // Aplicar configuraciones para otros efectos...
-    
-    default:
-      // Sin efecto, no aplicar animación
-      break;
-  }
-  
-  return baseProps;
-}
-
-// Convertir configuración a propiedades para GSAP
-export function getGSAPConfig(config: AnimationConfig): any {
-  const { effect, duration, delay, repeat, infinite } = config;
-  const durationMs = getDurationMs(duration);
-  const delayMs = getDelayMs(delay);
-  
-  // Configuración base
-  const fromVars: any = {};
-  const toVars: any = {
-    duration: durationMs / 1000,
-    delay: delayMs / 1000,
-    repeat: infinite ? -1 : (repeat ? 1 : 0),
-    ease: 'power2.out'
-  };
-  
-  // Aplicar efecto específico
-  switch (effect) {
-    // Efectos de entrada
-    case 'fadeIn':
-      fromVars.opacity = 0;
-      toVars.opacity = 1;
-      break;
-      
-    case 'fadeInUp':
-      fromVars.opacity = 0;
-      fromVars.y = 50;
-      toVars.opacity = 1;
-      toVars.y = 0;
-      break;
-      
-    case 'fadeInDown':
-      fromVars.opacity = 0;
-      fromVars.y = -50;
-      toVars.opacity = 1;
-      toVars.y = 0;
-      break;
-      
-    case 'fadeInLeft':
-      fromVars.opacity = 0;
-      fromVars.x = -50;
-      toVars.opacity = 1;
-      toVars.x = 0;
-      break;
-      
-    case 'fadeInRight':
-      fromVars.opacity = 0;
-      fromVars.x = 50;
-      toVars.opacity = 1;
-      toVars.x = 0;
-      break;
-      
-    // Efectos de atención
-    case 'bounce':
-      fromVars.y = 0;
-      toVars.y = -15;
-      toVars.yoyo = true;
-      break;
-      
-    case 'pulse':
-      fromVars.scale = 1;
-      toVars.scale = 1.05;
-      toVars.yoyo = true;
-      break;
-      
-    // Aplicar configuraciones para otros efectos...
-    
-    default:
-      // Sin efecto, no aplicar animación
-      break;
-  }
-  
-  return { fromVars, toVars };
-}
-
-// Convertir configuración a propiedades para AOS
-export function getAOSProps(config: AnimationConfig): any {
-  const { effect, duration, delay } = config;
-  const durationMs = getDurationMs(duration);
-  const delayMs = getDelayMs(delay);
-  
-  // Configuración base
-  const aosProps: any = {
-    'data-aos-duration': durationMs,
-    'data-aos-delay': delayMs,
-    'data-aos-once': !config.repeat
-  };
-  
-  // Convertir efecto a formato AOS
-  switch (effect) {
-    // Efectos de entrada
-    case 'fadeIn':
-      aosProps['data-aos'] = 'fade';
-      break;
-      
-    case 'fadeInUp':
-      aosProps['data-aos'] = 'fade-up';
-      break;
-      
-    case 'fadeInDown':
-      aosProps['data-aos'] = 'fade-down';
-      break;
-      
-    case 'fadeInLeft':
-      aosProps['data-aos'] = 'fade-left';
-      break;
-      
-    case 'fadeInRight':
-      aosProps['data-aos'] = 'fade-right';
-      break;
-      
-    case 'zoomIn':
-      aosProps['data-aos'] = 'zoom-in';
-      break;
-      
-    case 'zoomInUp':
-      aosProps['data-aos'] = 'zoom-in-up';
-      break;
-      
-    case 'zoomInDown':
-      aosProps['data-aos'] = 'zoom-in-down';
-      break;
-      
     case 'slideInUp':
-      aosProps['data-aos'] = 'slide-up';
+      result.from = { transform: `translateY(${50 * intensity}px)` };
+      result.to = { transform: 'translateY(0px)' };
       break;
-      
     case 'slideInDown':
-      aosProps['data-aos'] = 'slide-down';
+      result.from = { transform: `translateY(${-50 * intensity}px)` };
+      result.to = { transform: 'translateY(0px)' };
       break;
-      
     case 'slideInLeft':
-      aosProps['data-aos'] = 'slide-left';
+      result.from = { transform: `translateX(${-50 * intensity}px)` };
+      result.to = { transform: 'translateX(0px)' };
       break;
-      
     case 'slideInRight':
-      aosProps['data-aos'] = 'slide-right';
+      result.from = { transform: `translateX(${50 * intensity}px)` };
+      result.to = { transform: 'translateX(0px)' };
       break;
-      
-    // AOS no tiene equivalentes directos para algunos efectos
-    // En esos casos usamos efectos similares
-    
+    case 'zoomIn':
+      result.from = { transform: 'scale(0.8)' };
+      result.to = { transform: 'scale(1)' };
+      break;
+    case 'zoomOut':
+      result.from = { transform: 'scale(1.2)' };
+      result.to = { transform: 'scale(1)' };
+      break;
+    case 'pulse':
+      result.from = { transform: 'scale(1)' };
+      result.to = { transform: `scale(${1 + 0.05 * intensity})` };
+      result.loop = { reverse: true };
+      break;
+    case 'bounce':
+      result.from = { transform: 'translateY(0px)' };
+      result.to = { transform: `translateY(${-10 * intensity}px)` };
+      result.loop = { reverse: true };
+      break;
+    case 'flipX':
+      result.from = { transform: 'rotateX(90deg)' };
+      result.to = { transform: 'rotateX(0deg)' };
+      break;
+    case 'flipY':
+      result.from = { transform: 'rotateY(90deg)' };
+      result.to = { transform: 'rotateY(0deg)' };
+      break;
+    case 'rotate':
+      result.from = { transform: 'rotate(-90deg)' };
+      result.to = { transform: 'rotate(0deg)' };
+      break;
+    case 'none':
     default:
-      aosProps['data-aos'] = 'fade'; // Valor por defecto
+      result.from = {};
+      result.to = {};
       break;
   }
   
-  return aosProps;
+  return result;
+}
+
+/**
+ * Transformar configuración genérica a propiedades específicas de GSAP
+ */
+export function getGsapProps(config: Partial<AnimationConfig>) {
+  const {
+    effect = 'none',
+    duration = 'normal',
+    delay = 'none',
+    repeat = 0,
+    intensity = 1,
+    direction = 'none',
+    easing = 'ease'
+  } = config;
+  
+  // Valores default
+  const result: any = {
+    from: {},
+    to: {},
+    duration: getDurationValue(duration) / 1000, // Convertir ms a segundos
+    delay: getDelayValue(delay) / 1000,
+    repeat: repeat,
+    yoyo: direction === 'alternate' || direction === 'alternate-reverse',
+    ease: convertEasingToGsap(easing)
+  };
+  
+  // Configurar animación según el efecto
+  switch (effect) {
+    case 'fadeIn':
+      result.from = { opacity: 0 };
+      result.to = { opacity: 1 };
+      break;
+    case 'fadeOut':
+      result.from = { opacity: 1 };
+      result.to = { opacity: 0 };
+      break;
+    case 'fadeInUp':
+      result.from = { opacity: 0, y: 20 * intensity };
+      result.to = { opacity: 1, y: 0 };
+      break;
+    case 'fadeInDown':
+      result.from = { opacity: 0, y: -20 * intensity };
+      result.to = { opacity: 1, y: 0 };
+      break;
+    case 'fadeInLeft':
+      result.from = { opacity: 0, x: -20 * intensity };
+      result.to = { opacity: 1, x: 0 };
+      break;
+    case 'fadeInRight':
+      result.from = { opacity: 0, x: 20 * intensity };
+      result.to = { opacity: 1, x: 0 };
+      break;
+    case 'slideInUp':
+      result.from = { y: 50 * intensity };
+      result.to = { y: 0 };
+      break;
+    case 'slideInDown':
+      result.from = { y: -50 * intensity };
+      result.to = { y: 0 };
+      break;
+    case 'slideInLeft':
+      result.from = { x: -50 * intensity };
+      result.to = { x: 0 };
+      break;
+    case 'slideInRight':
+      result.from = { x: 50 * intensity };
+      result.to = { x: 0 };
+      break;
+    case 'zoomIn':
+      result.from = { scale: 0.8 };
+      result.to = { scale: 1 };
+      break;
+    case 'zoomOut':
+      result.from = { scale: 1.2 };
+      result.to = { scale: 1 };
+      break;
+    case 'zoomInUp':
+      result.from = { scale: 0.8, y: 20 * intensity };
+      result.to = { scale: 1, y: 0 };
+      break;
+    case 'zoomInDown':
+      result.from = { scale: 0.8, y: -20 * intensity };
+      result.to = { scale: 1, y: 0 };
+      break;
+    case 'pulse':
+      result.from = { scale: 1 };
+      result.to = { scale: 1 + 0.05 * intensity, repeat: 1, yoyo: true };
+      break;
+    case 'bounce':
+      result.from = { y: 0 };
+      result.to = { y: -10 * intensity, repeat: 1, yoyo: true };
+      break;
+    case 'shake':
+      result.from = { x: 0 };
+      result.to = { x: 5 * intensity, repeat: 2, yoyo: true };
+      break;
+    case 'flipX':
+      result.from = { rotationX: 90 };
+      result.to = { rotationX: 0 };
+      break;
+    case 'flipY':
+      result.from = { rotationY: 90 };
+      result.to = { rotationY: 0 };
+      break;
+    case 'rotate':
+      result.from = { rotation: -90 };
+      result.to = { rotation: 0 };
+      break;
+    case 'none':
+    default:
+      result.from = {};
+      result.to = {};
+      break;
+  }
+  
+  return result;
+}
+
+/**
+ * Transformar configuración genérica a propiedades específicas de AOS
+ */
+export function getAosProps(config: Partial<AnimationConfig>) {
+  const {
+    effect = 'none',
+    duration = 'normal',
+    delay = 'none',
+    repeat = 0,
+    direction = 'none',
+    easing = 'ease'
+  } = config;
+  
+  const result: any = {
+    'data-aos': convertEffectToAOS(effect)
+  };
+  
+  if (duration !== 'normal') {
+    result['data-aos-duration'] = getDurationValue(duration);
+  }
+  
+  if (delay !== 'none') {
+    result['data-aos-delay'] = getDelayValue(delay);
+  }
+  
+  if (easing !== 'ease') {
+    result['data-aos-easing'] = convertEasingToAOS(easing);
+  }
+  
+  if (repeat > 0 || repeat === -1) {
+    result['data-aos-once'] = false;
+  }
+  
+  return result;
+}
+
+/**
+ * Funciones auxiliares para conversión entre formatos
+ */
+
+function convertEasingToFramerMotion(easing: AnimationEasing): any {
+  switch (easing) {
+    case 'linear': return [0, 0, 1, 1];
+    case 'ease': return [0.25, 0.1, 0.25, 1];
+    case 'ease-in': return [0.42, 0, 1, 1];
+    case 'ease-out': return [0, 0, 0.58, 1];
+    case 'ease-in-out': return [0.42, 0, 0.58, 1];
+    case 'spring': return 'spring';
+    case 'bounce': return 'backOut';
+    default: return [0.25, 0.1, 0.25, 1]; // ease
+  }
+}
+
+function convertEasingToReactSpring(easing: AnimationEasing): any {
+  switch (easing) {
+    case 'linear': return 'linear';
+    case 'ease': return 'easeInOut';
+    case 'ease-in': return 'easeIn';
+    case 'ease-out': return 'easeOut';
+    case 'ease-in-out': return 'easeInOut';
+    case 'spring': return 'spring';
+    case 'bounce': return 'bounce';
+    default: return 'easeInOut'; // ease
+  }
+}
+
+function convertEasingToGsap(easing: AnimationEasing): string {
+  switch (easing) {
+    case 'linear': return 'none';
+    case 'ease': return 'power1.out';
+    case 'ease-in': return 'power2.in';
+    case 'ease-out': return 'power2.out';
+    case 'ease-in-out': return 'power2.inOut';
+    case 'spring': return 'elastic.out(1, 0.3)';
+    case 'bounce': return 'bounce.out';
+    default: return 'power1.out'; // ease
+  }
+}
+
+function convertEasingToAOS(easing: AnimationEasing): string {
+  switch (easing) {
+    case 'linear': return 'linear';
+    case 'ease': return 'ease';
+    case 'ease-in': return 'ease-in';
+    case 'ease-out': return 'ease-out';
+    case 'ease-in-out': return 'ease-in-out';
+    case 'spring': return 'ease-out-back';
+    case 'bounce': return 'ease-out-back';
+    default: return 'ease';
+  }
+}
+
+function convertEffectToAOS(effect: AnimationEffect): string {
+  // Mapear los efectos genéricos a los efectos específicos de AOS
+  switch (effect) {
+    case 'none': return '';
+    case 'fadeIn': return 'fade-up';
+    case 'fadeOut': return 'fade-down';
+    case 'fadeInUp': return 'fade-up';
+    case 'fadeInDown': return 'fade-down';
+    case 'fadeInLeft': return 'fade-right';
+    case 'fadeInRight': return 'fade-left';
+    case 'slideInUp': return 'slide-up';
+    case 'slideInDown': return 'slide-down';
+    case 'slideInLeft': return 'slide-right';
+    case 'slideInRight': return 'slide-left';
+    case 'zoomIn': return 'zoom-in';
+    case 'zoomOut': return 'zoom-out';
+    case 'zoomInUp': return 'zoom-in-up';
+    case 'zoomInDown': return 'zoom-in-down';
+    case 'flipX': return 'flip-up';
+    case 'flipY': return 'flip-left';
+    case 'rotate': return 'flip-left';
+    default: return 'fade';
+  }
 }

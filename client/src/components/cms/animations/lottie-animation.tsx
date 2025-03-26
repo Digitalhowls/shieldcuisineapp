@@ -1,57 +1,70 @@
-import React from 'react';
+import React, { ReactNode, CSSProperties } from 'react';
 import Lottie from 'lottie-react';
+import { AnimationConfig } from './animation-config';
 
-interface LottieAnimationProps {
+/**
+ * Propiedades para el componente de animación Lottie
+ */
+export interface LottieAnimationProps {
+  children?: ReactNode;
   animationData: any;
-  className?: string;
   loop?: boolean;
   autoplay?: boolean;
   speed?: number;
+  style?: CSSProperties;
+  className?: string;
   onClick?: () => void;
-  width?: string | number;
-  height?: string | number;
-  style?: React.CSSProperties;
+  onComplete?: () => void;
 }
 
 /**
- * Componente para mostrar animaciones Lottie
+ * Componente para reproducir animaciones Lottie
  * 
- * Este componente permite incorporar animaciones Lottie fácilmente.
- * 
- * @example
- * <LottieAnimation
- *   animationData={animationData}
- *   loop={true}
- *   autoplay={true}
- * />
+ * Este componente es diferente a los demás porque en lugar de animar sus hijos,
+ * muestra una animación Lottie, opcionalmente con hijos superpuestos.
  */
 export const LottieAnimation: React.FC<LottieAnimationProps> = ({
+  children,
   animationData,
-  className = '',
   loop = true,
   autoplay = true,
   speed = 1,
+  style,
+  className = '',
   onClick,
-  width,
-  height,
-  style = {}
+  onComplete,
+  ...props
 }) => {
-  // Estilos combinados
-  const combinedStyle: React.CSSProperties = {
-    width: width,
-    height: height,
-    ...style
-  };
+  if (!animationData) {
+    return (
+      <div className={className} onClick={onClick} style={style} {...props}>
+        {children || <div>No animation data provided</div>}
+      </div>
+    );
+  }
   
   return (
-    <div className={className} onClick={onClick}>
+    <div 
+      className={`relative ${className}`} 
+      onClick={onClick} 
+      style={{ ...style, position: 'relative' }}
+    >
       <Lottie
         animationData={animationData}
         loop={loop}
-        autoplay={autoplay}
+        autoplay={autoplay} 
+        // En lottie-react la velocidad se llama "speed"
         speed={speed}
-        style={combinedStyle}
+        style={style}
+        className={className}
+        onClick={onClick}
+        onComplete={onComplete}
       />
+      {children && (
+        <div className="absolute inset-0 flex items-center justify-center z-10">
+          {children}
+        </div>
+      )}
     </div>
   );
 };

@@ -1,62 +1,102 @@
-import React, { ReactNode, useEffect } from 'react';
+import React, { ReactNode, CSSProperties, useEffect } from 'react';
 import AOS from 'aos';
 import 'aos/dist/aos.css';
-import { AnimationConfig, getAOSProps } from './animation-utils';
+import { AnimationConfig, AnimationEffect, AnimationDirection, AnimationEasing } from './animation-config';
+import { getAosProps } from './animation-utils';
 
-interface AOSAnimationProps extends AnimationConfig {
+// Inicializar AOS
+let aosInitialized = false;
+
+/**
+ * Propiedades para el componente de animación AOS
+ */
+export interface AOSAnimationProps {
   children: ReactNode;
+  effect?: AnimationEffect;
+  duration?: string | number;
+  delay?: string | number;
+  repeat?: number;
+  direction?: AnimationDirection;
+  easing?: AnimationEasing;
   className?: string;
   onClick?: () => void;
+  style?: CSSProperties;
 }
 
 /**
- * Componente de animación basado en AOS (Animate On Scroll)
+ * Componente de animación que usa AOS
  * 
- * Este componente permite aplicar fácilmente efectos de animación al hacer scroll
- * utilizando la biblioteca AOS.
- * 
- * @example
- * <AOSAnimation
- *   effect="fadeIn"
- *   duration="normal"
- *   delay="small"
- * >
- *   <div>Contenido animado al hacer scroll</div>
- * </AOSAnimation>
+ * Acepta una configuración de animación genérica y la transforma
+ * en propiedades de AOS.
  */
 export const AOSAnimation: React.FC<AOSAnimationProps> = ({
   children,
+  effect = 'none',
+  duration = 'normal',
+  delay = 'none',
+  repeat = 0,
+  direction = 'none',
+  easing = 'ease',
   className = '',
   onClick,
-  ...animationConfig
+  style,
+  ...props
 }) => {
-  // Inicializar AOS
+  // Inicializar AOS si no está inicializado
   useEffect(() => {
-    // Inicializar AOS solo una vez
-    if (!document.body.hasAttribute('data-aos-initialized')) {
+    if (!aosInitialized) {
       AOS.init({
-        // Opciones globales
+        disable: false,
+        startEvent: 'DOMContentLoaded',
+        initClassName: 'aos-init',
+        animatedClassName: 'aos-animate',
+        useClassNames: false,
+        disableMutationObserver: false,
+        debounceDelay: 50,
+        throttleDelay: 99,
         offset: 120,
-        duration: 800,
-        easing: 'ease-out-cubic',
-        once: true,
+        delay: 0,
+        duration: 400,
+        easing: 'ease',
+        once: false,
+        mirror: false,
+        anchorPlacement: 'top-bottom'
       });
-      
-      document.body.setAttribute('data-aos-initialized', 'true');
+      aosInitialized = true;
     }
     
-    // Actualizar AOS cuando cambian los hijos del componente
+    // Refrescar AOS cuando el componente se monta
     AOS.refresh();
-  }, [children]);
+  }, []);
   
-  // Obtener propiedades de AOS basadas en la configuración
-  const aosProps = getAOSProps(animationConfig);
+  // Si no hay efecto, simplemente mostrar los niños sin animación
+  if (effect === 'none') {
+    return (
+      <div className={className} onClick={onClick} style={style} {...props}>
+        {children}
+      </div>
+    );
+  }
+  
+  // Obtener propiedades AOS
+  const aosProps = getAosProps({
+    effect,
+    duration,
+    delay,
+    repeat,
+    intensity: 1, // AOS no maneja intensidad directamente
+    direction,
+    easing,
+    threshold: 0.2 // Valor por defecto
+  });
   
   return (
     <div
       className={className}
       onClick={onClick}
+      style={style}
       {...aosProps}
+      {...props}
     >
       {children}
     </div>

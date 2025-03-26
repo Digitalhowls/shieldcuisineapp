@@ -20,6 +20,18 @@ export interface Block {
   id: string;
   type: BlockType;
   content: any;
+  animation?: {
+    effect?: string;
+    duration?: string | number;
+    delay?: string | number;
+    repeat?: number;
+    intensity?: number;
+    direction?: string;
+    easing?: string;
+    library?: string;
+    threshold?: number;
+    scrollTrigger?: boolean;
+  };
 }
 
 /**

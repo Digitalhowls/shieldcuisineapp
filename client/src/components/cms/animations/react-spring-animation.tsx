@@ -1,45 +1,78 @@
-import React, { ReactNode } from 'react';
+import React, { ReactNode, CSSProperties } from 'react';
 import { animated, useSpring } from '@react-spring/web';
-import { AnimationConfig, getReactSpringProps } from './animation-utils';
+import { AnimationConfig, AnimationEffect, AnimationDirection, AnimationEasing } from './animation-config';
+import { getReactSpringProps } from './animation-utils';
 
-interface ReactSpringAnimationProps extends AnimationConfig {
+/**
+ * Propiedades para el componente de animación React Spring
+ */
+export interface ReactSpringAnimationProps {
   children: ReactNode;
+  effect?: AnimationEffect;
+  duration?: string | number;
+  delay?: string | number;
+  repeat?: number;
+  intensity?: number;
+  direction?: AnimationDirection;
+  easing?: AnimationEasing;
   className?: string;
   onClick?: () => void;
+  style?: CSSProperties;
 }
 
 /**
- * Componente de animación basado en React Spring
+ * Componente de animación que usa React Spring
  * 
- * Este componente permite aplicar fácilmente efectos de animación a cualquier 
- * elemento utilizando React Spring.
- * 
- * @example
- * <ReactSpringAnimation
- *   effect="fadeIn"
- *   duration="normal"
- *   delay="small"
- * >
- *   <div>Contenido animado</div>
- * </ReactSpringAnimation>
+ * Acepta una configuración de animación genérica y la transforma
+ * en propiedades de React Spring.
  */
 export const ReactSpringAnimation: React.FC<ReactSpringAnimationProps> = ({
   children,
+  effect = 'none',
+  duration = 'normal',
+  delay = 'none',
+  repeat = 0,
+  intensity = 1,
+  direction = 'none',
+  easing = 'ease',
   className = '',
   onClick,
-  ...animationConfig
+  style,
+  ...props
 }) => {
-  // Obtener propiedades para React Spring basadas en la configuración
-  const springProps = getReactSpringProps(animationConfig);
+  // Si no hay efecto, simplemente mostrar los niños sin animación
+  if (effect === 'none') {
+    return (
+      <div className={className} onClick={onClick} style={style}>
+        {children}
+      </div>
+    );
+  }
   
   // Configurar la animación
+  const springProps = getReactSpringProps({
+    effect,
+    duration,
+    delay,
+    repeat,
+    intensity,
+    direction,
+    easing,
+    threshold: 0 // React Spring no usa threshold directamente
+  });
+  
+  // Crear la animación
   const animation = useSpring(springProps);
   
   return (
     <animated.div
       className={className}
-      style={animation}
       onClick={onClick}
+      style={{
+        ...style,
+        ...animation
+      }}
+      {...props}
     >
       {children}
     </animated.div>

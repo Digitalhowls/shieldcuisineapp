@@ -1,101 +1,85 @@
-import React, { ReactNode } from 'react';
-import { motion, useInView } from 'framer-motion';
-import { AnimationConfig, getFramerMotionProps } from './animation-utils';
+import React, { ReactNode, CSSProperties } from 'react';
+import { motion } from 'framer-motion';
+import { AnimationConfig, AnimationEffect, AnimationDirection, AnimationEasing } from './animation-config';
+import { getFramerMotionProps } from './animation-utils';
 
-interface FramerMotionAnimationProps extends AnimationConfig {
+/**
+ * Propiedades para el componente de animación Framer Motion
+ */
+export interface FramerMotionAnimationProps {
   children: ReactNode;
+  effect?: AnimationEffect;
+  duration?: string | number;
+  delay?: string | number;
+  repeat?: number;
+  threshold?: number;
+  intensity?: number;
+  direction?: AnimationDirection;
+  easing?: AnimationEasing;
   className?: string;
   onClick?: () => void;
+  // Para animaciones activadas por scroll
+  scrollTrigger?: boolean;
   viewportOnce?: boolean;
 }
 
 /**
- * Componente de animación basado en Framer Motion
+ * Componente de animación que usa Framer Motion
  * 
- * Este componente permite aplicar fácilmente efectos de animación a cualquier 
- * elemento utilizando Framer Motion.
- * 
- * @example
- * <FramerMotionAnimation
- *   effect="fadeIn"
- *   duration="normal"
- *   delay="small"
- * >
- *   <div>Contenido animado</div>
- * </FramerMotionAnimation>
+ * Acepta una configuración de animación genérica y la transforma
+ * en propiedades de Framer Motion.
  */
 export const FramerMotionAnimation: React.FC<FramerMotionAnimationProps> = ({
   children,
+  effect = 'none',
+  duration = 'normal',
+  delay = 'none',
+  repeat = 0,
+  threshold = 0.2,
+  intensity = 1,
+  direction = 'none',
+  easing = 'ease',
   className = '',
   onClick,
+  scrollTrigger = false,
   viewportOnce = true,
-  ...animationConfig
+  ...props
 }) => {
-  // Referencia para animaciones basadas en scroll
-  const ref = React.useRef(null);
-  const isInView = useInView(ref, {
-    once: viewportOnce,
-    amount: animationConfig.threshold || 0.2
+  // Si no hay efecto, simplemente mostrar los niños sin animación
+  if (effect === 'none') {
+    return (
+      <div className={className} onClick={onClick}>
+        {children}
+      </div>
+    );
+  }
+  
+  // Convertir la configuración a propiedades de Framer Motion
+  const motionProps = getFramerMotionProps({
+    effect,
+    duration,
+    delay,
+    repeat,
+    intensity,
+    direction,
+    easing
   });
   
-  // Obtener propiedades para Framer Motion basadas en la configuración
-  const motionProps = getFramerMotionProps(animationConfig);
+  // Configurar opciones de viewport para scroll-triggered animations
+  const viewportOptions = scrollTrigger ? {
+    viewport: { 
+      once: viewportOnce,
+      amount: threshold
+    }
+  } : {};
   
-  // Detectar si es un efecto basado en scroll
-  const isScrollEffect = animationConfig.effect?.startsWith('scroll');
-  
-  // Si es un efecto de scroll, aplicar animación cuando esté en vista
-  if (isScrollEffect) {
-    // Mapear efectos de scroll a efectos normales
-    const scrollToNormalEffect = (effect: string) => {
-      return effect.replace('scroll', 'fade') as any;
-    };
-    
-    // Obtener propiedades para el efecto convertido
-    const scrollMotionProps = getFramerMotionProps({
-      ...animationConfig,
-      effect: scrollToNormalEffect(animationConfig.effect || '')
-    });
-    
-    return (
-      <motion.div
-        ref={ref}
-        className={className}
-        onClick={onClick}
-        initial={scrollMotionProps.initial}
-        animate={isInView ? scrollMotionProps.animate : scrollMotionProps.initial}
-        transition={scrollMotionProps.transition}
-      >
-        {children}
-      </motion.div>
-    );
-  }
-  
-  // Para efectos hover, aplicar whileHover
-  const isHoverEffect = animationConfig.effect?.startsWith('hover');
-  
-  if (isHoverEffect) {
-    return (
-      <motion.div
-        className={className}
-        onClick={onClick}
-        whileHover={motionProps.whileHover}
-        whileTap={motionProps.whileTap}
-        transition={motionProps.transition}
-      >
-        {children}
-      </motion.div>
-    );
-  }
-  
-  // Para efectos normales
   return (
     <motion.div
       className={className}
       onClick={onClick}
-      initial={motionProps.initial}
-      animate={motionProps.animate}
-      transition={motionProps.transition}
+      {...motionProps}
+      {...viewportOptions}
+      {...props}
     >
       {children}
     </motion.div>

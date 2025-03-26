@@ -1,96 +1,141 @@
-import React, { ReactNode, useRef, useEffect } from 'react';
-import { gsap } from 'gsap';
-import { AnimationConfig, getGSAPConfig } from './animation-utils';
+import React, { ReactNode, CSSProperties, useRef, useEffect } from 'react';
+import gsap from 'gsap';
+import { ScrollTrigger } from 'gsap/ScrollTrigger';
+import { AnimationConfig, AnimationEffect, AnimationDirection, AnimationEasing } from './animation-config';
+import { getGsapProps } from './animation-utils';
 
-interface GSAPAnimationProps extends AnimationConfig {
+// Registrar ScrollTrigger
+gsap.registerPlugin(ScrollTrigger);
+
+/**
+ * Propiedades para el componente de animación GSAP
+ */
+export interface GSAPAnimationProps {
   children: ReactNode;
+  effect?: AnimationEffect;
+  duration?: string | number;
+  delay?: string | number;
+  repeat?: number;
+  threshold?: number;
+  intensity?: number;
+  direction?: AnimationDirection;
+  easing?: AnimationEasing;
   className?: string;
   onClick?: () => void;
+  style?: CSSProperties;
   runOnScroll?: boolean;
-  scrollTriggerThreshold?: number; // 0.0 - 1.0, parte del elemento visible para activar
+  scrollTriggerThreshold?: number;
 }
 
 /**
- * Componente de animación basado en GSAP
+ * Componente de animación que usa GSAP
  * 
- * Este componente permite aplicar fácilmente efectos de animación a cualquier 
- * elemento utilizando GSAP (GreenSock Animation Platform).
- * 
- * @example
- * <GSAPAnimation
- *   effect="fadeIn"
- *   duration="normal"
- *   delay="small"
- * >
- *   <div>Contenido animado</div>
- * </GSAPAnimation>
+ * Acepta una configuración de animación genérica y la transforma
+ * en propiedades de GSAP.
  */
 export const GSAPAnimation: React.FC<GSAPAnimationProps> = ({
   children,
+  effect = 'none',
+  duration = 'normal',
+  delay = 'none',
+  repeat = 0,
+  threshold = 0.2,
+  intensity = 1,
+  direction = 'none',
+  easing = 'ease',
   className = '',
   onClick,
+  style,
   runOnScroll = false,
   scrollTriggerThreshold = 0.2,
-  ...animationConfig
+  ...props
 }) => {
-  // Referencia al elemento a animar
+  // Referencia al elemento DOM
   const elementRef = useRef<HTMLDivElement>(null);
+  const gsapContextRef = useRef<gsap.Context | null>(null);
   
-  // Efecto para aplicar la animación
+  // Si no hay efecto, simplemente mostrar los niños sin animación
+  if (effect === 'none') {
+    return (
+      <div className={className} onClick={onClick} style={style} {...props}>
+        {children}
+      </div>
+    );
+  }
+  
+  // Configurar y ejecutar la animación cuando el componente se monta
   useEffect(() => {
-    if (!elementRef.current) return;
-    
-    // Obtener configuración GSAP
-    const { fromVars, toVars } = getGSAPConfig(animationConfig);
-    
-    // Configurar animación
-    if (!runOnScroll) {
-      // Animación inmediata
-      gsap.fromTo(elementRef.current, fromVars, toVars);
-    } else {
-      // Animación al hacer scroll
-      // Nota: ScrollTrigger es un plugin adicional de GSAP
-      // Si no está disponible, se usa un observador de intersección
-      if ('ScrollTrigger' in gsap) {
-        gsap.fromTo(elementRef.current, fromVars, {
-          ...toVars,
-          scrollTrigger: {
-            trigger: elementRef.current,
-            start: `top ${scrollTriggerThreshold * 100}%`,
-            toggleActions: 'play none none none'
-          }
-        });
-      } else {
-        // Alternativa con Intersection Observer
-        const observer = new IntersectionObserver(
-          (entries) => {
-            entries.forEach(entry => {
-              if (entry.isIntersecting) {
-                gsap.fromTo(elementRef.current, fromVars, toVars);
-                observer.unobserve(entry.target);
-              }
-            });
-          },
-          { threshold: scrollTriggerThreshold }
-        );
-        
-        observer.observe(elementRef.current);
-        
-        // Limpiar observador
-        return () => {
-          if (elementRef.current) {
-            observer.unobserve(elementRef.current);
-          }
-        };
-      }
+    // Limpiar cualquier contexto GSAP anterior
+    if (gsapContextRef.current) {
+      gsapContextRef.current.revert();
+      gsapContextRef.current = null;
     }
-  }, [animationConfig, runOnScroll, scrollTriggerThreshold]);
+    
+    // Referencia al elemento DOM
+    const element = elementRef.current;
+    if (!element) return;
+    
+    // Obtener las propiedades GSAP
+    const gsapProps = getGsapProps({
+      effect,
+      duration,
+      delay,
+      repeat,
+      threshold,
+      intensity,
+      direction,
+      easing
+    });
+    
+    // Crear un nuevo contexto GSAP
+    gsapContextRef.current = gsap.context(() => {
+      // Configurar la animación
+      if (runOnScroll) {
+        // Animación con ScrollTrigger
+        gsap.fromTo(
+          element,
+          gsapProps.from || {},
+          {
+            ...gsapProps.to,
+            scrollTrigger: {
+              trigger: element,
+              start: `top ${scrollTriggerThreshold * 100}%`,
+              toggleActions: 'play none none none'
+            }
+          }
+        );
+      } else {
+        // Animación normal
+        gsap.fromTo(
+          element,
+          gsapProps.from || {},
+          {
+            ...gsapProps.to,
+            duration: gsapProps.duration,
+            delay: gsapProps.delay,
+            repeat: gsapProps.repeat,
+            yoyo: gsapProps.yoyo,
+            ease: gsapProps.ease
+          }
+        );
+      }
+    });
+    
+    // Limpieza
+    return () => {
+      if (gsapContextRef.current) {
+        gsapContextRef.current.revert();
+      }
+    };
+  }, [effect, duration, delay, repeat, intensity, direction, easing, runOnScroll, scrollTriggerThreshold]);
   
   return (
     <div
       ref={elementRef}
       className={className}
       onClick={onClick}
+      style={style}
+      {...props}
     >
       {children}
     </div>
