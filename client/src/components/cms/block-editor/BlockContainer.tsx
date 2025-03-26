@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Block } from './index';
 import { getYouTubeID, getVimeoID } from './utils';
+import DialogMediaSelector from '../media/DialogMediaSelector';
 import {
   Card,
   CardContent,
@@ -172,10 +173,23 @@ const BlockContainer: React.FC<BlockContainerProps> = ({
                     value={block.content.src || ''}
                     onChange={(e) => handleContentChange({ src: e.target.value })}
                     placeholder="URL de la imagen"
+                    className="flex-1"
                   />
-                  <Button variant="outline" size="sm">
-                    Seleccionar
-                  </Button>
+                  <DialogMediaSelector
+                    title="Seleccionar imagen"
+                    description="Elige una imagen de la biblioteca de medios"
+                    defaultTab="image"
+                    allowedTypes={['image']}
+                    trigger={
+                      <Button variant="outline" size="sm">Seleccionar</Button>
+                    }
+                    onSelect={(media) => {
+                      handleContentChange({ 
+                        src: media.url,
+                        alt: media.title || block.content.alt || '',
+                      });
+                    }}
+                  />
                 </div>
                 <Input
                   value={block.content.alt || ''}
@@ -259,10 +273,26 @@ const BlockContainer: React.FC<BlockContainerProps> = ({
                               handleContentChange({ images });
                             }}
                             placeholder="URL de la imagen"
+                            className="flex-1"
                           />
-                          <Button variant="outline" size="sm">
-                            Seleccionar
-                          </Button>
+                          <DialogMediaSelector
+                            title="Seleccionar imagen para galería"
+                            description="Elige una imagen de la biblioteca de medios"
+                            defaultTab="image"
+                            allowedTypes={['image']}
+                            trigger={
+                              <Button variant="outline" size="sm">Seleccionar</Button>
+                            }
+                            onSelect={(media) => {
+                              const images = [...(block.content.images as GalleryImage[] || [])];
+                              images[idx] = { 
+                                ...images[idx], 
+                                src: media.url,
+                                alt: media.title || images[idx].alt || '',
+                              };
+                              handleContentChange({ images });
+                            }}
+                          />
                         </div>
                         
                         <Input
@@ -828,28 +858,53 @@ const BlockContainer: React.FC<BlockContainerProps> = ({
                 <div className="flex flex-col space-y-3">
                   <div className="space-y-2">
                     <label className="text-sm font-medium mb-1 block">URL del vídeo</label>
-                    <Input
-                      value={block.content.src || ''}
-                      onChange={(e) => {
-                        const url = e.target.value;
-                        // Detectar automáticamente el tipo de video
-                        let type = block.content.type || 'youtube';
-                        
-                        if (url.includes('youtube.com') || url.includes('youtu.be')) {
-                          type = 'youtube';
-                        } else if (url.includes('vimeo.com')) {
-                          type = 'vimeo';
-                        } else if (url.match(/\.(mp4|webm|ogg)$/i)) {
-                          type = 'file';
+                    <div className="flex space-x-2">
+                      <Input
+                        value={block.content.src || ''}
+                        onChange={(e) => {
+                          const url = e.target.value;
+                          // Detectar automáticamente el tipo de video
+                          let type = block.content.type || 'youtube';
+                          
+                          if (url.includes('youtube.com') || url.includes('youtu.be')) {
+                            type = 'youtube';
+                          } else if (url.includes('vimeo.com')) {
+                            type = 'vimeo';
+                          } else if (url.match(/\.(mp4|webm|ogg)$/i)) {
+                            type = 'file';
+                          }
+                          
+                          handleContentChange({ 
+                            src: url,
+                            type: type
+                          });
+                        }}
+                        placeholder="https://www.youtube.com/watch?v=VIDEO_ID o https://vimeo.com/VIDEO_ID"
+                        className="flex-1"
+                      />
+                      <DialogMediaSelector
+                        title="Seleccionar video"
+                        description="Elige un video de la biblioteca de medios"
+                        defaultTab="video"
+                        allowedTypes={['video', 'youtube', 'vimeo']}
+                        trigger={
+                          <Button variant="outline" size="sm">Explorar</Button>
                         }
-                        
-                        handleContentChange({ 
-                          src: url,
-                          type: type
-                        });
-                      }}
-                      placeholder="https://www.youtube.com/watch?v=VIDEO_ID o https://vimeo.com/VIDEO_ID"
-                    />
+                        onSelect={(media) => {
+                          // Detectar automáticamente el tipo de video
+                          let type = 'file';
+                          if (media.type === 'youtube' || media.type === 'vimeo') {
+                            type = media.type;
+                          }
+                          
+                          handleContentChange({ 
+                            src: media.url,
+                            type: type,
+                            title: media.title || block.content.title
+                          });
+                        }}
+                      />
+                    </div>
                   </div>
                   
                   <div className="grid grid-cols-2 gap-4">
@@ -939,11 +994,28 @@ const BlockContainer: React.FC<BlockContainerProps> = ({
                   {block.content.type === 'file' && (
                     <div>
                       <label className="text-sm font-medium mb-1 block">Imagen de previsualización</label>
-                      <Input
-                        value={block.content.poster || ''}
-                        onChange={(e) => handleContentChange({ poster: e.target.value })}
-                        placeholder="URL de la imagen de previsualización"
-                      />
+                      <div className="flex space-x-2">
+                        <Input
+                          value={block.content.poster || ''}
+                          onChange={(e) => handleContentChange({ poster: e.target.value })}
+                          placeholder="URL de la imagen de previsualización"
+                          className="flex-1"
+                        />
+                        <DialogMediaSelector
+                          title="Seleccionar imagen de previsualización"
+                          description="Elige una imagen para la previsualización del video"
+                          defaultTab="image"
+                          allowedTypes={['image']}
+                          trigger={
+                            <Button variant="outline" size="sm">Explorar</Button>
+                          }
+                          onSelect={(media) => {
+                            handleContentChange({ 
+                              poster: media.url
+                            });
+                          }}
+                        />
+                      </div>
                     </div>
                   )}
                 </div>
