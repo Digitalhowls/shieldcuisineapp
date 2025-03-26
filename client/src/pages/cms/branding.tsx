@@ -16,6 +16,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogFooter,
+  DialogTrigger,
 } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useForm } from "react-hook-form";
@@ -51,6 +52,7 @@ import {
   Save,
   RefreshCw,
   ArrowLeft,
+  X
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
@@ -71,14 +73,14 @@ interface BrandingSettings {
   fontPrimary: string;
   fontSecondary: string;
   companyName: string;
-  tagline: string;
-  description: string;
+  tagline?: string;
+  description?: string;
   socialMedia: {
     facebook?: string;
     twitter?: string;
     instagram?: string;
     linkedin?: string;
-  };
+  } | Record<string, never>;
   footerText: string;
   customCss?: string;
   useCustomFonts: boolean;
@@ -285,6 +287,7 @@ const BrandingPage: React.FC = () => {
       ...values,
       id: brandingSettings?.id,
       companyId: user.companyId,
+      socialMedia: values.socialMedia || {},
     });
   };
 
