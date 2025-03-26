@@ -956,6 +956,111 @@ export class DatabaseStorage implements IStorage {
   async deleteCmsFormSubmission(id: number): Promise<void> {
     await db.delete(cmsFormSubmissions).where(eq(cmsFormSubmissions.id, id));
   }
+  
+  // Purchasing Module
+  async getPurchaseOrders(companyId: number): Promise<any[]> {
+    return await db.select().from(purchaseOrders).where(eq(purchaseOrders.companyId, companyId));
+  }
+  
+  async getPurchaseOrder(id: number): Promise<any | undefined> {
+    const [order] = await db.select().from(purchaseOrders).where(eq(purchaseOrders.id, id));
+    return order;
+  }
+  
+  async createPurchaseOrder(order: any): Promise<any> {
+    const [newOrder] = await db.insert(purchaseOrders).values(order).returning();
+    return newOrder;
+  }
+  
+  async updatePurchaseOrder(id: number, data: any): Promise<any | undefined> {
+    const [updatedOrder] = await db
+      .update(purchaseOrders)
+      .set(data)
+      .where(eq(purchaseOrders.id, id))
+      .returning();
+    return updatedOrder;
+  }
+  
+  async getPurchaseOrderItems(orderId: number): Promise<any[]> {
+    return await db.select().from(purchaseOrderItems).where(eq(purchaseOrderItems.purchaseOrderId, orderId));
+  }
+  
+  async getPurchaseOrderItem(id: number): Promise<any | undefined> {
+    const [item] = await db.select().from(purchaseOrderItems).where(eq(purchaseOrderItems.id, id));
+    return item;
+  }
+  
+  async createPurchaseOrderItem(item: any): Promise<any> {
+    const [newItem] = await db.insert(purchaseOrderItems).values(item).returning();
+    return newItem;
+  }
+  
+  async getGoodsReceipts(purchaseOrderId: number): Promise<any[]> {
+    return await db.select().from(goodsReceipts).where(eq(goodsReceipts.purchaseOrderId, purchaseOrderId));
+  }
+  
+  async getGoodsReceipt(id: number): Promise<any | undefined> {
+    const [receipt] = await db.select().from(goodsReceipts).where(eq(goodsReceipts.id, id));
+    return receipt;
+  }
+  
+  async createGoodsReceipt(receipt: any): Promise<any> {
+    const [newReceipt] = await db.insert(goodsReceipts).values(receipt).returning();
+    return newReceipt;
+  }
+  
+  async getGoodsReceiptItems(receiptId: number): Promise<any[]> {
+    return await db.select().from(goodsReceiptItems).where(eq(goodsReceiptItems.goodsReceiptId, receiptId));
+  }
+  
+  async createGoodsReceiptItem(item: any): Promise<any> {
+    const [newItem] = await db.insert(goodsReceiptItems).values(item).returning();
+    return newItem;
+  }
+  
+  async getSupplier(id: number): Promise<any | undefined> {
+    const [supplier] = await db.select().from(suppliers).where(eq(suppliers.id, id));
+    return supplier;
+  }
+  
+  async getCompanyAdmins(companyId: number): Promise<any[]> {
+    return await db
+      .select()
+      .from(users)
+      .where(eq(users.companyId, companyId))
+      .where(sql`${users.role} IN ('admin', 'company_admin')`);
+  }
+  
+  async getLocationManagers(locationId: number): Promise<any[]> {
+    return await db
+      .select()
+      .from(users)
+      .where(eq(users.locationId, locationId))
+      .where(sql`${users.role} IN ('location_manager')`);
+  }
+  
+  async getInventoryItemByProductAndWarehouse(productId: number, warehouseId: number): Promise<any | undefined> {
+    const [item] = await db
+      .select()
+      .from(inventory)
+      .where(eq(inventory.productId, productId))
+      .where(eq(inventory.warehouseId, warehouseId));
+    return item;
+  }
+  
+  async updateInventoryItem(id: number, data: any): Promise<any | undefined> {
+    const [updatedItem] = await db
+      .update(inventory)
+      .set(data)
+      .where(eq(inventory.id, id))
+      .returning();
+    return updatedItem;
+  }
+  
+  async createInventoryItem(item: any): Promise<any> {
+    const [newItem] = await db.insert(inventory).values(item).returning();
+    return newItem;
+  }
 }
 
 export const storage = new DatabaseStorage();
