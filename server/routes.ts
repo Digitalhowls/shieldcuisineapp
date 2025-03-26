@@ -13,6 +13,7 @@ import { registerBankingRoutes } from "./routes/banking";
 import { registerELearningRoutes } from "./routes/e-learning";
 import { registerNotificationRoutes } from "./routes/notifications";
 import { registerPurchasingRoutes } from "./routes/purchasing";
+import { registerCmsRoutes } from "./routes/cms";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Setup auth routes
@@ -201,6 +202,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Registrar rutas para el módulo de compras
   registerPurchasingRoutes(app);
+  
+  // Registrar rutas para el módulo CMS
+  registerCmsRoutes(app);
 
   const httpServer = createServer(app);
   return httpServer;

@@ -12,7 +12,8 @@ import {
   GraduationCap,
   CreditCard,
   ShoppingCart,
-  ServerCog
+  ServerCog,
+  Globe
 } from "lucide-react";
 import { useNotifications } from "@/hooks/use-notifications";
 import { formatDistanceToNow } from "date-fns";
