@@ -1,5 +1,5 @@
 import { db } from "./db";
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import {
   users,
   companies,
@@ -18,6 +18,10 @@ import {
   saleItems,
   invoices,
   invoiceItems,
+  purchaseOrders,
+  purchaseOrderItems,
+  goodsReceipts,
+  goodsReceiptItems,
   courses,
   lessons,
   quizzes,
