@@ -33,6 +33,7 @@ import { Badge } from "@/components/ui/badge";
 import {
   Save,
   Eye,
+  EyeOff,
   ArrowLeft,
   Layout,
   Settings,
@@ -43,10 +44,12 @@ import {
   BookOpen,
   FileImage,
   Sparkles,
+  Split,
 } from "lucide-react";
 
-// Importar componente del asistente de IA
+// Importar componentes
 import { AIAssistantPanel } from "./ai-assistant";
+import PreviewPanel from "./page-editor/PreviewPanel";
 
 // Componentes del editor
 import BlockEditor from "./block-editor/BlockEditor";
@@ -83,6 +86,7 @@ const PageEditor: React.FC<PageEditorProps> = ({ isNew = false, pageId }) => {
   
   const [activeTab, setActiveTab] = useState("content");
   const [previewMode, setPreviewMode] = useState(false);
+  const [previewLayout, setPreviewLayout] = useState<'split' | 'full'>('split');
   const [pageData, setPageData] = useState<PageData>({
     title: "",
     slug: "",
@@ -358,6 +362,24 @@ const PageEditor: React.FC<PageEditorProps> = ({ isNew = false, pageId }) => {
         </div>
         
         <div className="flex flex-wrap gap-2 justify-end">
+          <Button 
+            variant={previewMode ? "secondary" : "outline"}
+            onClick={() => setPreviewMode(!previewMode)}
+            className="gap-2"
+          >
+            {previewMode ? (
+              <>
+                <EyeOff className="h-4 w-4" />
+                <span>Cerrar Vista Previa</span>
+              </>
+            ) : (
+              <>
+                <Eye className="h-4 w-4" />
+                <span>Vista Previa</span>
+              </>
+            )}
+          </Button>
+          
           {pageData.id && pageData.status === "published" && (
             <Button 
               variant="outline" 
@@ -365,7 +387,7 @@ const PageEditor: React.FC<PageEditorProps> = ({ isNew = false, pageId }) => {
               className="gap-2"
             >
               <ExternalLink className="h-4 w-4" />
-              <span>Vista Previa</span>
+              <span>Ver Publicado</span>
             </Button>
           )}
           
@@ -768,6 +790,125 @@ const PageEditor: React.FC<PageEditorProps> = ({ isNew = false, pageId }) => {
           </div>
         </TabsContent>
       </Tabs>
+
+      {/* Panel de vista previa */}
+      {previewMode && (
+        <div className={`fixed inset-0 bg-background z-50 flex ${previewLayout === 'split' ? 'p-4' : 'p-0'}`}>
+          <div className={`${previewLayout === 'split' ? 'w-1/2 pr-2' : 'hidden'}`}>
+            <div className="h-full overflow-auto rounded-md border">
+              <Tabs value={activeTab} onValueChange={setActiveTab} className="p-4">
+                <TabsList className="grid grid-cols-4">
+                  <TabsTrigger value="content" className="flex items-center gap-2">
+                    <Layout className="h-4 w-4" />
+                    <span>Contenido</span>
+                  </TabsTrigger>
+                  <TabsTrigger value="settings" className="flex items-center gap-2">
+                    <Settings className="h-4 w-4" />
+                    <span>Configuración</span>
+                  </TabsTrigger>
+                  <TabsTrigger value="seo" className="flex items-center gap-2">
+                    <CopyCheck className="h-4 w-4" />
+                    <span>SEO</span>
+                  </TabsTrigger>
+                  <TabsTrigger value="ai-assistant" className="flex items-center gap-2">
+                    <Sparkles className="h-4 w-4" />
+                    <span>Asistente IA</span>
+                  </TabsTrigger>
+                </TabsList>
+
+                <TabsContent value="content" className="space-y-4">
+                  {/* Contenido del tab */}
+                  <div className="min-h-[400px] border rounded-md p-4">
+                    <BlockEditor 
+                      blocks={blocks} 
+                      onChange={handleBlocksChange} 
+                    />
+                  </div>
+                </TabsContent>
+
+                <TabsContent value="settings" className="space-y-4">
+                  {/* Contenido resumido */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Configuración Básica</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <Label htmlFor="preview-status">Estado</Label>
+                          <Input id="preview-status" value={pageData.status} readOnly />
+                        </div>
+                        <div>
+                          <Label htmlFor="preview-type">Tipo</Label>
+                          <Input id="preview-type" value={pageData.type} readOnly />
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </TabsContent>
+
+                <TabsContent value="seo" className="space-y-4">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>SEO</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-2">
+                        <Label htmlFor="preview-meta-title">Título SEO</Label>
+                        <Input
+                          id="preview-meta-title"
+                          value={pageData.metaTitle || pageData.title}
+                          onChange={(e) => handleFieldChange("metaTitle", e.target.value)}
+                        />
+                      </div>
+                    </CardContent>
+                  </Card>
+                </TabsContent>
+
+                <TabsContent value="ai-assistant" className="space-y-4">
+                  <AIAssistantPanel 
+                    pageTitle={pageData.title}
+                    pageDescription={pageData.description || ""}
+                    pageType={pageData.type}
+                    onAddContent={(content) => {
+                      const newBlock = {
+                        id: `ai-${Date.now()}`,
+                        type: "ai",
+                        content: content,
+                      };
+                      
+                      setBlocks([...blocks, newBlock]);
+                      setHasChanges(true);
+                      setActiveTab("content");
+                    }}
+                    onApplySeoTitle={(title) => handleFieldChange("metaTitle", title)}
+                    onApplySeoDescription={(description) => handleFieldChange("metaDescription", description)}
+                    onApplySeoKeywords={(keywords) => handleFieldChange("metaKeywords", keywords)}
+                  />
+                </TabsContent>
+              </Tabs>
+            </div>
+          </div>
+          
+          <div className={`${previewLayout === 'split' ? 'w-1/2 pl-2' : 'w-full'}`}>
+            <PreviewPanel 
+              pageData={pageData} 
+              blocks={blocks} 
+              onClose={() => setPreviewMode(false)} 
+            />
+          </div>
+
+          {/* Botón para cambiar el layout */}
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={() => setPreviewLayout(previewLayout === 'split' ? 'full' : 'split')}
+            className="absolute top-6 left-1/2 -translate-x-1/2 z-10"
+          >
+            <Split className="h-4 w-4" />
+          </Button>
+        </div>
+      )}
     </div>
   );
 };
