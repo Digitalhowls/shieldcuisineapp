@@ -10,7 +10,7 @@ export function ProtectedRoute({
   allowedRoles = ['admin', 'company_admin', 'location_manager', 'area_supervisor', 'employee', 'external'],
 }: {
   path: string;
-  component: () => React.JSX.Element;
+  component: React.ComponentType<any>;
   allowedRoles?: AllowedRoles[];
 }) {
   const { user, isLoading } = useAuth();
