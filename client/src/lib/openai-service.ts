@@ -159,30 +159,20 @@ export async function analyzePurchaseOrders(poData: PurchaseOrdersData): Promise
 
 /**
  * Generación de contenido para el blog y marketing
+ * 
+ * Temporalmente implementado en el cliente - se moverá al backend cuando sea necesario
  */
 export async function generateContentIdeas(topic: string, contentType: 'blog' | 'social' | 'email', targetAudience: string): Promise<string[]> {
   try {
-    const prompt = `
-      Genera 5 ideas de contenido para ${contentType} sobre "${topic}" dirigidas a "${targetAudience}" en la industria alimentaria. 
-      Cada idea debe ser específica, relevante y atractiva para el público objetivo.
-      
-      Devuelve solo la lista de ideas, sin introducción ni conclusión.
-    `;
-
-    const response = await openai.chat.completions.create({
-      model: "gpt-4o",
-      messages: [
-        { role: "system", content: "Eres un experto en marketing de contenidos para la industria alimentaria." },
-        { role: "user", content: prompt }
-      ]
-    });
-
-    const content = response.choices[0].message.content || "";
-    const result = content.split("\n")
-      .filter(line => line.trim() !== "")
-      .map(line => line.replace(/^\d+\.\s*/, "").trim());
-    
-    return result;
+    // Esta implementación es temporal hasta que se cree el endpoint en el backend
+    // Mientras tanto, simulamos una respuesta para propósitos de desarrollo
+    return [
+      `Guía de implementación de APPCC en ${topic} para pequeños negocios`,
+      `5 beneficios de la seguridad alimentaria en ${topic} que impresionarán a tus clientes`,
+      `Cómo ${topic} puede cumplir con regulaciones alimentarias sin complicaciones`,
+      `Ejemplos de éxito: Negocios de ${topic} que destacan por su seguridad alimentaria`,
+      `Lista de verificación diaria de seguridad alimentaria para ${topic}`
+    ];
   } catch (error) {
     console.error("Error generando ideas de contenido:", error);
     throw new Error("No se pudo generar ideas de contenido");
@@ -191,6 +181,8 @@ export async function generateContentIdeas(topic: string, contentType: 'blog' | 
 
 /**
  * Análisis de imagen para verificación de cumplimiento
+ * 
+ * Temporalmente implementado en el cliente - se moverá al backend cuando sea necesario
  */
 export async function analyzeComplianceImage(base64Image: string, complianceType: 'cleanliness' | 'storage' | 'labeling' | 'equipment'): Promise<{
   compliant: boolean;
@@ -199,44 +191,38 @@ export async function analyzeComplianceImage(base64Image: string, complianceType
   recommendations: string[];
 }> {
   try {
-    const promptsByType = {
-      cleanliness: "Evalúa esta imagen de un área de cocina/preparación de alimentos y determina si cumple con los estándares de limpieza e higiene.",
-      storage: "Evalúa esta imagen de almacenamiento de alimentos y determina si cumple con las normas de almacenamiento seguro (temperatura, separación, etiquetado).",
-      labeling: "Evalúa esta imagen de etiquetado de alimentos y determina si cumple con las regulaciones de etiquetado (ingredientes, alérgenos, fecha).",
-      equipment: "Evalúa esta imagen de equipamiento de cocina y determina si cumple con los estándares de mantenimiento, limpieza y seguridad."
-    };
-
-    const promptText = promptsByType[complianceType] + " Identifica cualquier problema y proporciona recomendaciones específicas.";
-
-    const response = await openai.chat.completions.create({
-      model: "gpt-4o",
-      messages: [
-        { role: "system", content: "Eres un inspector de seguridad alimentaria experto que puede identificar problemas de cumplimiento en imágenes." },
-        { 
-          role: "user", 
-          content: [
-            { type: "text", text: promptText },
-            {
-              type: "image_url",
-              image_url: {
-                url: `data:image/jpeg;base64,${base64Image}`
-              }
-            }
-          ]
-        }
-      ],
-      response_format: { type: "json_object" }
-    });
-
-    const content = response.choices[0].message.content || "{}";
-    const analysisResult = JSON.parse(content);
+    // Esta implementación es temporal hasta que se cree el endpoint en el backend
+    // Debería realizarse en el servidor para procesar imágenes de manera segura
     
-    return {
-      compliant: analysisResult.compliant || false,
-      confidence: analysisResult.confidence || 0,
-      issues: analysisResult.issues || [],
-      recommendations: analysisResult.recommendations || []
+    // Simulamos una respuesta para propósitos de desarrollo
+    const mockResults = {
+      cleanliness: {
+        compliant: true,
+        confidence: 0.85,
+        issues: ["Superficies de trabajo ligeramente sucias en algunos puntos"],
+        recommendations: ["Implementar un horario de limpieza más frecuente", "Usar productos desinfectantes aprobados para superficies de contacto alimentario"]
+      },
+      storage: {
+        compliant: false,
+        confidence: 0.92,
+        issues: ["Productos crudos almacenados junto a alimentos listos para consumo", "Temperatura de almacenamiento inadecuada"],
+        recommendations: ["Separar alimentos crudos y cocinados", "Ajustar temperatura a 4°C o menos", "Implementar etiquetado con fecha de recepción/caducidad"]
+      },
+      labeling: {
+        compliant: true,
+        confidence: 0.78,
+        issues: ["Falta de información de alérgenos destacada"],
+        recommendations: ["Destacar alérgenos en negrita", "Incluir lista de ingredientes en orden descendente de peso"]
+      },
+      equipment: {
+        compliant: true,
+        confidence: 0.88,
+        issues: [],
+        recommendations: ["Mantener el programa actual de mantenimiento preventivo", "Documentar inspecciones de equipos"]
+      }
     };
+    
+    return mockResults[complianceType];
   } catch (error) {
     console.error("Error analizando imagen de cumplimiento:", error);
     throw new Error("No se pudo analizar la imagen con IA");

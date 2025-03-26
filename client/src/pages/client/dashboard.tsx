@@ -230,7 +230,61 @@ export default function ClientDashboard() {
         </Card>
       </div>
       
-      {/* Tercera fila - Actividad reciente */}
+      {/* Tercera fila - Análisis inteligente */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <AnalysisCard
+          title="Análisis APPCC Semanal"
+          description="Evaluación de controles de seguridad alimentaria"
+          type="appcc"
+          status="ready"
+          summary="Los controles de APPCC muestran un cumplimiento general satisfactorio (87%). Se han completado 24 de 27 controles programados esta semana."
+          insights={[
+            "La temperatura de conservación en cámaras frigoríficas ha mejorado un 5% desde la semana pasada.",
+            "3 controles de limpieza de superficies han presentado desviaciones menores.",
+            "El área de recepción de mercancías muestra el cumplimiento más alto (95%)."
+          ]}
+          metrics={[
+            { label: "Cumplimiento", value: "87%", color: "green" },
+            { label: "Controles OK", value: "24/27", color: "blue" },
+            { label: "Desviaciones", value: "3", color: "yellow" },
+            { label: "Incidencias", value: "0", color: "green" }
+          ]}
+          recommendations={[
+            "Reforzar el protocolo de limpieza en la zona de preparación.",
+            "Programar formación específica sobre control de alérgenos para el personal nuevo.",
+            "Implementar verificación adicional en horarios de alta actividad."
+          ]}
+          onRefresh={() => console.log("Refrescando análisis APPCC")}
+          onViewDetails={() => console.log("Ver detalles de análisis APPCC")}
+        />
+        
+        <AnalysisCard
+          title="Optimización de Inventario"
+          description="Análisis predictivo de consumo y reposición"
+          type="inventory"
+          status="ready"
+          summary="Se han identificado 2 productos que requieren reposición inmediata y 3 con patrones de consumo inusuales que podrían optimizarse."
+          insights={[
+            "El consumo de productos lácteos ha aumentado un 12% respecto al mes anterior.",
+            "Productos cárnicos muestran un patrón de consumo estacional que podría aprovecharse para optimizar pedidos.",
+            "Los niveles de stock de pescados están por encima de lo necesario según el análisis de rotación."
+          ]}
+          metrics={[
+            { label: "Productos críticos", value: "2", color: "red" },
+            { label: "Sobre-stock", value: "5", color: "yellow" },
+            { label: "Ahorro potencial", value: "320€", color: "green" }
+          ]}
+          recommendations={[
+            "Reducir el stock de pescado congelado en un 15% para optimizar costes.",
+            "Aumentar pedido de lácteos en un 10% para la próxima semana.",
+            "Revisar niveles de alerta para productos cárnicos adaptándolos a la estacionalidad."
+          ]}
+          onRefresh={() => console.log("Refrescando análisis de inventario")}
+          onViewDetails={() => console.log("Ver detalles de análisis de inventario")}
+        />
+      </div>
+
+      {/* Cuarta fila - Actividad reciente */}
       <Card>
         <CardHeader>
           <CardTitle>Actividad Reciente</CardTitle>
