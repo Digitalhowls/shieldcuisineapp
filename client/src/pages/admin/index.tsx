@@ -1,216 +1,322 @@
-import { useState } from "react";
-import { Route, Switch, useLocation, Link } from "wouter";
-import { Button } from "@/components/ui/button";
-import { 
-  Users,
-  Building2,
+import React, { useState } from "react";
+import { Route, Switch, useLocation } from "wouter";
+import {
   LayoutDashboard,
-  Package,
-  FileBarChart,
+  Users,
+  FileText,
   Settings,
-  ChevronLeft,
-  ChevronRight,
+  Database,
+  BookOpen,
+  BarChart3,
+  Globe,
+  Bell,
+  User,
+  LogOut,
   Menu,
   X,
-  LogOut
+  ChevronDown
 } from "lucide-react";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { Button } from "@/components/ui/button";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 import { useAuth } from "@/hooks/use-auth";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import Dashboard from "./dashboard";
-import Clientes from "./clientes";
-import Detalles from "./cliente-detalles";
-import Modulos from "./modulos";
-import Facturacion from "./facturacion";
-import Configuracion from "./configuracion";
+import AdminDashboard from "./dashboard";
 
-export default function AdminModule() {
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-  const isMobile = useIsMobile();
-  const [location] = useLocation();
-  const { user, logoutMutation } = useAuth();
-  
-  // Cerrar sidebar en mobile automáticamente
-  useState(() => {
-    if (isMobile) {
-      setIsSidebarOpen(false);
-    }
-  });
+// Componente de navegación para panel de administrador
+const NavItem = ({ href, icon, label, active, onClick }: any) => {
+  return (
+    <a
+      href={href}
+      className={`flex items-center space-x-3 px-3 py-2 rounded-md text-sm transition-colors ${
+        active
+          ? "bg-primary text-primary-foreground"
+          : "hover:bg-gray-100 dark:hover:bg-gray-800"
+      }`}
+      onClick={onClick}
+    >
+      {icon}
+      <span>{label}</span>
+    </a>
+  );
+};
 
-  // Manejo del sidebar
-  const toggleSidebar = () => {
-    setIsSidebarOpen(!isSidebarOpen);
-  };
-
-  // Verifica si la ruta actual es la indicada
-  const isActive = (path: string) => {
-    return location === path || location.startsWith(`${path}/`);
-  };
+// Componente para grupo de navegación con items colapsables
+const NavGroup = ({ 
+  icon, 
+  label, 
+  children, 
+  active, 
+  defaultOpen = false 
+}: any) => {
+  const [open, setOpen] = useState(defaultOpen || active);
 
   return (
-    <div className="flex h-screen bg-neutral-50 overflow-hidden">
-      {/* Sidebar */}
-      <aside 
-        className={`bg-white border-r transition-all duration-300 flex flex-col ${
-          isSidebarOpen ? "w-64" : "w-0 md:w-16"
-        } ${isMobile && !isSidebarOpen ? "-ml-64" : ""}`}
-      >
-        {/* Logo y cabecera */}
-        <div className="p-4 border-b flex items-center justify-between h-16">
-          {isSidebarOpen && (
-            <div className="font-semibold text-primary flex items-center">
-              <Package className="h-5 w-5 mr-2" />
-              <span>ShieldCuisine</span>
-            </div>
-          )}
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={toggleSidebar}
-            className="ml-auto"
-          >
-            {isSidebarOpen ? (
-              <ChevronLeft className="h-5 w-5" />
-            ) : (
-              <ChevronRight className="h-5 w-5" />
-            )}
-          </Button>
+    <Collapsible open={open} onOpenChange={setOpen} className="w-full">
+      <CollapsibleTrigger className="flex items-center justify-between w-full px-3 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md">
+        <div className="flex items-center space-x-3">
+          {icon}
+          <span>{label}</span>
         </div>
+        <ChevronDown className={`h-4 w-4 transition-transform ${open ? "transform rotate-180" : ""}`} />
+      </CollapsibleTrigger>
+      <CollapsibleContent className="pl-10 space-y-1 pt-1">
+        {children}
+      </CollapsibleContent>
+    </Collapsible>
+  );
+};
 
-        {/* Enlaces de navegación */}
-        <nav className="flex-1 py-4 overflow-y-auto">
-          <ul className="space-y-1 px-2">
-            <li>
-              <Link href="/admin">
-                <div className={`flex items-center px-3 py-2 rounded-md transition-colors ${
-                  isActive("/admin") && !isActive("/admin/clientes") && !isActive("/admin/modulos") 
-                  && !isActive("/admin/facturacion") && !isActive("/admin/configuracion")
-                    ? "bg-primary/10 text-primary"
-                    : "hover:bg-neutral-100"
-                }`}>
-                  <LayoutDashboard className="h-5 w-5" />
-                  {isSidebarOpen && <span className="ml-3">Dashboard</span>}
-                </div>
-              </Link>
-            </li>
-            <li>
-              <Link href="/admin/clientes">
-                <div className={`flex items-center px-3 py-2 rounded-md transition-colors ${
-                  isActive("/admin/clientes")
-                    ? "bg-primary/10 text-primary"
-                    : "hover:bg-neutral-100"
-                }`}>
-                  <Building2 className="h-5 w-5" />
-                  {isSidebarOpen && <span className="ml-3">Empresas</span>}
-                </div>
-              </Link>
-            </li>
-            <li>
-              <Link href="/admin/modulos">
-                <div className={`flex items-center px-3 py-2 rounded-md transition-colors ${
-                  isActive("/admin/modulos")
-                    ? "bg-primary/10 text-primary"
-                    : "hover:bg-neutral-100"
-                }`}>
-                  <Package className="h-5 w-5" />
-                  {isSidebarOpen && <span className="ml-3">Módulos</span>}
-                </div>
-              </Link>
-            </li>
-            <li>
-              <Link href="/admin/facturacion">
-                <div className={`flex items-center px-3 py-2 rounded-md transition-colors ${
-                  isActive("/admin/facturacion")
-                    ? "bg-primary/10 text-primary"
-                    : "hover:bg-neutral-100"
-                }`}>
-                  <FileBarChart className="h-5 w-5" />
-                  {isSidebarOpen && <span className="ml-3">Facturación</span>}
-                </div>
-              </Link>
-            </li>
-            <li>
-              <Link href="/admin/configuracion">
-                <div className={`flex items-center px-3 py-2 rounded-md transition-colors ${
-                  isActive("/admin/configuracion")
-                    ? "bg-primary/10 text-primary"
-                    : "hover:bg-neutral-100"
-                }`}>
-                  <Settings className="h-5 w-5" />
-                  {isSidebarOpen && <span className="ml-3">Configuración</span>}
-                </div>
-              </Link>
-            </li>
-          </ul>
-        </nav>
+// Componente principal para el panel de administración
+export default function AdminModule() {
+  const [location] = useLocation();
+  const { user, logoutMutation } = useAuth();
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
-        {/* Perfil de usuario */}
-        <div className="p-4 border-t mt-auto">
-          <div className="flex items-center">
-            <Avatar className="h-8 w-8">
-              <AvatarFallback>
-                {user?.name?.charAt(0) || user?.username?.charAt(0) || "U"}
-              </AvatarFallback>
-            </Avatar>
-            {isSidebarOpen && (
-              <div className="ml-3 overflow-hidden">
-                <p className="text-sm font-medium truncate">
-                  {user?.name || user?.username}
-                </p>
-                <p className="text-xs text-neutral-500 truncate">
-                  {user?.role === "admin" ? "Administrador" : user?.role}
-                </p>
+  const toggleSidebar = () => {
+    setSidebarOpen(!sidebarOpen);
+  };
+
+  // Determinar si algún subitem dentro de un grupo está activo
+  const isCmsActive = 
+    location === "/admin/cms/pages" || 
+    location === "/admin/cms/categories" || 
+    location === "/admin/cms/media" ||
+    location === "/admin/cms/branding";
+
+  // Navegación principal para el administrador
+  const mainNavigation = [
+    {
+      name: "Dashboard",
+      href: "/admin/dashboard",
+      icon: <LayoutDashboard className="h-5 w-5" />,
+      active: location === "/admin/dashboard",
+    },
+    {
+      name: "Clientes",
+      href: "/admin/clients",
+      icon: <Users className="h-5 w-5" />,
+      active: location === "/admin/clients",
+    },
+    {
+      name: "Estadísticas",
+      href: "/admin/stats",
+      icon: <BarChart3 className="h-5 w-5" />,
+      active: location === "/admin/stats",
+    },
+  ];
+
+  // Subitems para el CMS
+  const cmsNavItems = [
+    {
+      name: "Páginas",
+      href: "/admin/cms/pages",
+      active: location === "/admin/cms/pages",
+    },
+    {
+      name: "Categorías",
+      href: "/admin/cms/categories",
+      active: location === "/admin/cms/categories",
+    },
+    {
+      name: "Medios",
+      href: "/admin/cms/media",
+      active: location === "/admin/cms/media",
+    },
+    {
+      name: "Marca",
+      href: "/admin/cms/branding",
+      active: location === "/admin/cms/branding",
+    },
+  ];
+
+  // Navegación de configuración
+  const configNavigation = [
+    {
+      name: "Configuración",
+      href: "/admin/settings",
+      icon: <Settings className="h-5 w-5" />,
+      active: location === "/admin/settings",
+    },
+    {
+      name: "API",
+      href: "/admin/api",
+      icon: <Database className="h-5 w-5" />,
+      active: location === "/admin/api",
+    },
+  ];
+
+  return (
+    <div className="flex h-screen bg-background">
+      {/* Botón de toggle para móvil */}
+      <button
+        className="fixed z-50 bottom-4 right-4 md:hidden bg-primary text-white p-3 rounded-full shadow-lg"
+        onClick={toggleSidebar}
+      >
+        {sidebarOpen ? <X size={24} /> : <Menu size={24} />}
+      </button>
+
+      {/* Sidebar (barra lateral) */}
+      <div
+        className={`w-64 bg-card border-r shadow-sm transition-all duration-300 ${
+          sidebarOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
+        } fixed inset-y-0 left-0 z-20 md:relative md:translate-x-0`}
+      >
+        <div className="flex flex-col h-full">
+          {/* Encabezado del sidebar */}
+          <div className="p-4 border-b">
+            <h2 className="text-xl font-bold">ShieldCuisine</h2>
+            <p className="text-sm text-muted-foreground mt-1">Panel de Administración</p>
+          </div>
+
+          {/* Navegación principal */}
+          <div className="flex-1 overflow-y-auto py-4 px-3 space-y-1">
+            {mainNavigation.map((item) => (
+              <NavItem
+                key={item.name}
+                href={item.href}
+                icon={item.icon}
+                label={item.name}
+                active={item.active}
+                onClick={() => setSidebarOpen(false)}
+              />
+            ))}
+
+            {/* Grupo de CMS */}
+            <NavGroup 
+              icon={<Globe className="h-5 w-5" />} 
+              label="CMS"
+              active={isCmsActive}
+              defaultOpen={isCmsActive}
+            >
+              {cmsNavItems.map((item) => (
+                <NavItem
+                  key={item.name}
+                  href={item.href}
+                  label={item.name}
+                  active={item.active}
+                  onClick={() => setSidebarOpen(false)}
+                />
+              ))}
+            </NavGroup>
+
+            {/* Sección e-Learning */}
+            <NavGroup 
+              icon={<BookOpen className="h-5 w-5" />} 
+              label="E-Learning"
+              active={location.startsWith("/admin/learning")}
+            >
+              <NavItem
+                href="/admin/learning/courses"
+                label="Cursos"
+                active={location === "/admin/learning/courses"}
+                onClick={() => setSidebarOpen(false)}
+              />
+              <NavItem
+                href="/admin/learning/lessons"
+                label="Lecciones"
+                active={location === "/admin/learning/lessons"}
+                onClick={() => setSidebarOpen(false)}
+              />
+              <NavItem
+                href="/admin/learning/quizzes"
+                label="Cuestionarios"
+                active={location === "/admin/learning/quizzes"}
+                onClick={() => setSidebarOpen(false)}
+              />
+            </NavGroup>
+
+            {/* Navegación de configuración */}
+            <div className="mt-6 pt-6 border-t">
+              {configNavigation.map((item) => (
+                <NavItem
+                  key={item.name}
+                  href={item.href}
+                  icon={item.icon}
+                  label={item.name}
+                  active={item.active}
+                  onClick={() => setSidebarOpen(false)}
+                />
+              ))}
+            </div>
+          </div>
+
+          {/* Usuario y logout */}
+          <div className="p-4 border-t">
+            <div className="flex items-center space-x-3 mb-4">
+              <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+                <User className="h-5 w-5 text-primary" />
               </div>
-            )}
-            {isSidebarOpen && (
-              <Button
-                variant="ghost"
-                size="icon"
-                className="ml-auto"
-                onClick={() => logoutMutation.mutate()}
-              >
-                <LogOut className="h-4 w-4" />
-              </Button>
-            )}
+              <div>
+                <div className="font-medium">{user?.name || "Administrador"}</div>
+                <div className="text-xs text-muted-foreground">
+                  Administrador del Sistema
+                </div>
+              </div>
+            </div>
+            <Button
+              variant="outline"
+              className="w-full justify-start"
+              onClick={() => logoutMutation.mutate()}
+            >
+              <LogOut className="h-4 w-4 mr-2" />
+              Cerrar Sesión
+            </Button>
           </div>
         </div>
-      </aside>
+      </div>
 
       {/* Contenido principal */}
       <div className="flex-1 flex flex-col overflow-hidden">
-        {/* Barra superior móvil */}
-        {isMobile && (
-          <header className="bg-white border-b h-16 flex items-center px-4 md:hidden">
-            <Button variant="ghost" size="icon" onClick={toggleSidebar}>
+        {/* Header superior */}
+        <header className="h-16 border-b bg-card flex items-center px-6 sticky top-0 z-10">
+          <div className="flex items-center md:hidden mr-4">
+            <button
+              className="p-2 rounded-md"
+              onClick={toggleSidebar}
+            >
               <Menu className="h-5 w-5" />
+            </button>
+          </div>
+          
+          <div className="flex-1">
+            <h1 className="text-lg font-semibold">
+              {location === "/admin/dashboard" && "Dashboard"}
+              {location === "/admin/clients" && "Clientes"}
+              {location === "/admin/stats" && "Estadísticas"}
+              {location === "/admin/cms/pages" && "CMS - Páginas"}
+              {location === "/admin/cms/categories" && "CMS - Categorías"}
+              {location === "/admin/cms/media" && "CMS - Medios"}
+              {location === "/admin/cms/branding" && "CMS - Marca"}
+              {location === "/admin/settings" && "Configuración"}
+              {location === "/admin/api" && "API"}
+            </h1>
+          </div>
+          
+          <div>
+            <Button variant="ghost" size="icon" className="relative">
+              <Bell className="h-5 w-5" />
+              <span className="absolute top-0 right-0 h-2 w-2 rounded-full bg-red-500"></span>
             </Button>
-            <div className="font-semibold text-primary mx-auto flex items-center">
-              <Package className="h-5 w-5 mr-2" />
-              <span>ShieldCuisine Admin</span>
-            </div>
-          </header>
-        )}
+          </div>
+        </header>
 
         {/* Área de contenido */}
-        <main className="flex-1 overflow-auto p-4 md:p-6">
+        <main className="flex-1 overflow-y-auto bg-muted/20">
           <Switch>
-            <Route path="/admin" component={Dashboard} />
-            <Route path="/admin/clientes" component={Clientes} />
-            <Route path="/admin/clientes/:clienteId" component={Detalles} />
-            <Route path="/admin/modulos" component={Modulos} />
-            <Route path="/admin/facturacion" component={Facturacion} />
-            <Route path="/admin/configuracion" component={Configuracion} />
+            <Route path="/admin/dashboard" component={AdminDashboard} />
+            <Route path="/admin">
+              {/* Redirección por defecto al dashboard */}
+              {() => {
+                window.location.href = "/admin/dashboard";
+                return null;
+              }}
+            </Route>
           </Switch>
         </main>
       </div>
-
-      {/* Overlay para cerrar el sidebar en mobile */}
-      {isMobile && isSidebarOpen && (
-        <div
-          className="fixed inset-0 bg-black/20 z-10 md:hidden"
-          onClick={toggleSidebar}
-        />
-      )}
     </div>
   );
 }

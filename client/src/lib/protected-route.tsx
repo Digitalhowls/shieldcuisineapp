@@ -1,36 +1,63 @@
 import { useAuth } from "@/hooks/use-auth";
 import { Loader2 } from "lucide-react";
-import { Redirect, Route } from "wouter";
+import { Redirect, Route, useLocation } from "wouter";
+
+type AllowedRoles = 'admin' | 'company_admin' | 'location_manager' | 'area_supervisor' | 'employee' | 'external';
 
 export function ProtectedRoute({
   path,
   component: Component,
+  allowedRoles = ['admin', 'company_admin', 'location_manager', 'area_supervisor', 'employee', 'external'],
 }: {
   path: string;
   component: () => React.JSX.Element;
+  allowedRoles?: AllowedRoles[];
 }) {
   const { user, isLoading } = useAuth();
+  const [location] = useLocation();
 
-  // Esta función muestra un indicador de carga mientras se verifica la autenticación
-  const LoadingComponent = () => (
-    <div className="flex items-center justify-center min-h-screen">
-      <Loader2 className="h-8 w-8 animate-spin text-primary" />
-    </div>
-  );
-
-  // Esta función redirige al usuario a la página de autenticación si no está autenticado
-  const RedirectToAuth = () => <Redirect to="/auth" />;
-
-  // Si la autenticación está cargando, muestra el indicador de carga
   if (isLoading) {
-    return <Route path={path} component={LoadingComponent} />;
+    return (
+      <Route path={path}>
+        <div className="flex items-center justify-center min-h-screen">
+          <Loader2 className="h-8 w-8 animate-spin text-border" />
+        </div>
+      </Route>
+    );
   }
 
-  // Si el usuario no está autenticado, redirige a la página de autenticación
   if (!user) {
-    return <Route path={path} component={RedirectToAuth} />;
+    return (
+      <Route path={path}>
+        <Redirect to="/auth" />
+      </Route>
+    );
   }
 
-  // Si el usuario está autenticado, muestra el componente protegido
+  // Verificar si el usuario tiene uno de los roles permitidos
+  const hasRequiredRole = allowedRoles.includes(user.role as AllowedRoles);
+
+  // Redirigir a la interfaz adecuada según el rol si el usuario no tiene permiso
+  if (!hasRequiredRole) {
+    // Si el usuario está en una ruta de admin pero no es admin, redirigir a su dashboard apropiado
+    if (path.startsWith('/admin') && user.role !== 'admin') {
+      return (
+        <Route path={path}>
+          <Redirect to="/client/dashboard" />
+        </Route>
+      );
+    }
+    
+    // Si el usuario está en una ruta de cliente pero es admin, redirigir al dashboard de admin
+    if (path.startsWith('/client') && user.role === 'admin') {
+      return (
+        <Route path={path}>
+          <Redirect to="/admin/dashboard" />
+        </Route>
+      );
+    }
+  }
+
+  // Si el usuario tiene un rol permitido para esta ruta, mostrar el componente
   return <Route path={path} component={Component} />;
 }
