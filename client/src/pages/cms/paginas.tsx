@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
   Card,
@@ -17,17 +17,11 @@ import {
 } from "@/components/ui/dropdown-menu";
 import {
   Dialog,
-  DialogClose,
   DialogContent,
   DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import {
   Table,
   TableBody,
@@ -44,6 +38,8 @@ import {
   Plus,
   Trash2,
   Globe,
+  FileSearch,
+  ExternalLink,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
@@ -52,24 +48,90 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useAuth } from "@/hooks/use-auth";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
+import PageEditor from "@/components/cms/page-editor";
+
+interface Page {
+  id: number;
+  title: string;
+  slug: string;
+  status: "draft" | "published" | "archived";
+  updatedAt: string;
+  content: string;
+  visibility: "public" | "private" | "internal";
+  type: "page" | "blog_post" | "course_page" | "landing_page";
+  companyId: number;
+}
+
+type DialogMode = "create" | "edit" | "view" | "delete" | "preview" | null;
 
 // Componente principal
 const PaginasPage: React.FC = () => {
   const { toast } = useToast();
   const { user } = useAuth();
+  const [dialogMode, setDialogMode] = useState<DialogMode>(null);
+  const [selectedPage, setSelectedPage] = useState<Page | null>(null);
   
   // Obtener páginas del CMS
-  const { data: pages, isLoading, error } = useQuery({
+  const { data: pages, isLoading, error } = useQuery<Page[]>({
     queryKey: ["/api/cms/pages"],
     queryFn: async () => {
       if (!user?.companyId) {
         return [];
       }
-      return fetch(`/api/cms/pages?companyId=${user.companyId}`).then(
-        (res) => res.json()
-      );
+      const response = await fetch(`/api/cms/pages?companyId=${user.companyId}`);
+      if (!response.ok) {
+        throw new Error("Error al cargar las páginas");
+      }
+      return response.json();
     },
   });
+
+  // Función para abrir el diálogo en diferentes modos
+  const openDialog = (mode: DialogMode, page?: Page) => {
+    if (page) {
+      setSelectedPage(page);
+    } else {
+      setSelectedPage(null);
+    }
+    setDialogMode(mode);
+  };
+
+  // Función para cerrar el diálogo
+  const closeDialog = () => {
+    setDialogMode(null);
+    setSelectedPage(null);
+  };
+
+  // Función para eliminar una página
+  const handleDeletePage = async (pageId: number) => {
+    try {
+      await apiRequest("DELETE", `/api/cms/pages/${pageId}`);
+      queryClient.invalidateQueries({ queryKey: ["/api/cms/pages"] });
+      toast({
+        title: "Página eliminada",
+        description: "La página ha sido eliminada correctamente.",
+      });
+      closeDialog();
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "No se pudo eliminar la página. Inténtelo de nuevo.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Función para confirmar eliminación
+  const confirmDelete = (page: Page) => {
+    setSelectedPage(page);
+    setDialogMode("delete");
+  };
+
+  // Función después de guardar la página
+  const onPageSaved = () => {
+    closeDialog();
+    queryClient.invalidateQueries({ queryKey: ["/api/cms/pages"] });
+  };
 
   // Renderizar el estado de carga
   if (isLoading) {
@@ -115,25 +177,6 @@ const PaginasPage: React.FC = () => {
     );
   }
 
-  // Función para eliminar una página
-  const handleDeletePage = async (pageId: number) => {
-    try {
-      await apiRequest("DELETE", `/api/cms/pages/${pageId}`);
-      queryClient.invalidateQueries({ queryKey: ["/api/cms/pages"] });
-      toast({
-        title: "Página eliminada",
-        description: "La página ha sido eliminada correctamente.",
-      });
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "No se pudo eliminar la página. Inténtelo de nuevo.",
-        variant: "destructive",
-      });
-    }
-  };
-
-  // Componente principal
   return (
     <div className="container mx-auto py-6">
       <div className="mb-6">
@@ -147,49 +190,10 @@ const PaginasPage: React.FC = () => {
         <div>
           {/* Aquí podría ir un filtro o búsqueda */}
         </div>
-        <Dialog>
-          <DialogTrigger asChild>
-            <Button className="gap-2">
-              <Plus size={16} />
-              <span>Nueva Página</span>
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="sm:max-w-[600px]">
-            <DialogHeader>
-              <DialogTitle>Crear nueva página</DialogTitle>
-              <DialogDescription>
-                Define los detalles de la nueva página web
-              </DialogDescription>
-            </DialogHeader>
-            <form className="space-y-4 py-4">
-              <div className="grid grid-cols-1 gap-4">
-                <div>
-                  <Label htmlFor="title">Título</Label>
-                  <Input id="title" placeholder="Título de la página" />
-                </div>
-                <div>
-                  <Label htmlFor="slug">URL (slug)</Label>
-                  <Input id="slug" placeholder="url-amigable" />
-                </div>
-                <div>
-                  <Label htmlFor="description">Descripción</Label>
-                  <Textarea
-                    id="description"
-                    placeholder="Breve descripción de la página"
-                    rows={3}
-                  />
-                </div>
-                {/* Aquí irían más campos como estado, visibilidad, etc. */}
-              </div>
-            </form>
-            <DialogFooter>
-              <DialogClose asChild>
-                <Button variant="outline">Cancelar</Button>
-              </DialogClose>
-              <Button type="submit">Crear página</Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+        <Button className="gap-2" onClick={() => openDialog("create")}>
+          <Plus size={16} />
+          <span>Nueva Página</span>
+        </Button>
       </div>
 
       {pages && pages.length === 0 ? (
@@ -201,17 +205,10 @@ const PaginasPage: React.FC = () => {
               <p className="text-muted-foreground">
                 Crea tu primera página para comenzar a construir tu sitio web.
               </p>
-              <Dialog>
-                <DialogTrigger asChild>
-                  <Button className="mt-4">
-                    <Plus className="mr-2 h-4 w-4" />
-                    Nueva página
-                  </Button>
-                </DialogTrigger>
-                <DialogContent>
-                  {/* Mismo contenido que el diálogo anterior */}
-                </DialogContent>
-              </Dialog>
+              <Button className="mt-4" onClick={() => openDialog("create")}>
+                <Plus className="mr-2 h-4 w-4" />
+                Nueva página
+              </Button>
             </div>
           </CardContent>
         </Card>
@@ -223,16 +220,25 @@ const PaginasPage: React.FC = () => {
               <TableRow>
                 <TableHead>Título</TableHead>
                 <TableHead>URL</TableHead>
+                <TableHead>Tipo</TableHead>
                 <TableHead>Estado</TableHead>
                 <TableHead>Última Actualización</TableHead>
                 <TableHead className="text-right">Acciones</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {pages && pages.map((page: any) => (
+              {pages && pages.map((page) => (
                 <TableRow key={page.id}>
                   <TableCell className="font-medium">{page.title}</TableCell>
                   <TableCell>/{page.slug}</TableCell>
+                  <TableCell>
+                    <Badge variant="secondary">
+                      {page.type === "page" ? "Página" : 
+                       page.type === "blog_post" ? "Blog" : 
+                       page.type === "course_page" ? "Curso" : 
+                       "Landing Page"}
+                    </Badge>
+                  </TableCell>
                   <TableCell>
                     <Badge
                       variant={
@@ -266,24 +272,28 @@ const PaginasPage: React.FC = () => {
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
                         <DropdownMenuItem
-                          onClick={() => {
-                            // Visualizar la página
-                          }}
+                          onClick={() => openDialog("view", page)}
                         >
-                          <Eye className="mr-2 h-4 w-4" />
-                          <span>Visualizar</span>
+                          <FileSearch className="mr-2 h-4 w-4" />
+                          <span>Ver contenido</span>
                         </DropdownMenuItem>
+                        {page.status === "published" && (
+                          <DropdownMenuItem
+                            onClick={() => openDialog("preview", page)}
+                          >
+                            <Eye className="mr-2 h-4 w-4" />
+                            <span>Vista previa</span>
+                          </DropdownMenuItem>
+                        )}
                         <DropdownMenuItem
-                          onClick={() => {
-                            // Editar la página
-                          }}
+                          onClick={() => openDialog("edit", page)}
                         >
                           <FileEdit className="mr-2 h-4 w-4" />
                           <span>Editar</span>
                         </DropdownMenuItem>
                         <DropdownMenuItem
                           className="text-destructive"
-                          onClick={() => handleDeletePage(page.id)}
+                          onClick={() => confirmDelete(page)}
                         >
                           <Trash2 className="mr-2 h-4 w-4" />
                           <span>Eliminar</span>
@@ -297,6 +307,155 @@ const PaginasPage: React.FC = () => {
           </Table>
         </div>
       )}
+
+      {/* Diálogo para crear/editar página */}
+      <Dialog open={dialogMode === "create" || dialogMode === "edit"} onOpenChange={(open) => !open && closeDialog()}>
+        <DialogContent className="max-w-4xl">
+          <DialogHeader>
+            <DialogTitle>
+              {dialogMode === "create" ? "Crear nueva página" : "Editar página"}
+            </DialogTitle>
+            <DialogDescription>
+              {dialogMode === "create"
+                ? "Define los detalles de la nueva página web"
+                : "Modifica los detalles y contenido de la página"}
+            </DialogDescription>
+          </DialogHeader>
+          <PageEditor 
+            pageId={selectedPage?.id} 
+            onSave={onPageSaved} 
+            onCancel={closeDialog} 
+          />
+        </DialogContent>
+      </Dialog>
+
+      {/* Diálogo para ver el contenido */}
+      <Dialog open={dialogMode === "view"} onOpenChange={(open) => !open && closeDialog()}>
+        <DialogContent className="max-w-4xl">
+          <DialogHeader>
+            <DialogTitle>{selectedPage?.title}</DialogTitle>
+            <DialogDescription>
+              Contenido de la página
+            </DialogDescription>
+          </DialogHeader>
+          <div className="mt-4 max-h-[500px] overflow-y-auto">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">Información</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                <div>
+                  <span className="font-semibold">URL:</span> /{selectedPage?.slug}
+                </div>
+                <div>
+                  <span className="font-semibold">Estado:</span>{" "}
+                  {selectedPage?.status === "published"
+                    ? "Publicado"
+                    : selectedPage?.status === "draft"
+                    ? "Borrador"
+                    : "Archivado"}
+                </div>
+                <div>
+                  <span className="font-semibold">Tipo:</span>{" "}
+                  {selectedPage?.type === "page"
+                    ? "Página"
+                    : selectedPage?.type === "blog_post"
+                    ? "Blog"
+                    : selectedPage?.type === "course_page"
+                    ? "Curso"
+                    : "Landing Page"}
+                </div>
+                <div>
+                  <span className="font-semibold">Visibilidad:</span>{" "}
+                  {selectedPage?.visibility === "public"
+                    ? "Pública"
+                    : selectedPage?.visibility === "private"
+                    ? "Privada"
+                    : "Interna"}
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="mt-4">
+              <CardHeader>
+                <CardTitle className="text-lg">Contenido</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <pre className="whitespace-pre-wrap font-mono text-xs p-4 bg-muted rounded-md overflow-auto max-h-[300px]">
+                  {selectedPage?.content || "Sin contenido"}
+                </pre>
+              </CardContent>
+            </Card>
+          </div>
+          <div className="flex justify-end space-x-2">
+            <Button
+              onClick={() => openDialog("edit", selectedPage!)}
+              className="gap-1"
+            >
+              <FileEdit className="h-4 w-4" />
+              <span>Editar</span>
+            </Button>
+            {selectedPage?.status === "published" && (
+              <Button
+                variant="outline"
+                onClick={() => openDialog("preview", selectedPage!)}
+                className="gap-1"
+              >
+                <Eye className="h-4 w-4" />
+                <span>Vista previa</span>
+              </Button>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Diálogo para vista previa */}
+      <Dialog open={dialogMode === "preview"} onOpenChange={(open) => !open && closeDialog()}>
+        <DialogContent className="max-w-4xl max-h-[80vh]">
+          <DialogHeader>
+            <DialogTitle>Vista previa: {selectedPage?.title}</DialogTitle>
+            <DialogDescription>
+              Así es como se verá la página en el sitio web
+            </DialogDescription>
+          </DialogHeader>
+          <div className="mt-4 border rounded overflow-hidden">
+            <div className="bg-background text-sm p-2 border-b flex justify-between items-center">
+              <span>Vista previa</span>
+              <Button variant="ghost" size="sm" className="h-7 gap-1">
+                <ExternalLink className="h-3 w-3" />
+                <span className="text-xs">Abrir en nueva ventana</span>
+              </Button>
+            </div>
+            <div className="h-[500px] overflow-auto p-4">
+              {/* Aquí se renderizaría el contenido HTML o Markdown */}
+              <div dangerouslySetInnerHTML={{ __html: selectedPage?.content || "" }} />
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Diálogo para confirmar eliminación */}
+      <Dialog open={dialogMode === "delete"} onOpenChange={(open) => !open && closeDialog()}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Eliminar página</DialogTitle>
+            <DialogDescription>
+              ¿Estás seguro de que deseas eliminar la página "{selectedPage?.title}"? Esta acción no se puede deshacer.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex justify-end space-x-2 mt-4">
+            <Button variant="outline" onClick={closeDialog}>
+              Cancelar
+            </Button>
+            <Button 
+              variant="destructive" 
+              onClick={() => selectedPage && handleDeletePage(selectedPage.id)}
+            >
+              Eliminar
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
