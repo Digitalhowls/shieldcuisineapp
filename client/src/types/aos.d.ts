@@ -16,9 +16,12 @@ declare module 'aos' {
     debounceDelay?: number;
   }
 
-  export default {
-    init: (options?: AosOptions) => void,
-    refresh: (initialize?: boolean) => void,
-    refreshHard: () => void
-  };
+  interface AosInstance {
+    init: (options?: AosOptions) => void;
+    refresh: (initialize?: boolean) => void;
+    refreshHard: () => void;
+  }
+
+  const aos: AosInstance;
+  export default aos;
 }

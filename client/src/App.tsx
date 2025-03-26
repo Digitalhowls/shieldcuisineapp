@@ -21,6 +21,8 @@ import ComprasNueva from "./pages/compras/nueva";
 import ComprasDetalle from "./pages/compras/[id]";
 import ComprasAnalisis from "./pages/compras/analisis";
 import CMSModule from "./pages/cms";
+import AnimationPlayground from "./pages/cms/animation-playground";
+import AnimatedBlocksDemo from "./pages/cms/animated-blocks-demo";
 
 // Páginas públicas
 import PublicIndex from "@/pages/public/index";
@@ -53,6 +55,8 @@ function AppRouter() {
       <ProtectedRoute path="/compras/analisis" component={ComprasAnalisis} />
       <ProtectedRoute path="/compras/:id" component={ComprasDetalle} />
       <ProtectedRoute path="/cms" component={CMSModule} />
+      <ProtectedRoute path="/cms/animation-playground" component={AnimationPlayground} />
+      <ProtectedRoute path="/cms/animated-blocks-demo" component={AnimatedBlocksDemo} />
       <ProtectedRoute path="/cms/:rest*" component={CMSModule} />
       
       {/* Rutas públicas */}

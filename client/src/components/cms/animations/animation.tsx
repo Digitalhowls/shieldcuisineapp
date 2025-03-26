@@ -14,6 +14,7 @@ interface AnimationProps extends AnimationConfig {
   className?: string;
   onClick?: () => void;
   scrollTrigger?: boolean;
+  style?: React.CSSProperties;
 }
 
 /**
