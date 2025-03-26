@@ -1141,6 +1141,124 @@ const BlockContainer: React.FC<BlockContainerProps> = ({
           </div>
         );
 
+      case 'divider':
+        return (
+          <div className="w-full">
+            {!readOnly ? (
+              <div className="space-y-4">
+                <div className="flex flex-col space-y-3">
+                  <div>
+                    <label className="text-sm font-medium mb-1 block">Estilo del separador</label>
+                    <Select
+                      value={block.content.style || 'solid'}
+                      onValueChange={(value) => handleContentChange({ style: value })}
+                    >
+                      <SelectTrigger className="w-[180px]">
+                        <SelectValue placeholder="Seleccione un estilo" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="solid">Sólido</SelectItem>
+                        <SelectItem value="dashed">Punteado</SelectItem>
+                        <SelectItem value="dotted">Puntos</SelectItem>
+                        <SelectItem value="double">Doble</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-sm font-medium mb-1 block">Ancho</label>
+                      <Select
+                        value={block.content.width || 'full'}
+                        onValueChange={(value) => handleContentChange({ width: value })}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Seleccione el ancho" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="full">Completo</SelectItem>
+                          <SelectItem value="medium">Medio</SelectItem>
+                          <SelectItem value="small">Pequeño</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium mb-1 block">Alineación</label>
+                      <Select
+                        value={block.content.align || 'center'}
+                        onValueChange={(value) => handleContentChange({ align: value })}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Seleccione la alineación" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="left">Izquierda</SelectItem>
+                          <SelectItem value="center">Centrado</SelectItem>
+                          <SelectItem value="right">Derecha</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <label className="text-sm font-medium mb-1 block">Espacio</label>
+                    <Select
+                      value={block.content.spacing || 'normal'}
+                      onValueChange={(value) => handleContentChange({ spacing: value })}
+                    >
+                      <SelectTrigger className="w-[180px]">
+                        <SelectValue placeholder="Seleccione el espacio" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="tight">Compacto</SelectItem>
+                        <SelectItem value="normal">Normal</SelectItem>
+                        <SelectItem value="loose">Amplio</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  <div className="mt-4">
+                    <p className="text-sm font-medium mb-2">Vista previa:</p>
+                    <div className={`flex ${
+                      block.content.align === 'left' ? 'justify-start' : 
+                      block.content.align === 'right' ? 'justify-end' : 'justify-center'
+                    }`}>
+                      <div className={`border-t ${
+                        block.content.width === 'small' ? 'w-1/4' : 
+                        block.content.width === 'medium' ? 'w-1/2' : 'w-full'
+                      } ${
+                        block.content.style === 'dashed' ? 'border-dashed' : 
+                        block.content.style === 'dotted' ? 'border-dotted' : 
+                        block.content.style === 'double' ? 'border-double border-t-2' : 'border-solid'
+                      } border-muted-foreground/50 ${
+                        block.content.spacing === 'tight' ? 'my-2' :
+                        block.content.spacing === 'loose' ? 'my-8' : 'my-4'
+                      }`}></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className={`flex ${
+                block.content.align === 'left' ? 'justify-start' : 
+                block.content.align === 'right' ? 'justify-end' : 'justify-center'
+              }`}>
+                <div className={`border-t ${
+                  block.content.width === 'small' ? 'w-1/4' : 
+                  block.content.width === 'medium' ? 'w-1/2' : 'w-full'
+                } ${
+                  block.content.style === 'dashed' ? 'border-dashed' : 
+                  block.content.style === 'dotted' ? 'border-dotted' : 
+                  block.content.style === 'double' ? 'border-double border-t-2' : 'border-solid'
+                } border-muted-foreground/50 ${
+                  block.content.spacing === 'tight' ? 'my-2' :
+                  block.content.spacing === 'loose' ? 'my-8' : 'my-4'
+                }`}></div>
+              </div>
+            )}
+          </div>
+        );
+
       default:
         return (
           <div className="p-4 border rounded-md bg-muted/20">
