@@ -16,6 +16,9 @@ import BancaModule from "./pages/banca";
 import FormacionModule from "./pages/formacion";
 import NotificacionesPage from "./pages/configuracion/notificaciones";
 import TodasNotificacionesPage from "./pages/configuracion/todas-notificaciones";
+import ComprasIndex from "./pages/compras";
+import ComprasNueva from "./pages/compras/nueva";
+import ComprasDetalle from "./pages/compras/[id]";
 
 function AppRouter() {
   return (
@@ -36,6 +39,9 @@ function AppRouter() {
       <ProtectedRoute path="/formacion/:rest*" component={FormacionModule} />
       <ProtectedRoute path="/configuracion/notificaciones" component={NotificacionesPage} />
       <ProtectedRoute path="/configuracion/todas-notificaciones" component={TodasNotificacionesPage} />
+      <ProtectedRoute path="/compras" component={ComprasIndex} />
+      <ProtectedRoute path="/compras/nueva" component={ComprasNueva} />
+      <ProtectedRoute path="/compras/:id" component={ComprasDetalle} />
       
       {/* Rutas públicas */}
       <Route path="/auth" component={AuthPage} />

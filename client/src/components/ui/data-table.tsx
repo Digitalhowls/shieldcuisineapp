@@ -1,12 +1,5 @@
 import React from "react";
 import {
-  ColumnDef,
-  flexRender,
-  getCoreRowModel,
-  useReactTable,
-  getPaginationRowModel,
-} from "@tanstack/react-table";
-import {
   Table,
   TableBody,
   TableCell,
@@ -22,63 +15,75 @@ import {
   ChevronsRight, 
 } from "lucide-react";
 
-interface DataTableProps<TData, TValue> {
-  columns: ColumnDef<TData, TValue>[];
+interface DataTableProps<TData> {
+  columns: {
+    header: string;
+    accessorKey: string;
+    cell?: (props: { row: { original: TData } }) => React.ReactNode;
+  }[];
   data: TData[];
   pageSize?: number;
   onRowClick?: (row: TData) => void;
 }
 
-export function DataTable<TData, TValue>({
+export function DataTable<TData>({
   columns,
   data,
   pageSize = 10,
   onRowClick,
-}: DataTableProps<TData, TValue>) {
-  const table = useReactTable({
-    data,
-    columns,
-    getCoreRowModel: getCoreRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
-    initialState: {
-      pagination: {
-        pageSize,
-      },
-    },
-  });
+}: DataTableProps<TData>) {
+  const [currentPage, setCurrentPage] = React.useState(0);
+  
+  const totalPages = Math.ceil(data.length / pageSize);
+  const startIndex = currentPage * pageSize;
+  const endIndex = Math.min(startIndex + pageSize, data.length);
+  const currentData = data.slice(startIndex, endIndex);
+  
+  const canPreviousPage = currentPage > 0;
+  const canNextPage = currentPage < totalPages - 1;
+  
+  const goToPage = (page: number) => {
+    setCurrentPage(Math.max(0, Math.min(page, totalPages - 1)));
+  };
+  
+  const previousPage = () => {
+    if (canPreviousPage) {
+      setCurrentPage(currentPage - 1);
+    }
+  };
+  
+  const nextPage = () => {
+    if (canNextPage) {
+      setCurrentPage(currentPage + 1);
+    }
+  };
 
   return (
     <div>
       <div className="rounded-md border">
         <Table>
           <TableHeader>
-            {table.getHeaderGroups().map((headerGroup) => (
-              <TableRow key={headerGroup.id}>
-                {headerGroup.headers.map((header) => (
-                  <TableHead key={header.id}>
-                    {header.isPlaceholder
-                      ? null
-                      : flexRender(
-                          header.column.columnDef.header,
-                          header.getContext()
-                        )}
-                  </TableHead>
-                ))}
-              </TableRow>
-            ))}
+            <TableRow>
+              {columns.map((column, index) => (
+                <TableHead key={index}>
+                  {column.header}
+                </TableHead>
+              ))}
+            </TableRow>
           </TableHeader>
           <TableBody>
-            {table.getRowModel().rows.length ? (
-              table.getRowModel().rows.map((row) => (
+            {currentData.length > 0 ? (
+              currentData.map((row, rowIndex) => (
                 <TableRow
-                  key={row.id}
-                  data-state={row.getIsSelected() && "selected"}
+                  key={rowIndex}
                   className={onRowClick ? "cursor-pointer hover:bg-muted" : undefined}
-                  onClick={onRowClick ? () => onRowClick(row.original) : undefined}
+                  onClick={onRowClick ? () => onRowClick(row) : undefined}
                 >
-                  {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id}>
-                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                  {columns.map((column, cellIndex) => (
+                    <TableCell key={cellIndex}>
+                      {column.cell 
+                        ? column.cell({ row: { original: row } }) 
+                        : (row as any)[column.accessorKey]}
                     </TableCell>
                   ))}
                 </TableRow>
@@ -100,43 +105,38 @@ export function DataTable<TData, TValue>({
       {data.length > pageSize && (
         <div className="flex items-center justify-end space-x-2 py-4">
           <div className="flex-1 text-sm text-muted-foreground">
-            Mostrando {table.getState().pagination.pageIndex * table.getState().pagination.pageSize + 1} a{" "}
-            {Math.min(
-              (table.getState().pagination.pageIndex + 1) * table.getState().pagination.pageSize,
-              table.getFilteredRowModel().rows.length
-            )}{" "}
-            de {table.getFilteredRowModel().rows.length} resultados
+            Mostrando {startIndex + 1} a {endIndex} de {data.length} resultados
           </div>
           <div className="space-x-1">
             <Button
               variant="outline"
               size="sm"
-              onClick={() => table.setPageIndex(0)}
-              disabled={!table.getCanPreviousPage()}
+              onClick={() => goToPage(0)}
+              disabled={!canPreviousPage}
             >
               <ChevronsLeft className="h-4 w-4" />
             </Button>
             <Button
               variant="outline"
               size="sm"
-              onClick={() => table.previousPage()}
-              disabled={!table.getCanPreviousPage()}
+              onClick={previousPage}
+              disabled={!canPreviousPage}
             >
               <ChevronLeft className="h-4 w-4" />
             </Button>
             <Button
               variant="outline"
               size="sm"
-              onClick={() => table.nextPage()}
-              disabled={!table.getCanNextPage()}
+              onClick={nextPage}
+              disabled={!canNextPage}
             >
               <ChevronRight className="h-4 w-4" />
             </Button>
             <Button
               variant="outline"
               size="sm"
-              onClick={() => table.setPageIndex(table.getPageCount() - 1)}
-              disabled={!table.getCanNextPage()}
+              onClick={() => goToPage(totalPages - 1)}
+              disabled={!canNextPage}
             >
               <ChevronsRight className="h-4 w-4" />
             </Button>
