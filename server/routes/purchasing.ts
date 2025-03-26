@@ -10,6 +10,22 @@ import {
   insertGoodsReceiptSchema,
   insertGoodsReceiptItemSchema
 } from "@shared/schema";
+import { getPurchaseAnalysis, PurchaseAnalysisRequest } from "../services/purchase-analysis";
+
+/**
+ * Middleware para verificar rol de administrador
+ */
+const verifyAdmin = (req: Request, res: Response, next: Function) => {
+  if (!req.isAuthenticated()) {
+    return res.status(401).json({ error: "No autenticado" });
+  }
+  
+  if (!req.user || (req.user.role !== 'admin' && req.user.role !== 'company_admin')) {
+    return res.status(403).json({ error: "Acceso denegado. Se requiere rol de administrador" });
+  }
+  
+  next();
+};
 
 /**
  * Registra las rutas para el módulo de compras
