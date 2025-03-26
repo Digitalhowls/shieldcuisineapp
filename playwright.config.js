@@ -1,52 +1,36 @@
-// playwright.config.js
 // @ts-check
+const { defineConfig, devices } = require('@playwright/test');
 
-/** @type {import('@playwright/test').PlaywrightTestConfig} */
-const config = {
-  // Carpeta donde se guardarán las capturas de pantalla, vídeos y trazas
-  outputDir: './test-results',
-
-  // Configuración del navegador
+/**
+ * @see https://playwright.dev/docs/test-configuration
+ */
+module.exports = defineConfig({
+  testDir: './tests',
+  timeout: 30 * 1000,
+  expect: {
+    timeout: 5000
+  },
+  fullyParallel: true,
+  forbidOnly: !!process.env.CI,
+  retries: process.env.CI ? 2 : 0,
+  workers: process.env.CI ? 1 : undefined,
+  reporter: [
+    ['html', { outputFolder: 'test-results/html-report' }],
+    ['json', { outputFile: 'test-results/test-results.json' }]
+  ],
   use: {
-    // Navegador a utilizar. Opciones: 'chromium', 'firefox', 'webkit'
-    browserName: 'chromium',
-    
-    // Mostrar navegador durante la ejecución (headless: false) o no (headless: true)
-    headless: false,
-    
-    // Ralentizar la ejecución para que sea más visible (en milisegundos)
-    slowMo: 50,
-    
-    // Tamaño de la ventana del navegador
-    viewport: { width: 1280, height: 720 },
-    
-    // Grabar vídeo de las pruebas
-    video: 'on-first-retry',
-    
-    // Grabar trazas de las pruebas
+    actionTimeout: 0,
+    baseURL: 'http://localhost:3000',
     trace: 'on-first-retry',
-    
-    // Capturas de pantalla al fallar
+    headless: true,
     screenshot: 'only-on-failure',
   },
-
-  // Configuración de la ejecución de los tests
-  testDir: './scripts',
-  testMatch: 'test-automation.js',
-  timeout: 60000,
-  
-  // Número de reintentos en caso de fallo
-  retries: 1,
-  
-  // Número de trabajadores en paralelo (1 para evitar problemas de estado)
-  workers: 1,
-  
-  // Gestión de metadatos de informes
-  reporter: [
-    ['html', { outputFolder: './test-results/html-report' }],
-    ['json', { outputFile: './test-results/report.json' }],
-    ['list']
+  projects: [
+    {
+      name: 'chromium',
+      use: { ...devices['Desktop Chrome'] },
+    },
   ],
-};
-
-module.exports = config;
+  outputDir: 'test-results',
+  testMatch: '**/*.spec.js',
+});
