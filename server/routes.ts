@@ -15,6 +15,8 @@ import { registerELearningRoutes } from "./routes/e-learning";
 import { registerNotificationRoutes } from "./routes/notifications";
 import { registerPurchasingRoutes } from "./routes/purchasing";
 import { registerCmsRoutes } from "./routes/cms";
+import { registerCmsApiRoutes } from "./routes/cms-api";
+import { registerPerplexityApiRoutes } from "./routes/perplexity-api";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Setup auth routes
@@ -207,6 +209,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Registrar rutas para el módulo CMS
   registerCmsRoutes(app);
+  
+  // Registrar rutas de API para el CMS
+  registerCmsApiRoutes(app);
+  
+  // Registrar rutas para la API de Perplexity AI
+  registerPerplexityApiRoutes(app);
 
   const httpServer = createServer(app);
   return httpServer;
