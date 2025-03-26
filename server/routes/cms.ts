@@ -47,6 +47,75 @@ const verifyAdmin = (req: Request, res: Response, next: NextFunction) => {
 export function registerCmsRoutes(app: Express) {
   
   /**
+   * Endpoint público para enviar formularios de contacto
+   * No requiere autenticación ya que es para los visitantes del sitio
+   */
+  app.post("/api/cms/forms/submit", async (req: Request, res: Response) => {
+    try {
+      const { companyId, pageId, formId, data } = req.body;
+      
+      if (!companyId || !formId || !data) {
+        return res.status(400).json({ error: "Faltan campos obligatorios" });
+      }
+      
+      const formSubmission = await storage.createCmsFormSubmission({
+        companyId,
+        formId,
+        pageId: pageId || null,
+        data,
+        ipAddress: req.ip,
+        userAgent: req.headers["user-agent"] || null,
+        processed: false
+      });
+      
+      // Enviar notificación si hay un correo electrónico de destino
+      if (data.destinationEmail) {
+        try {
+          // TODO: Implementar envío de correo electrónico
+          // Por ahora, marcar como procesado
+          console.log(`[CMS] Formulario ${formId} enviado. Se enviaría correo a: ${data.destinationEmail}`);
+        } catch (emailError) {
+          console.error("[CMS] Error al enviar notificación por correo:", emailError);
+        }
+      }
+      
+      return res.status(201).json({ 
+        success: true, 
+        message: "Formulario enviado correctamente", 
+        id: formSubmission.id 
+      });
+    } catch (error) {
+      console.error("[CMS] Error al procesar envío de formulario:", error);
+      return res.status(500).json({ error: "Error al procesar el formulario" });
+    }
+  });
+  
+  /**
+   * Obtener envíos de formularios (requiere autenticación)
+   */
+  app.get("/api/cms/forms/submissions", verifyAuth, async (req: Request, res: Response) => {
+    try {
+      const companyId = parseInt(req.query.companyId as string);
+      const pageId = req.query.pageId ? parseInt(req.query.pageId as string) : undefined;
+      
+      if (!companyId || isNaN(companyId)) {
+        return res.status(400).json({ error: "ID de empresa no válido" });
+      }
+      
+      // Verificar que el usuario tiene acceso a esta empresa
+      if (req.user && req.user.role !== 'admin' && req.user.companyId !== companyId) {
+        return res.status(403).json({ error: "No tienes permisos para acceder a estos datos" });
+      }
+      
+      const submissions = await storage.getCmsFormSubmissions(companyId, pageId);
+      return res.json(submissions);
+    } catch (error) {
+      console.error("[CMS] Error al obtener envíos de formularios:", error);
+      return res.status(500).json({ error: "Error al obtener los envíos de formularios" });
+    }
+  });
+  
+  /**
    * Rutas para páginas CMS
    */
   

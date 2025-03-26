@@ -1455,6 +1455,9 @@ const BlockContainer: React.FC<BlockContainerProps> = ({
         );
         
       case 'contact-form':
+        // Importar el componente dinámicamente
+        const ContactFormRenderer = React.lazy(() => import('../blocks/ContactFormRenderer'));
+        
         return (
           <div className="w-full">
             {!readOnly ? (
@@ -1710,72 +1713,32 @@ const BlockContainer: React.FC<BlockContainerProps> = ({
                 </div>
               </div>
             ) : (
-              <div className="border rounded-md p-6 space-y-4">
-                {block.content.title && (
-                  <h3 className="text-xl font-bold">{block.content.title}</h3>
-                )}
-                {block.content.description && (
-                  <p className="text-muted-foreground">{block.content.description}</p>
-                )}
-                
-                <div className="space-y-4">
-                  {(block.content.fields || []).map((field: any, idx: number) => (
-                    <div key={idx} className="space-y-2">
-                      <label className="text-sm font-medium">{field.label}{field.required ? ' *' : ''}</label>
-                      
-                      {field.type === 'textarea' ? (
-                        <Textarea 
-                          disabled={readOnly} 
-                          placeholder={field.label}
-                          className="w-full"
-                        />
-                      ) : field.type === 'select' ? (
-                        <Select disabled={readOnly}>
-                          <SelectTrigger>
-                            <SelectValue placeholder={`Seleccionar ${field.label.toLowerCase()}`} />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {(field.options || []).map((option: string, optIdx: number) => (
-                              <SelectItem key={optIdx} value={option}>{option}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      ) : field.type === 'checkbox' ? (
-                        <div className="flex items-center space-x-2">
-                          <Switch id={`form-${field.name}-${block.id}`} disabled={readOnly} />
-                          <Label htmlFor={`form-${field.name}-${block.id}`}>{field.label}</Label>
-                        </div>
-                      ) : field.type === 'radio' ? (
-                        <div className="space-y-2">
-                          {(field.options || []).map((option: string, optIdx: number) => (
-                            <div key={optIdx} className="flex items-center space-x-2">
-                              <input
-                                type="radio"
-                                disabled={readOnly}
-                                id={`${field.name}-${optIdx}-${block.id}`}
-                                name={field.name}
-                                className="h-4 w-4"
-                              />
-                              <label htmlFor={`${field.name}-${optIdx}-${block.id}`}>{option}</label>
-                            </div>
-                          ))}
-                        </div>
-                      ) : (
-                        <Input 
-                          type={field.type} 
-                          disabled={readOnly} 
-                          placeholder={field.label}
-                          className="w-full"
-                        />
-                      )}
+              <React.Suspense fallback={
+                <div className="border rounded-md p-6 space-y-4">
+                  <div className="animate-pulse flex space-x-4">
+                    <div className="flex-1 space-y-4 py-1">
+                      <div className="h-4 bg-muted rounded w-3/4"></div>
+                      <div className="space-y-2">
+                        <div className="h-4 bg-muted rounded"></div>
+                        <div className="h-4 bg-muted rounded"></div>
+                      </div>
                     </div>
-                  ))}
+                  </div>
                 </div>
-                
-                <Button disabled={readOnly} className="mt-4">
-                  {block.content.submitText || 'Enviar'}
-                </Button>
-              </div>
+              }>
+                <ContactFormRenderer
+                  title={block.content.title}
+                  description={block.content.description}
+                  fields={block.content.fields || []}
+                  submitText={block.content.submitText}
+                  email={block.content.email}
+                  showSuccess={block.content.showSuccess}
+                  successMessage={block.content.successMessage}
+                  companyId={1} // TODO: Obtener del contexto de la página
+                  pageId={undefined} // TODO: Obtener del contexto de la página
+                  formId={block.id} // Usamos el ID del bloque como ID del formulario
+                />
+              </React.Suspense>
             )}
           </div>
         );
