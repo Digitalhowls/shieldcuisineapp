@@ -50,6 +50,30 @@ interface ButtonContent {
   newTab?: boolean;
 }
 
+interface QuoteContent {
+  text: string;
+  author?: string;
+  source?: string;
+  align?: 'left' | 'center' | 'right';
+  style?: 'default' | 'large' | 'bordered';
+}
+
+interface TableCell {
+  content: string;
+  header?: boolean;
+  colspan?: number;
+  rowspan?: number;
+  align?: 'left' | 'center' | 'right';
+}
+
+interface TableContent {
+  rows: TableCell[][];
+  caption?: string;
+  withHeader?: boolean;
+  withBorder?: boolean;
+  striped?: boolean;
+}
+
 interface BlockContainerProps {
   block: Block;
   index: number;
@@ -443,6 +467,342 @@ const BlockContainer: React.FC<BlockContainerProps> = ({
                     {block.content.text || 'Botón'}
                   </a>
                 </Button>
+              </div>
+            )}
+          </div>
+        );
+
+      case 'quote':
+        return (
+          <div className="w-full space-y-4">
+            {!readOnly ? (
+              <>
+                <div className="flex flex-col space-y-3">
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium mb-1 block">Texto de la cita</label>
+                    <Textarea
+                      value={block.content.text || ''}
+                      onChange={(e) => handleContentChange({ text: e.target.value })}
+                      placeholder="Escribe el texto de la cita..."
+                      className="min-h-[100px] resize-y"
+                    />
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-sm font-medium mb-1 block">Autor</label>
+                      <Input
+                        value={block.content.author || ''}
+                        onChange={(e) => handleContentChange({ author: e.target.value })}
+                        placeholder="Nombre del autor"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium mb-1 block">Fuente</label>
+                      <Input
+                        value={block.content.source || ''}
+                        onChange={(e) => handleContentChange({ source: e.target.value })}
+                        placeholder="Fuente o publicación"
+                      />
+                    </div>
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-sm font-medium mb-1 block">Alineación</label>
+                      <Select
+                        value={block.content.align || 'left'}
+                        onValueChange={(value) => handleContentChange({ align: value })}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Seleccione la alineación" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="left">Izquierda</SelectItem>
+                          <SelectItem value="center">Centro</SelectItem>
+                          <SelectItem value="right">Derecha</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium mb-1 block">Estilo</label>
+                      <Select
+                        value={block.content.style || 'default'}
+                        onValueChange={(value) => handleContentChange({ style: value })}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Seleccione el estilo" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="default">Estándar</SelectItem>
+                          <SelectItem value="large">Grande</SelectItem>
+                          <SelectItem value="bordered">Con borde</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                </div>
+              </>
+            ) : (
+              <div className={`${
+                block.content.align === 'center' ? 'text-center' : 
+                block.content.align === 'right' ? 'text-right' : 'text-left'
+              }`}>
+                <blockquote className={`relative ${
+                  block.content.style === 'large' 
+                    ? 'text-xl md:text-2xl font-medium' 
+                    : block.content.style === 'bordered'
+                    ? 'pl-4 border-l-4 border-primary'
+                    : 'text-lg italic'
+                }`}>
+                  <span className="text-3xl leading-none opacity-20 absolute top-0 left-0 -ml-4">"</span>
+                  <p className="relative">{block.content.text || ''}</p>
+                  {(block.content.author || block.content.source) && (
+                    <footer className="mt-2 text-sm text-muted-foreground">
+                      {block.content.author && <cite className="font-medium not-italic">{block.content.author}</cite>}
+                      {block.content.author && block.content.source && <span>, </span>}
+                      {block.content.source && <span className="italic">{block.content.source}</span>}
+                    </footer>
+                  )}
+                </blockquote>
+              </div>
+            )}
+          </div>
+        );  
+
+      case 'table':
+        return (
+          <div className="w-full space-y-4">
+            {!readOnly ? (
+              <>
+                <div className="flex flex-col space-y-4">
+                  <div className="flex justify-between items-center">
+                    <h4 className="text-sm font-medium">Tabla de datos</h4>
+                    <div className="flex items-center space-x-2">
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => {
+                          const rows = [...(block.content.rows || [])];
+                          const newRow = Array(rows[0]?.length || 2).fill({}).map(() => ({ content: '' }));
+                          rows.push(newRow);
+                          handleContentChange({ rows });
+                        }}
+                        disabled={!(block.content.rows || []).length}
+                      >
+                        Añadir fila
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => {
+                          const rows = [...(block.content.rows || [])];
+                          if (!rows.length) {
+                            // Si no hay filas, creamos una tabla 2x2
+                            const newRows = [
+                              [{ content: '', header: true }, { content: '', header: true }],
+                              [{ content: '' }, { content: '' }]
+                            ];
+                            handleContentChange({ rows: newRows, withHeader: true });
+                          } else {
+                            // Si ya hay filas, añadimos una columna a cada fila
+                            const newRows = rows.map(row => [...row, { content: '', header: row[0]?.header || false }]);
+                            handleContentChange({ rows: newRows });
+                          }
+                        }}
+                      >
+                        Añadir columna
+                      </Button>
+                    </div>
+                  </div>
+                  
+                  {!(block.content.rows || []).length ? (
+                    <div className="h-24 border-2 border-dashed rounded-md flex items-center justify-center">
+                      <p className="text-muted-foreground text-sm">No hay datos en la tabla</p>
+                    </div>
+                  ) : (
+                    <div className="overflow-x-auto border rounded-md">
+                      <table className="w-full min-w-full">
+                        <tbody>
+                          {(block.content.rows as TableCell[][] || []).map((row, rowIdx) => (
+                            <tr key={rowIdx} className="border-b last:border-b-0">
+                              {row.map((cell, cellIdx) => (
+                                <td key={cellIdx} className="border-r last:border-r-0 p-2">
+                                  <div className="flex flex-col space-y-2">
+                                    <Input
+                                      value={cell.content || ''}
+                                      onChange={(e) => {
+                                        const rows = [...(block.content.rows as TableCell[][] || [])];
+                                        rows[rowIdx][cellIdx] = { 
+                                          ...rows[rowIdx][cellIdx], 
+                                          content: e.target.value 
+                                        };
+                                        handleContentChange({ rows });
+                                      }}
+                                      placeholder="Contenido de la celda"
+                                      className={cell.header ? "font-bold" : ""}
+                                    />
+                                    
+                                    <div className="flex justify-between items-center">
+                                      <div className="flex items-center">
+                                        <input
+                                          type="checkbox"
+                                          checked={cell.header || false}
+                                          onChange={(e) => {
+                                            const rows = [...(block.content.rows as TableCell[][] || [])];
+                                            rows[rowIdx][cellIdx] = { 
+                                              ...rows[rowIdx][cellIdx], 
+                                              header: e.target.checked 
+                                            };
+                                            handleContentChange({ rows });
+                                          }}
+                                          id={`header-${block.id}-${rowIdx}-${cellIdx}`}
+                                          className="mr-2"
+                                        />
+                                        <label 
+                                          htmlFor={`header-${block.id}-${rowIdx}-${cellIdx}`} 
+                                          className="text-xs"
+                                        >
+                                          Encabezado
+                                        </label>
+                                      </div>
+                                      
+                                      <Button 
+                                        variant="ghost" 
+                                        size="icon"
+                                        className="h-6 w-6 text-destructive"
+                                        onClick={() => {
+                                          if (row.length > 1) {
+                                            // Eliminar la celda
+                                            const rows = [...(block.content.rows as TableCell[][] || [])];
+                                            rows[rowIdx].splice(cellIdx, 1);
+                                            handleContentChange({ rows });
+                                          } else if ((block.content.rows as TableCell[][] || []).length > 1) {
+                                            // Eliminar la fila
+                                            const rows = [...(block.content.rows as TableCell[][] || [])];
+                                            rows.splice(rowIdx, 1);
+                                            handleContentChange({ rows });
+                                          }
+                                        }}
+                                      >
+                                        <Trash2 className="h-3 w-3" />
+                                      </Button>
+                                    </div>
+                                  </div>
+                                </td>
+                              ))}
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                  
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-4">
+                    <div className="flex items-center">
+                      <input
+                        type="checkbox"
+                        checked={block.content.withHeader || false}
+                        onChange={(e) => handleContentChange({ withHeader: e.target.checked })}
+                        id={`with-header-${block.id}`}
+                        className="mr-2"
+                      />
+                      <label htmlFor={`with-header-${block.id}`} className="text-sm">
+                        Con encabezado
+                      </label>
+                    </div>
+                    
+                    <div className="flex items-center">
+                      <input
+                        type="checkbox"
+                        checked={block.content.withBorder || false}
+                        onChange={(e) => handleContentChange({ withBorder: e.target.checked })}
+                        id={`with-border-${block.id}`}
+                        className="mr-2"
+                      />
+                      <label htmlFor={`with-border-${block.id}`} className="text-sm">
+                        Con bordes
+                      </label>
+                    </div>
+                    
+                    <div className="flex items-center">
+                      <input
+                        type="checkbox"
+                        checked={block.content.striped || false}
+                        onChange={(e) => handleContentChange({ striped: e.target.checked })}
+                        id={`striped-${block.id}`}
+                        className="mr-2"
+                      />
+                      <label htmlFor={`striped-${block.id}`} className="text-sm">
+                        Filas alternadas
+                      </label>
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <label className="text-sm font-medium mb-1 block">Leyenda</label>
+                    <Input
+                      value={block.content.caption || ''}
+                      onChange={(e) => handleContentChange({ caption: e.target.value })}
+                      placeholder="Descripción de la tabla (opcional)"
+                    />
+                  </div>
+                </div>
+              </>
+            ) : (
+              <div className="overflow-x-auto">
+                {block.content.caption && (
+                  <p className="text-sm text-muted-foreground mb-2">{block.content.caption}</p>
+                )}
+                <table className={`w-full ${block.content.withBorder ? 'border border-border' : ''}`}>
+                  {(block.content.rows as TableCell[][] || []).length > 0 && (
+                    <>
+                      {block.content.withHeader && (
+                        <thead>
+                          <tr className={`${block.content.withBorder ? 'border-b border-border' : ''}`}>
+                            {(block.content.rows as TableCell[][])[0].map((cell, cellIdx) => (
+                              <th 
+                                key={cellIdx}
+                                className={`p-2 text-left ${block.content.withBorder ? 'border-r last:border-r-0 border-border' : ''}`}
+                              >
+                                {cell.content}
+                              </th>
+                            ))}
+                          </tr>
+                        </thead>
+                      )}
+                      <tbody>
+                        {(block.content.rows as TableCell[][]).slice(block.content.withHeader ? 1 : 0).map((row, rowIdx) => (
+                          <tr 
+                            key={rowIdx}
+                            className={`
+                              ${block.content.withBorder ? 'border-b last:border-b-0 border-border' : ''}
+                              ${block.content.striped && rowIdx % 2 ? 'bg-muted/30' : ''}
+                            `}
+                          >
+                            {row.map((cell, cellIdx) => (
+                              cell.header ? (
+                                <th 
+                                  key={cellIdx}
+                                  className={`p-2 text-left ${block.content.withBorder ? 'border-r last:border-r-0 border-border' : ''}`}
+                                >
+                                  {cell.content}
+                                </th>
+                              ) : (
+                                <td 
+                                  key={cellIdx}
+                                  className={`p-2 ${block.content.withBorder ? 'border-r last:border-r-0 border-border' : ''}`}
+                                >
+                                  {cell.content}
+                                </td>
+                              )
+                            ))}
+                          </tr>
+                        ))}
+                      </tbody>
+                    </>
+                  )}
+                </table>
               </div>
             )}
           </div>

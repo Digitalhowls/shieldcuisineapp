@@ -28,6 +28,7 @@ import {
   Plus,
   PlusCircle,
   Images,
+  Table,
 } from 'lucide-react';
 import { BlockType } from './index';
 import { Button } from '@/components/ui/button';
@@ -73,6 +74,7 @@ const BlockToolbar: React.FC<BlockToolbarProps> = ({ onAddBlock }) => {
 
   const moreTools = [
     { icon: <Images size={16} />, label: 'Galería', type: 'gallery' as BlockType },
+    { icon: <Table size={16} />, label: 'Tabla', type: 'table' as BlockType },
     { icon: <Video size={16} />, label: 'Vídeo', type: 'video' as BlockType },
     { icon: <Minus size={16} />, label: 'Divisor', type: 'divider' as BlockType },
     { icon: <Quote size={16} />, label: 'Cita', type: 'quote' as BlockType },

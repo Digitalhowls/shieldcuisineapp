@@ -23,7 +23,8 @@ export type BlockType =
   | 'quote'
   | 'list'
   | 'html'
-  | 'contact-form';
+  | 'contact-form'
+  | 'table';
 
 // Interfaz para un bloque genérico
 export interface Block {
@@ -133,6 +134,18 @@ const BlockEditor: React.FC<BlockEditorProps> = ({
             { name: 'email', label: 'Email', type: 'email', required: true },
             { name: 'message', label: 'Mensaje', type: 'textarea', required: true }
           ]
+        };
+        break;
+      case 'table':
+        newBlock.content = {
+          rows: [
+            [{ content: 'Encabezado 1', header: true }, { content: 'Encabezado 2', header: true }],
+            [{ content: 'Celda 1' }, { content: 'Celda 2' }]
+          ],
+          withHeader: true,
+          withBorder: true,
+          striped: false,
+          caption: 'Tabla de datos'
         };
         break;
     }
