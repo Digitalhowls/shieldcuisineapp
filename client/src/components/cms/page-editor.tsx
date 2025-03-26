@@ -42,7 +42,11 @@ import {
   ExternalLink,
   BookOpen,
   FileImage,
+  Sparkles,
 } from "lucide-react";
+
+// Importar componente del asistente de IA
+import { AIAssistantPanel } from "./ai-assistant";
 
 // Componentes del editor
 import BlockEditor from "./block-editor/BlockEditor";
@@ -399,7 +403,7 @@ const PageEditor: React.FC<PageEditorProps> = ({ isNew = false, pageId }) => {
       
       {/* Tabs de edición */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-        <TabsList className="grid grid-cols-3">
+        <TabsList className="grid grid-cols-4">
           <TabsTrigger value="content" className="flex items-center gap-2">
             <Layout className="h-4 w-4" />
             <span>Contenido</span>
@@ -411,6 +415,10 @@ const PageEditor: React.FC<PageEditorProps> = ({ isNew = false, pageId }) => {
           <TabsTrigger value="seo" className="flex items-center gap-2">
             <CopyCheck className="h-4 w-4" />
             <span>SEO</span>
+          </TabsTrigger>
+          <TabsTrigger value="ai-assistant" className="flex items-center gap-2">
+            <Sparkles className="h-4 w-4" />
+            <span>Asistente IA</span>
           </TabsTrigger>
         </TabsList>
         
@@ -706,6 +714,58 @@ const PageEditor: React.FC<PageEditorProps> = ({ isNew = false, pageId }) => {
               </div>
             </CardContent>
           </Card>
+        </TabsContent>
+        
+        {/* Tab de Asistente IA */}
+        <TabsContent value="ai-assistant" className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <AIAssistantPanel 
+              pageTitle={pageData.title}
+              pageDescription={pageData.description || ""}
+              pageType={pageData.type}
+              onApplyContent={(content) => {
+                // Añadir un nuevo bloque con el contenido generado
+                const newBlock = {
+                  id: `ai-block-${Date.now()}`,
+                  type: "ai",
+                  content: content,
+                };
+                
+                setBlocks([...blocks, newBlock]);
+                setHasChanges(true);
+                setActiveTab("content"); // Cambiar a la pestaña de contenido
+                
+                toast({
+                  title: "Contenido añadido",
+                  description: "El contenido generado por IA se ha añadido como un nuevo bloque",
+                });
+              }}
+              onApplySeoTitle={(title) => {
+                handleFieldChange("metaTitle", title);
+                
+                toast({
+                  title: "Título SEO actualizado",
+                  description: "El título SEO ha sido actualizado con la sugerencia de IA",
+                });
+              }}
+              onApplySeoDescription={(description) => {
+                handleFieldChange("metaDescription", description);
+                
+                toast({
+                  title: "Descripción SEO actualizada",
+                  description: "La descripción SEO ha sido actualizada con la sugerencia de IA",
+                });
+              }}
+              onApplySeoKeywords={(keywords) => {
+                handleFieldChange("metaKeywords", keywords);
+                
+                toast({
+                  title: "Palabras clave actualizadas",
+                  description: "Las palabras clave han sido actualizadas con la sugerencia de IA",
+                });
+              }}
+            />
+          </div>
         </TabsContent>
       </Tabs>
     </div>

@@ -33,9 +33,27 @@ export interface GenerateContentOptions {
 }
 
 /**
- * Genera contenido utilizando la API de OpenAI
+ * Sobrecarga de la función generateContent para aceptar string directo 
+ * (usado en los componentes de asistente IA)
  */
-export async function generateContent(options: GenerateContentOptions): Promise<string> {
+export async function generateContent(prompt: string): Promise<string>;
+
+/**
+ * Genera contenido utilizando la API de OpenAI (versión completa con opciones)
+ */
+export async function generateContent(options: GenerateContentOptions): Promise<string>;
+
+/**
+ * Implementación de generateContent que maneja ambas sobrecargas
+ */
+export async function generateContent(
+  optionsOrPrompt: GenerateContentOptions | string
+): Promise<string> {
+  // Convertir string a opciones si se pasó un string
+  const options: GenerateContentOptions = typeof optionsOrPrompt === 'string'
+    ? { instruction: optionsOrPrompt }
+    : optionsOrPrompt;
+  
   const {
     instruction,
     context = "",
@@ -180,6 +198,91 @@ export async function expandContent(
     });
   } catch (error) {
     console.error('Error expandiendo contenido:', error);
+    throw error;
+  }
+}
+
+/**
+ * Analiza una imagen y genera una descripción detallada
+ * La imagen debe estar en formato Base64
+ */
+export async function analyzeImage(base64Image: string): Promise<{
+  description: string;
+  tags: string[];
+  altText: string;
+}> {
+  try {
+    const response = await fetch('/api/ai/openai/analyze-image', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        image: base64Image,
+      }),
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || 'Error analizando la imagen');
+    }
+    
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error('Error analizando imagen con OpenAI:', error);
+    throw error;
+  }
+}
+
+/**
+ * Genera descripciones mejoradas para imágenes en el CMS
+ */
+export async function generateImageDescription(
+  imageUrl: string,
+  context: string = ""
+): Promise<{ 
+  description: string; 
+  altText: string;
+  tags: string[];
+}> {
+  try {
+    // Convertir URL a Base64 para enviar a la API
+    const response = await fetch(imageUrl);
+    const blob = await response.blob();
+    const reader = new FileReader();
+    
+    return new Promise((resolve, reject) => {
+      reader.onloadend = async () => {
+        try {
+          const base64data = (reader.result as string).split(',')[1];
+          
+          const analysisResult = await analyzeImage(base64data);
+          
+          // Si hay contexto, generamos una descripción más específica
+          if (context) {
+            const enhancedDescription = await generateContent({
+              instruction: `Genera una descripción profesional para esta imagen que se utilizará en ${context}. Basándote en esta descripción inicial: "${analysisResult.description}"`,
+              maxTokens: 300,
+            });
+            
+            return resolve({
+              description: enhancedDescription,
+              altText: analysisResult.altText,
+              tags: analysisResult.tags
+            });
+          }
+          
+          return resolve(analysisResult);
+        } catch (err) {
+          reject(err);
+        }
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    });
+  } catch (error) {
+    console.error('Error generando descripción de imagen:', error);
     throw error;
   }
 }
