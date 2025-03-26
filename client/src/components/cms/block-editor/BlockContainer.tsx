@@ -238,157 +238,35 @@ const BlockContainer: React.FC<BlockContainerProps> = ({
         );
         
       case 'gallery':
+        // Utilizamos el componente GalleryBlock para manejar este tipo de bloque
         return (
-          <div className="w-full space-y-4">
-            {!readOnly ? (
-              <>
-                <div className="flex justify-between items-center">
-                  <h4 className="text-sm font-medium">Galería de imágenes</h4>
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    onClick={() => {
-                      const images = [...(block.content.images || [])];
-                      images.push({ src: '', alt: '', caption: '' });
-                      handleContentChange({ images });
-                    }}
-                  >
-                    Añadir imagen
-                  </Button>
+          <div className="w-full">
+            <React.Suspense fallback={
+              <div className="border rounded-md p-6 space-y-4">
+                <div className="animate-pulse flex space-x-4">
+                  <div className="flex-1 space-y-4 py-1">
+                    <div className="h-4 bg-muted rounded w-3/4"></div>
+                    <div className="space-y-2">
+                      <div className="h-4 bg-muted rounded"></div>
+                      <div className="h-4 bg-muted rounded"></div>
+                    </div>
+                  </div>
                 </div>
-                
-                {(block.content.images || []).length === 0 ? (
-                  <div className="h-24 border-2 border-dashed rounded-md flex items-center justify-center">
-                    <p className="text-muted-foreground text-sm">No hay imágenes en la galería</p>
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    {(block.content.images as GalleryImage[] || []).map((image: GalleryImage, idx: number) => (
-                      <div key={idx} className="border rounded-md p-3 space-y-2 relative">
-                        <Button 
-                          variant="ghost" 
-                          size="icon"
-                          className="absolute right-2 top-2 h-6 w-6 text-destructive"
-                          onClick={() => {
-                            const images = [...(block.content.images as GalleryImage[] || [])];
-                            images.splice(idx, 1);
-                            handleContentChange({ images });
-                          }}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                        
-                        <div className="flex items-center space-x-2">
-                          <Input
-                            value={image.src || ''}
-                            onChange={(e) => {
-                              const images = [...(block.content.images as GalleryImage[] || [])];
-                              images[idx] = { ...images[idx], src: e.target.value };
-                              handleContentChange({ images });
-                            }}
-                            placeholder="URL de la imagen"
-                            className="flex-1"
-                          />
-                          <DialogMediaSelector
-                            title="Seleccionar imagen para galería"
-                            description="Elige una imagen de la biblioteca de medios"
-                            defaultTab="image"
-                            allowedTypes={['image']}
-                            trigger={
-                              <Button variant="outline" size="sm">Seleccionar</Button>
-                            }
-                            onSelect={(media) => {
-                              const images = [...(block.content.images as GalleryImage[] || [])];
-                              images[idx] = { 
-                                ...images[idx], 
-                                src: media.url,
-                                alt: media.title || images[idx].alt || '',
-                              };
-                              handleContentChange({ images });
-                            }}
-                          />
-                        </div>
-                        
-                        <Input
-                          value={image.alt || ''}
-                          onChange={(e) => {
-                            const images = [...(block.content.images as GalleryImage[] || [])];
-                            images[idx] = { ...images[idx], alt: e.target.value };
-                            handleContentChange({ images });
-                          }}
-                          placeholder="Texto alternativo"
-                        />
-                        
-                        <Input
-                          value={image.caption || ''}
-                          onChange={(e) => {
-                            const images = [...(block.content.images as GalleryImage[] || [])];
-                            images[idx] = { ...images[idx], caption: e.target.value };
-                            handleContentChange({ images });
-                          }}
-                          placeholder="Título de la imagen"
-                        />
-                        
-                        {image.src && (
-                          <div className="mt-2">
-                            <img 
-                              src={image.src} 
-                              alt={image.alt || ''} 
-                              className="h-20 object-cover rounded-md" 
-                            />
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                )}
-                
-                <div className="mt-4">
-                  <Select
-                    value={block.content.layout || 'grid'}
-                    onValueChange={(value) => handleContentChange({ layout: value })}
-                  >
-                    <SelectTrigger className="w-[180px]">
-                      <SelectValue placeholder="Estilo de galería" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="grid">Cuadrícula</SelectItem>
-                      <SelectItem value="masonry">Mosaico</SelectItem>
-                      <SelectItem value="carousel">Carrusel</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </>
-            ) : (
-              <div>
-                {(block.content.images as GalleryImage[] || []).length > 0 ? (
-                  <div className={`grid ${
-                    block.content.layout === 'masonry' 
-                      ? 'grid-cols-2 md:grid-cols-3 gap-4' 
-                      : 'grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4'
-                  }`}>
-                    {(block.content.images as GalleryImage[] || []).map((image: GalleryImage, idx: number) => (
-                      <figure key={idx} className="overflow-hidden rounded-md">
-                        <img
-                          src={image.src}
-                          alt={image.alt || ''}
-                          className="w-full h-auto object-cover"
-                        />
-                        {image.caption && (
-                          <figcaption className="text-sm text-muted-foreground mt-2">
-                            {image.caption}
-                          </figcaption>
-                        )}
-                      </figure>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="h-40 bg-muted/30 flex items-center justify-center rounded-md">
-                    <p className="text-muted-foreground">Galería sin imágenes</p>
-                  </div>
-                )}
               </div>
-            )}
+            }>
+              <div className="dynamic-import-wrapper">
+                {(() => {
+                  const GalleryBlock = React.lazy(() => import('./blocks/gallery-block'));
+                  return (
+                    <GalleryBlock 
+                      block={block} 
+                      onChange={handleBlockChange} 
+                      editable={!readOnly} 
+                    />
+                  );
+                })()}
+              </div>
+            </React.Suspense>
           </div>
         );
 
