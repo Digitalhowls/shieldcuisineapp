@@ -62,6 +62,10 @@ const notificationTypeConfig = {
     color: "bg-orange-100 text-orange-800 hover:bg-orange-200", 
     label: "Compras" 
   },
+  cms: { 
+    color: "bg-indigo-100 text-indigo-800 hover:bg-indigo-200", 
+    label: "CMS y Web" 
+  },
   system: { 
     color: "bg-gray-100 text-gray-800 hover:bg-gray-200", 
     label: "Sistema" 
