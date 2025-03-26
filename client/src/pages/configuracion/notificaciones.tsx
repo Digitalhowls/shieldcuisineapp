@@ -42,6 +42,7 @@ export default function NotificacionesPage() {
     systemNotifications: false,
     securityNotifications: false,
     purchasingNotifications: false,
+    cmsNotifications: false,
     // Frecuencia
     emailFrequency: "daily"
   });
@@ -58,6 +59,7 @@ export default function NotificacionesPage() {
         systemNotifications: preferences.systemNotifications,
         securityNotifications: preferences.securityNotifications,
         purchasingNotifications: preferences.purchasingNotifications || false,
+        cmsNotifications: preferences.cmsNotifications || false,
         emailFrequency: preferences.emailFrequency
       });
     }
@@ -283,6 +285,22 @@ export default function NotificacionesPage() {
                 id="purchasing-notifications"
                 checked={formState.purchasingNotifications}
                 onCheckedChange={handleToggle('purchasingNotifications')}
+              />
+            </div>
+            
+            <Separator />
+            
+            <div className="flex items-center justify-between">
+              <div className="space-y-0.5">
+                <Label htmlFor="cms-notifications">CMS y Web</Label>
+                <p className="text-sm text-muted-foreground">
+                  Actualizaciones de páginas web y publicaciones
+                </p>
+              </div>
+              <Switch
+                id="cms-notifications"
+                checked={formState.cmsNotifications}
+                onCheckedChange={handleToggle('cmsNotifications')}
               />
             </div>
           </CardContent>

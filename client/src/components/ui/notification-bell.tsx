@@ -44,6 +44,7 @@ const notificationTypeConfig = {
   learning: { color: "bg-purple-500", icon: GraduationCap },
   banking: { color: "bg-yellow-500", icon: CreditCard },
   purchasing: { color: "bg-orange-500", icon: ShoppingCart },
+  cms: { color: "bg-indigo-500", icon: Globe },
   system: { color: "bg-gray-500", icon: ServerCog },
 };
 
