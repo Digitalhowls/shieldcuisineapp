@@ -753,6 +753,189 @@ export class DatabaseStorage implements IStorage {
       .where(eq(cmsPageCategories.pageId, pageId))
       .where(eq(cmsPageCategories.categoryId, categoryId));
   }
+  
+  // CMS Tags
+  async getCmsTags(companyId: number): Promise<CmsTag[]> {
+    return await db.select().from(cmsTags).where(eq(cmsTags.companyId, companyId));
+  }
+  
+  async getCmsTag(id: number): Promise<CmsTag | undefined> {
+    const [tag] = await db.select().from(cmsTags).where(eq(cmsTags.id, id));
+    return tag;
+  }
+  
+  async createCmsTag(tag: InsertCmsTag): Promise<CmsTag> {
+    const [newTag] = await db.insert(cmsTags).values(tag).returning();
+    return newTag;
+  }
+  
+  async updateCmsTag(id: number, data: Partial<InsertCmsTag>): Promise<CmsTag | undefined> {
+    const [updatedTag] = await db
+      .update(cmsTags)
+      .set(data)
+      .where(eq(cmsTags.id, id))
+      .returning();
+    return updatedTag;
+  }
+  
+  async deleteCmsTag(id: number): Promise<void> {
+    await db.delete(cmsTags).where(eq(cmsTags.id, id));
+  }
+  
+  // CMS Page Tags (Junction table)
+  async getCmsPageTags(pageId: number): Promise<CmsPageTag[]> {
+    return await db.select().from(cmsPageTags).where(eq(cmsPageTags.pageId, pageId));
+  }
+  
+  async addCmsPageTag(pageTag: InsertCmsPageTag): Promise<CmsPageTag> {
+    const [newPageTag] = await db.insert(cmsPageTags).values(pageTag).returning();
+    return newPageTag;
+  }
+  
+  async removeCmsPageTag(pageId: number, tagId: number): Promise<void> {
+    await db
+      .delete(cmsPageTags)
+      .where(eq(cmsPageTags.pageId, pageId))
+      .where(eq(cmsPageTags.tagId, tagId));
+  }
+  
+  // CMS Media
+  async getCmsMedia(companyId: number): Promise<CmsMedia[]> {
+    return await db.select().from(cmsMedia).where(eq(cmsMedia.companyId, companyId));
+  }
+  
+  async getCmsMediaItem(id: number): Promise<CmsMedia | undefined> {
+    const [media] = await db.select().from(cmsMedia).where(eq(cmsMedia.id, id));
+    return media;
+  }
+  
+  async createCmsMedia(media: InsertCmsMedia): Promise<CmsMedia> {
+    const [newMedia] = await db.insert(cmsMedia).values(media).returning();
+    return newMedia;
+  }
+  
+  async updateCmsMedia(id: number, data: Partial<InsertCmsMedia>): Promise<CmsMedia | undefined> {
+    const [updatedMedia] = await db
+      .update(cmsMedia)
+      .set(data)
+      .where(eq(cmsMedia.id, id))
+      .returning();
+    return updatedMedia;
+  }
+  
+  async deleteCmsMedia(id: number): Promise<void> {
+    await db.delete(cmsMedia).where(eq(cmsMedia.id, id));
+  }
+  
+  // CMS Branding
+  async getCmsBranding(companyId: number): Promise<CmsBranding | undefined> {
+    const [branding] = await db.select().from(cmsBranding).where(eq(cmsBranding.companyId, companyId));
+    return branding;
+  }
+  
+  async createCmsBranding(branding: InsertCmsBranding): Promise<CmsBranding> {
+    const [newBranding] = await db.insert(cmsBranding).values(branding).returning();
+    return newBranding;
+  }
+  
+  async updateCmsBranding(id: number, data: Partial<InsertCmsBranding>): Promise<CmsBranding | undefined> {
+    const [updatedBranding] = await db
+      .update(cmsBranding)
+      .set(data)
+      .where(eq(cmsBranding.id, id))
+      .returning();
+    return updatedBranding;
+  }
+  
+  // CMS Menus
+  async getCmsMenus(companyId: number): Promise<CmsMenu[]> {
+    return await db.select().from(cmsMenus).where(eq(cmsMenus.companyId, companyId));
+  }
+  
+  async getCmsMenu(id: number): Promise<CmsMenu | undefined> {
+    const [menu] = await db.select().from(cmsMenus).where(eq(cmsMenus.id, id));
+    return menu;
+  }
+  
+  async getCmsMenuByLocation(companyId: number, location: string): Promise<CmsMenu | undefined> {
+    const [menu] = await db
+      .select()
+      .from(cmsMenus)
+      .where(eq(cmsMenus.companyId, companyId))
+      .where(eq(cmsMenus.location, location));
+    return menu;
+  }
+  
+  async createCmsMenu(menu: InsertCmsMenu): Promise<CmsMenu> {
+    const [newMenu] = await db.insert(cmsMenus).values(menu).returning();
+    return newMenu;
+  }
+  
+  async updateCmsMenu(id: number, data: Partial<InsertCmsMenu>): Promise<CmsMenu | undefined> {
+    const [updatedMenu] = await db
+      .update(cmsMenus)
+      .set(data)
+      .where(eq(cmsMenus.id, id))
+      .returning();
+    return updatedMenu;
+  }
+  
+  async deleteCmsMenu(id: number): Promise<void> {
+    await db.delete(cmsMenus).where(eq(cmsMenus.id, id));
+  }
+  
+  // CMS Menu Items
+  async getCmsMenuItems(menuId: number): Promise<CmsMenuItem[]> {
+    return await db.select().from(cmsMenuItems).where(eq(cmsMenuItems.menuId, menuId));
+  }
+  
+  async getCmsMenuItem(id: number): Promise<CmsMenuItem | undefined> {
+    const [menuItem] = await db.select().from(cmsMenuItems).where(eq(cmsMenuItems.id, id));
+    return menuItem;
+  }
+  
+  async createCmsMenuItem(menuItem: InsertCmsMenuItem): Promise<CmsMenuItem> {
+    const [newMenuItem] = await db.insert(cmsMenuItems).values(menuItem).returning();
+    return newMenuItem;
+  }
+  
+  async updateCmsMenuItem(id: number, data: Partial<InsertCmsMenuItem>): Promise<CmsMenuItem | undefined> {
+    const [updatedMenuItem] = await db
+      .update(cmsMenuItems)
+      .set(data)
+      .where(eq(cmsMenuItems.id, id))
+      .returning();
+    return updatedMenuItem;
+  }
+  
+  async deleteCmsMenuItem(id: number): Promise<void> {
+    await db.delete(cmsMenuItems).where(eq(cmsMenuItems.id, id));
+  }
+  
+  // CMS Form Submissions
+  async getCmsFormSubmissions(companyId: number, pageId?: number): Promise<CmsFormSubmission[]> {
+    let query = db.select().from(cmsFormSubmissions).where(eq(cmsFormSubmissions.companyId, companyId));
+    
+    if (pageId) {
+      query = query.where(eq(cmsFormSubmissions.pageId, pageId));
+    }
+    
+    return await query;
+  }
+  
+  async getCmsFormSubmission(id: number): Promise<CmsFormSubmission | undefined> {
+    const [submission] = await db.select().from(cmsFormSubmissions).where(eq(cmsFormSubmissions.id, id));
+    return submission;
+  }
+  
+  async createCmsFormSubmission(submission: InsertCmsFormSubmission): Promise<CmsFormSubmission> {
+    const [newSubmission] = await db.insert(cmsFormSubmissions).values(submission).returning();
+    return newSubmission;
+  }
+  
+  async deleteCmsFormSubmission(id: number): Promise<void> {
+    await db.delete(cmsFormSubmissions).where(eq(cmsFormSubmissions.id, id));
+  }
 }
 
 export const storage = new DatabaseStorage();
