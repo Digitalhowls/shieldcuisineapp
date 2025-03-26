@@ -2,6 +2,9 @@ import React, { useState } from 'react';
 import { Block } from './index';
 import { getYouTubeID, getVimeoID } from './utils';
 import DialogMediaSelector from '../media/DialogMediaSelector';
+import Animation from '../animations/animation';
+import AnimationBlockOptions from '../animations/animation-block-options';
+import { blockToAnimationConfig, hasAnimation } from '../animations/block-animation-utils';
 import {
   Card,
   CardContent,
@@ -20,6 +23,7 @@ import {
   Trash2,
   GripVertical,
   Plus,
+  Wand2,
 } from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
@@ -111,6 +115,12 @@ const BlockContainer: React.FC<BlockContainerProps> = ({
     newContent: Partial<typeof block.content>
   ) => {
     updateBlock(block.id, { ...block.content, ...newContent });
+  };
+  
+  // Actualizar el bloque con nuevas propiedades de animación
+  const handleAnimationChange = (updatedBlock: Block) => {
+    // Aseguramos que updateBlock reciba el id y el bloque modificado
+    updateBlock(updatedBlock.id, updatedBlock);
   };
 
   const renderBlockContent = () => {
@@ -1754,10 +1764,33 @@ const BlockContainer: React.FC<BlockContainerProps> = ({
     }
   };
 
+  // Determinar si hay animación configurada
+  const hasConfiguredAnimation = hasAnimation(block);
+  
+  // Obtener la configuración de animación del bloque
+  const animationConfig = blockToAnimationConfig(block);
+  
   return (
     <div className="relative group">
       {!readOnly && (
         <div className="absolute right-2 top-2 z-10 flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
+          {/* Botón para configurar animaciones */}
+          <Button
+            variant="ghost"
+            size="icon"
+            className={`h-8 w-8 rounded-full backdrop-blur-sm ${hasConfiguredAnimation ? 'bg-primary/20 text-primary' : 'bg-background/80'}`}
+            title="Configurar animación"
+            onClick={() => {
+              // Mostrar el panel de opciones de animación
+              const animationPanel = document.getElementById(`animation-panel-${block.id}`);
+              if (animationPanel) {
+                animationPanel.classList.toggle('hidden');
+              }
+            }}
+          >
+            <Wand2 className="h-4 w-4" />
+          </Button>
+          
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button
@@ -1793,9 +1826,32 @@ const BlockContainer: React.FC<BlockContainerProps> = ({
         </div>
       )}
 
-      <Card className="overflow-hidden border border-muted-foreground/10 group-hover:border-muted-foreground/20 transition-all">
-        <CardContent className="p-4">{renderBlockContent()}</CardContent>
-      </Card>
+      {/* Panel de opciones de animación (oculto por defecto) */}
+      {!readOnly && (
+        <div id={`animation-panel-${block.id}`} className="mb-4 hidden">
+          <Card className="border border-primary/20 bg-primary/5">
+            <CardContent className="p-4">
+              <AnimationBlockOptions 
+                block={block} 
+                onChange={handleAnimationChange} 
+              />
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* Contenido del bloque envuelto en el componente Animation cuando está en modo de solo lectura */}
+      {readOnly && hasConfiguredAnimation ? (
+        <Animation config={animationConfig}>
+          <Card className="overflow-hidden border border-muted-foreground/10 group-hover:border-muted-foreground/20 transition-all">
+            <CardContent className="p-4">{renderBlockContent()}</CardContent>
+          </Card>
+        </Animation>
+      ) : (
+        <Card className="overflow-hidden border border-muted-foreground/10 group-hover:border-muted-foreground/20 transition-all">
+          <CardContent className="p-4">{renderBlockContent()}</CardContent>
+        </Card>
+      )}
     </div>
   );
 };
