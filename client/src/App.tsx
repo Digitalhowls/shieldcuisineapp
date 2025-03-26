@@ -23,6 +23,7 @@ import ComprasAnalisis from "./pages/compras/analisis";
 import CMSModule from "./pages/cms";
 import AnimationPlayground from "./pages/cms/animation-playground";
 import AnimatedBlocksDemo from "./pages/cms/animated-blocks-demo";
+import GalleryDemo from "./pages/cms/gallery-demo";
 
 // Páginas públicas
 import PublicIndex from "@/pages/public/index";

@@ -120,31 +120,25 @@ const BlockRenderer: React.FC<BlockRendererProps> = ({ blocks }) => {
   };
 
   const renderGallery = (block: Block) => {
-    const { images, columns = 3 } = block.content;
+    const { images, layout = 'grid', columns = 3 } = block.content;
     
     if (!images || images.length === 0) {
       return null;
     }
+
+    // Importamos dinámicamente para evitar problemas de renderizado en SSR
+    const { Gallery } = require('../gallery');
     
     return (
-      <div 
-        key={block.id} 
-        className={`grid gap-4 mb-6 grid-cols-1 sm:grid-cols-2 md:grid-cols-${Math.min(columns, 4)}`}
-      >
-        {images.map((image: any, index: number) => (
-          <figure key={index} className="overflow-hidden rounded-md">
-            <img 
-              src={image.src} 
-              alt={image.alt || `Imagen ${index + 1}`} 
-              className="w-full h-48 object-cover hover:scale-105 transition-transform duration-300" 
-            />
-            {image.caption && (
-              <figcaption className="text-sm text-muted-foreground mt-2 p-1">
-                {image.caption}
-              </figcaption>
-            )}
-          </figure>
-        ))}
+      <div key={block.id} className="mb-6">
+        <Gallery 
+          images={images}
+          viewType={layout as 'grid' | 'masonry' | 'carousel'}
+          columns={columns as 2 | 3 | 4}
+          showDots={true}
+          showArrows={true}
+          gap="medium"
+        />
       </div>
     );
   };

@@ -19,6 +19,8 @@ const GalleryCarousel: React.FC<GalleryCarouselProps> = ({
   autoplay = false,
   autoplayInterval = 5000,
 }) => {
+  // Variable shadow para evitar el error TypeScript
+  const intervalTime = autoplayInterval;
   const [emblaRef, emblaApi] = useEmblaCarousel({ loop: true });
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [scrollSnaps, setScrollSnaps] = useState<number[]>([]);
@@ -58,14 +60,14 @@ const GalleryCarousel: React.FC<GalleryCarouselProps> = ({
   useEffect(() => {
     if (!emblaApi || !autoplay) return;
 
-    const autoplayInterval = setInterval(() => {
+    const intervalId = setInterval(() => {
       emblaApi.scrollNext();
-    }, autoplayInterval);
+    }, intervalTime);
 
     return () => {
-      clearInterval(autoplayInterval);
+      clearInterval(intervalId);
     };
-  }, [emblaApi, autoplay, autoplayInterval]);
+  }, [emblaApi, autoplay, intervalTime]);
 
   if (!images.length) return null;
 
