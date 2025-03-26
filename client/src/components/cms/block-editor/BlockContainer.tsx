@@ -1258,6 +1258,138 @@ const BlockContainer: React.FC<BlockContainerProps> = ({
             )}
           </div>
         );
+        
+      case 'list':
+        return (
+          <div className="w-full">
+            {!readOnly ? (
+              <div className="space-y-4">
+                <div className="flex flex-col space-y-3">
+                  <div>
+                    <label className="text-sm font-medium mb-1 block">Tipo de lista</label>
+                    <Select
+                      value={block.content.type || 'unordered'}
+                      onValueChange={(value) => handleContentChange({ type: value })}
+                    >
+                      <SelectTrigger className="w-[180px]">
+                        <SelectValue placeholder="Seleccione el tipo" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="unordered">Sin orden (viñetas)</SelectItem>
+                        <SelectItem value="ordered">Numerada</SelectItem>
+                        <SelectItem value="check">Con casillas</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  <div>
+                    <label className="text-sm font-medium mb-1 block">Elementos de la lista</label>
+                    <div className="space-y-2">
+                      {(block.content.items || []).map((item: string, idx: number) => (
+                        <div key={idx} className="flex items-center space-x-2">
+                          <Input
+                            value={item}
+                            onChange={(e) => {
+                              const items = [...(block.content.items || [])];
+                              items[idx] = e.target.value;
+                              handleContentChange({ items });
+                            }}
+                            placeholder={`Elemento ${idx + 1}`}
+                            className="flex-1"
+                          />
+                          <Button 
+                            variant="ghost" 
+                            size="icon"
+                            className="h-8 w-8 text-destructive"
+                            onClick={() => {
+                              const items = [...(block.content.items || [])];
+                              items.splice(idx, 1);
+                              handleContentChange({ items });
+                            }}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      ))}
+                      
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        className="mt-2"
+                        onClick={() => {
+                          const items = [...(block.content.items || []), ''];
+                          handleContentChange({ items });
+                        }}
+                      >
+                        <Plus className="h-4 w-4 mr-2" />
+                        Añadir elemento
+                      </Button>
+                    </div>
+                  </div>
+                  
+                  <div className="mt-4">
+                    <p className="text-sm font-medium mb-2">Vista previa:</p>
+                    {block.content.type === 'unordered' ? (
+                      <ul className="list-disc pl-6 space-y-1">
+                        {(block.content.items || []).map((item: string, idx: number) => (
+                          <li key={idx}>{item || `Elemento ${idx + 1}`}</li>
+                        ))}
+                      </ul>
+                    ) : block.content.type === 'ordered' ? (
+                      <ol className="list-decimal pl-6 space-y-1">
+                        {(block.content.items || []).map((item: string, idx: number) => (
+                          <li key={idx}>{item || `Elemento ${idx + 1}`}</li>
+                        ))}
+                      </ol>
+                    ) : (
+                      <ul className="pl-6 space-y-1">
+                        {(block.content.items || []).map((item: string, idx: number) => (
+                          <li key={idx} className="flex items-center space-x-2">
+                            <span className="inline-flex items-center justify-center w-4 h-4 border border-muted-foreground/50 rounded-sm">
+                              <svg width="10" height="10" viewBox="0 0 10 10" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M2 5L4 7L8 3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                              </svg>
+                            </span>
+                            <span>{item || `Elemento ${idx + 1}`}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <>
+                {block.content.type === 'unordered' ? (
+                  <ul className="list-disc pl-6 space-y-1">
+                    {(block.content.items || []).map((item: string, idx: number) => (
+                      <li key={idx}>{item}</li>
+                    ))}
+                  </ul>
+                ) : block.content.type === 'ordered' ? (
+                  <ol className="list-decimal pl-6 space-y-1">
+                    {(block.content.items || []).map((item: string, idx: number) => (
+                      <li key={idx}>{item}</li>
+                    ))}
+                  </ol>
+                ) : (
+                  <ul className="pl-6 space-y-1">
+                    {(block.content.items || []).map((item: string, idx: number) => (
+                      <li key={idx} className="flex items-center space-x-2">
+                        <span className="inline-flex items-center justify-center w-4 h-4 border border-muted-foreground/50 rounded-sm">
+                          <svg width="10" height="10" viewBox="0 0 10 10" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M2 5L4 7L8 3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                          </svg>
+                        </span>
+                        <span>{item}</span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </>
+            )}
+          </div>
+        );
 
       default:
         return (
