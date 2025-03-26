@@ -28,6 +28,16 @@ import {
   userAnswers,
   notifications,
   notificationPreferences,
+  cmsPages,
+  cmsCategories,
+  cmsPageCategories,
+  cmsTags,
+  cmsPageTags,
+  cmsMedia,
+  cmsBranding,
+  cmsMenus,
+  cmsMenuItems,
+  cmsFormSubmissions,
   type User,
   type InsertUser,
   type Company,
@@ -61,7 +71,27 @@ import {
   type Notification,
   type InsertNotification,
   type NotificationPreferences,
-  type InsertNotificationPreferences
+  type InsertNotificationPreferences,
+  type CmsPage,
+  type InsertCmsPage,
+  type CmsCategory,
+  type InsertCmsCategory,
+  type CmsPageCategory,
+  type InsertCmsPageCategory,
+  type CmsTag,
+  type InsertCmsTag,
+  type CmsPageTag,
+  type InsertCmsPageTag,
+  type CmsMedia,
+  type InsertCmsMedia,
+  type CmsBranding,
+  type InsertCmsBranding,
+  type CmsMenu,
+  type InsertCmsMenu,
+  type CmsMenuItem,
+  type InsertCmsMenuItem,
+  type CmsFormSubmission,
+  type InsertCmsFormSubmission
 } from "@shared/schema";
 import session from "express-session";
 import createMemoryStore from "memorystore";
@@ -156,6 +186,72 @@ export interface IStorage {
   getUserNotificationPreferences(userId: number): Promise<NotificationPreferences | undefined>;
   createNotificationPreferences(preferences: InsertNotificationPreferences): Promise<NotificationPreferences>;
   updateNotificationPreferences(id: number, data: Partial<InsertNotificationPreferences>): Promise<NotificationPreferences | undefined>;
+  
+  // CMS Pages
+  getCmsPages(companyId: number): Promise<CmsPage[]>;
+  getCmsPage(id: number): Promise<CmsPage | undefined>;
+  getCmsPageBySlug(companyId: number, slug: string): Promise<CmsPage | undefined>;
+  createCmsPage(page: InsertCmsPage): Promise<CmsPage>;
+  updateCmsPage(id: number, data: Partial<InsertCmsPage>): Promise<CmsPage | undefined>;
+  deleteCmsPage(id: number): Promise<void>;
+  
+  // CMS Categories
+  getCmsCategories(companyId: number): Promise<CmsCategory[]>;
+  getCmsCategory(id: number): Promise<CmsCategory | undefined>;
+  getCmsCategoryBySlug(companyId: number, slug: string): Promise<CmsCategory | undefined>;
+  createCmsCategory(category: InsertCmsCategory): Promise<CmsCategory>;
+  updateCmsCategory(id: number, data: Partial<InsertCmsCategory>): Promise<CmsCategory | undefined>;
+  deleteCmsCategory(id: number): Promise<void>;
+  
+  // CMS Page Categories (Junction table)
+  getCmsPageCategories(pageId: number): Promise<CmsPageCategory[]>;
+  addCmsPageToCategory(pageCategory: InsertCmsPageCategory): Promise<CmsPageCategory>;
+  removeCmsPageFromCategory(pageId: number, categoryId: number): Promise<void>;
+  
+  // CMS Tags
+  getCmsTags(companyId: number): Promise<CmsTag[]>;
+  getCmsTag(id: number): Promise<CmsTag | undefined>;
+  createCmsTag(tag: InsertCmsTag): Promise<CmsTag>;
+  updateCmsTag(id: number, data: Partial<InsertCmsTag>): Promise<CmsTag | undefined>;
+  deleteCmsTag(id: number): Promise<void>;
+  
+  // CMS Page Tags (Junction table)
+  getCmsPageTags(pageId: number): Promise<CmsPageTag[]>;
+  addCmsPageTag(pageTag: InsertCmsPageTag): Promise<CmsPageTag>;
+  removeCmsPageTag(pageId: number, tagId: number): Promise<void>;
+  
+  // CMS Media
+  getCmsMedia(companyId: number): Promise<CmsMedia[]>;
+  getCmsMediaItem(id: number): Promise<CmsMedia | undefined>;
+  createCmsMedia(media: InsertCmsMedia): Promise<CmsMedia>;
+  updateCmsMedia(id: number, data: Partial<InsertCmsMedia>): Promise<CmsMedia | undefined>;
+  deleteCmsMedia(id: number): Promise<void>;
+  
+  // CMS Branding
+  getCmsBranding(companyId: number): Promise<CmsBranding | undefined>;
+  createCmsBranding(branding: InsertCmsBranding): Promise<CmsBranding>;
+  updateCmsBranding(id: number, data: Partial<InsertCmsBranding>): Promise<CmsBranding | undefined>;
+  
+  // CMS Menus
+  getCmsMenus(companyId: number): Promise<CmsMenu[]>;
+  getCmsMenu(id: number): Promise<CmsMenu | undefined>;
+  getCmsMenuByLocation(companyId: number, location: string): Promise<CmsMenu | undefined>;
+  createCmsMenu(menu: InsertCmsMenu): Promise<CmsMenu>;
+  updateCmsMenu(id: number, data: Partial<InsertCmsMenu>): Promise<CmsMenu | undefined>;
+  deleteCmsMenu(id: number): Promise<void>;
+  
+  // CMS Menu Items
+  getCmsMenuItems(menuId: number): Promise<CmsMenuItem[]>;
+  getCmsMenuItem(id: number): Promise<CmsMenuItem | undefined>;
+  createCmsMenuItem(menuItem: InsertCmsMenuItem): Promise<CmsMenuItem>;
+  updateCmsMenuItem(id: number, data: Partial<InsertCmsMenuItem>): Promise<CmsMenuItem | undefined>;
+  deleteCmsMenuItem(id: number): Promise<void>;
+  
+  // CMS Form Submissions
+  getCmsFormSubmissions(companyId: number, pageId?: number): Promise<CmsFormSubmission[]>;
+  getCmsFormSubmission(id: number): Promise<CmsFormSubmission | undefined>;
+  createCmsFormSubmission(submission: InsertCmsFormSubmission): Promise<CmsFormSubmission>;
+  deleteCmsFormSubmission(id: number): Promise<void>;
   
   // Session storage
   sessionStore: any;
@@ -565,6 +661,97 @@ export class DatabaseStorage implements IStorage {
       .where(eq(notificationPreferences.id, id))
       .returning();
     return updatedPreferences;
+  }
+  
+  // CMS Pages
+  async getCmsPages(companyId: number): Promise<CmsPage[]> {
+    return await db.select().from(cmsPages).where(eq(cmsPages.companyId, companyId));
+  }
+  
+  async getCmsPage(id: number): Promise<CmsPage | undefined> {
+    const [page] = await db.select().from(cmsPages).where(eq(cmsPages.id, id));
+    return page;
+  }
+  
+  async getCmsPageBySlug(companyId: number, slug: string): Promise<CmsPage | undefined> {
+    const [page] = await db
+      .select()
+      .from(cmsPages)
+      .where(eq(cmsPages.companyId, companyId))
+      .where(eq(cmsPages.slug, slug));
+    return page;
+  }
+  
+  async createCmsPage(page: InsertCmsPage): Promise<CmsPage> {
+    const [newPage] = await db.insert(cmsPages).values(page).returning();
+    return newPage;
+  }
+  
+  async updateCmsPage(id: number, data: Partial<InsertCmsPage>): Promise<CmsPage | undefined> {
+    const [updatedPage] = await db
+      .update(cmsPages)
+      .set(data)
+      .where(eq(cmsPages.id, id))
+      .returning();
+    return updatedPage;
+  }
+  
+  async deleteCmsPage(id: number): Promise<void> {
+    await db.delete(cmsPages).where(eq(cmsPages.id, id));
+  }
+  
+  // CMS Categories
+  async getCmsCategories(companyId: number): Promise<CmsCategory[]> {
+    return await db.select().from(cmsCategories).where(eq(cmsCategories.companyId, companyId));
+  }
+  
+  async getCmsCategory(id: number): Promise<CmsCategory | undefined> {
+    const [category] = await db.select().from(cmsCategories).where(eq(cmsCategories.id, id));
+    return category;
+  }
+  
+  async getCmsCategoryBySlug(companyId: number, slug: string): Promise<CmsCategory | undefined> {
+    const [category] = await db
+      .select()
+      .from(cmsCategories)
+      .where(eq(cmsCategories.companyId, companyId))
+      .where(eq(cmsCategories.slug, slug));
+    return category;
+  }
+  
+  async createCmsCategory(category: InsertCmsCategory): Promise<CmsCategory> {
+    const [newCategory] = await db.insert(cmsCategories).values(category).returning();
+    return newCategory;
+  }
+  
+  async updateCmsCategory(id: number, data: Partial<InsertCmsCategory>): Promise<CmsCategory | undefined> {
+    const [updatedCategory] = await db
+      .update(cmsCategories)
+      .set(data)
+      .where(eq(cmsCategories.id, id))
+      .returning();
+    return updatedCategory;
+  }
+  
+  async deleteCmsCategory(id: number): Promise<void> {
+    await db.delete(cmsCategories).where(eq(cmsCategories.id, id));
+  }
+  
+  // CMS Page Categories (Junction table)
+  async getCmsPageCategories(pageId: number): Promise<CmsPageCategory[]> {
+    return await db.select().from(cmsPageCategories).where(eq(cmsPageCategories.pageId, pageId));
+  }
+  
+  async addCmsPageToCategory(pageCategory: InsertCmsPageCategory): Promise<CmsPageCategory> {
+    const [newPageCategory] = await db.insert(cmsPageCategories).values(pageCategory).returning();
+    return newPageCategory;
+  }
+  
+  async removeCmsPageFromCategory(pageId: number, categoryId: number): Promise<void> {
+    await db
+      .delete(cmsPageCategories)
+      .where(eq(cmsPageCategories.pageId, pageId))
+      .where(eq(cmsPageCategories.categoryId, categoryId));
   }
 }
 

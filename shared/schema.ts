@@ -440,10 +440,135 @@ export const notificationPreferences = pgTable("notification_preferences", {
   systemNotifications: boolean("system_notifications").notNull().default(true),
   securityNotifications: boolean("security_notifications").notNull().default(true),
   purchasingNotifications: boolean("purchasing_notifications").notNull().default(true),
+  cmsNotifications: boolean("cms_notifications").notNull().default(true),
   emailNotifications: boolean("email_notifications").notNull().default(true),
   emailFrequency: text("email_frequency").notNull().default("daily"), // "immediate", "daily", "weekly"
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+// Tablas para el módulo CMS y Constructor Web
+export const cmsPages = pgTable("cms_pages", {
+  id: serial("id").primaryKey(),
+  title: text("title").notNull(),
+  slug: text("slug").notNull().unique(),
+  content: jsonb("content").notNull(), // Contenido en formato de bloques
+  metaTitle: text("meta_title"),
+  metaDescription: text("meta_description"),
+  status: contentStatusEnum("status").notNull().default('draft'),
+  visibility: contentVisibilityEnum("visibility").notNull().default('public'),
+  type: contentTypeEnum("type").notNull(),
+  authorId: integer("author_id").references(() => users.id),
+  companyId: integer("company_id").notNull().references(() => companies.id),
+  thumbnail: text("thumbnail"),
+  publishedAt: timestamp("published_at"),
+  scheduledFor: timestamp("scheduled_for"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const cmsCategories = pgTable("cms_categories", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  slug: text("slug").notNull(),
+  description: text("description"),
+  companyId: integer("company_id").notNull().references(() => companies.id),
+  parentId: integer("parent_id").references(() => cmsCategories.id),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const cmsPageCategories = pgTable("cms_page_categories", {
+  id: serial("id").primaryKey(),
+  pageId: integer("page_id").notNull().references(() => cmsPages.id, { onDelete: 'cascade' }),
+  categoryId: integer("category_id").notNull().references(() => cmsCategories.id, { onDelete: 'cascade' }),
+});
+
+export const cmsTags = pgTable("cms_tags", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  slug: text("slug").notNull(),
+  companyId: integer("company_id").notNull().references(() => companies.id),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const cmsPageTags = pgTable("cms_page_tags", {
+  id: serial("id").primaryKey(),
+  pageId: integer("page_id").notNull().references(() => cmsPages.id, { onDelete: 'cascade' }),
+  tagId: integer("tag_id").notNull().references(() => cmsTags.id, { onDelete: 'cascade' }),
+});
+
+export const cmsMedia = pgTable("cms_media", {
+  id: serial("id").primaryKey(),
+  filename: text("filename").notNull(),
+  originalFilename: text("original_filename").notNull(),
+  mimeType: text("mime_type").notNull(),
+  size: integer("size").notNull(), // tamaño en bytes
+  path: text("path").notNull(),
+  url: text("url").notNull(),
+  thumbnailUrl: text("thumbnail_url"),
+  width: integer("width"),
+  height: integer("height"),
+  alt: text("alt"),
+  title: text("title"),
+  companyId: integer("company_id").notNull().references(() => companies.id),
+  uploadedBy: integer("uploaded_by").notNull().references(() => users.id),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const cmsBranding = pgTable("cms_branding", {
+  id: serial("id").primaryKey(),
+  companyId: integer("company_id").notNull().references(() => companies.id).unique(),
+  logo: text("logo"),
+  favicon: text("favicon"),
+  primaryColor: text("primary_color").default("#1e40af"),
+  secondaryColor: text("secondary_color").default("#60a5fa"),
+  accentColor: text("accent_color").default("#f59e0b"),
+  backgroundColor: text("background_color").default("#ffffff"),
+  textColor: text("text_color").default("#111827"),
+  headingFont: text("heading_font").default("Inter"),
+  bodyFont: text("body_font").default("Inter"),
+  customDomain: text("custom_domain"),
+  subdomain: text("subdomain"),
+  socialImage: text("social_image"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const cmsMenus = pgTable("cms_menus", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  location: text("location").notNull(), // "header", "footer", "sidebar", etc.
+  companyId: integer("company_id").notNull().references(() => companies.id),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const cmsMenuItems = pgTable("cms_menu_items", {
+  id: serial("id").primaryKey(),
+  menuId: integer("menu_id").notNull().references(() => cmsMenus.id, { onDelete: 'cascade' }),
+  parentId: integer("parent_id").references(() => cmsMenuItems.id),
+  label: text("label").notNull(),
+  url: text("url"),
+  pageId: integer("page_id").references(() => cmsPages.id),
+  order: integer("order").notNull().default(0),
+  target: text("target").default("_self"), // "_self", "_blank"
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const cmsFormSubmissions = pgTable("cms_form_submissions", {
+  id: serial("id").primaryKey(),
+  formId: text("form_id").notNull(), // Identificador del formulario
+  pageId: integer("page_id").references(() => cmsPages.id),
+  data: jsonb("data").notNull(),
+  ipAddress: text("ip_address"),
+  userAgent: text("user_agent"),
+  companyId: integer("company_id").notNull().references(() => companies.id),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  processed: boolean("processed").default(false),
+  processedAt: timestamp("processed_at"),
 });
 
 // Relations
@@ -545,6 +670,118 @@ export const purchaseOrderRelations = relations(purchaseOrders, ({ one, many }) 
   goodsReceipts: many(goodsReceipts),
 }));
 
+// Relations for CMS module
+export const cmsPagesRelations = relations(cmsPages, ({ one, many }) => ({
+  company: one(companies, {
+    fields: [cmsPages.companyId],
+    references: [companies.id],
+  }),
+  author: one(users, {
+    fields: [cmsPages.authorId],
+    references: [users.id],
+  }),
+  categories: many(cmsPageCategories),
+  tags: many(cmsPageTags),
+  menuItems: many(cmsMenuItems),
+  formSubmissions: many(cmsFormSubmissions),
+}));
+
+export const cmsCategoriesRelations = relations(cmsCategories, ({ one, many }) => ({
+  company: one(companies, {
+    fields: [cmsCategories.companyId],
+    references: [companies.id],
+  }),
+  parent: one(cmsCategories, {
+    fields: [cmsCategories.parentId],
+    references: [cmsCategories.id],
+  }),
+  children: many(cmsCategories, { relationName: "parent" }),
+  pages: many(cmsPageCategories),
+}));
+
+export const cmsPageCategoriesRelations = relations(cmsPageCategories, ({ one }) => ({
+  page: one(cmsPages, {
+    fields: [cmsPageCategories.pageId],
+    references: [cmsPages.id],
+  }),
+  category: one(cmsCategories, {
+    fields: [cmsPageCategories.categoryId],
+    references: [cmsCategories.id],
+  }),
+}));
+
+export const cmsTagsRelations = relations(cmsTags, ({ one, many }) => ({
+  company: one(companies, {
+    fields: [cmsTags.companyId],
+    references: [companies.id],
+  }),
+  pages: many(cmsPageTags),
+}));
+
+export const cmsPageTagsRelations = relations(cmsPageTags, ({ one }) => ({
+  page: one(cmsPages, {
+    fields: [cmsPageTags.pageId],
+    references: [cmsPages.id],
+  }),
+  tag: one(cmsTags, {
+    fields: [cmsPageTags.tagId],
+    references: [cmsTags.id],
+  }),
+}));
+
+export const cmsMediaRelations = relations(cmsMedia, ({ one }) => ({
+  company: one(companies, {
+    fields: [cmsMedia.companyId],
+    references: [companies.id],
+  }),
+  uploader: one(users, {
+    fields: [cmsMedia.uploadedBy],
+    references: [users.id],
+  }),
+}));
+
+export const cmsBrandingRelations = relations(cmsBranding, ({ one }) => ({
+  company: one(companies, {
+    fields: [cmsBranding.companyId],
+    references: [companies.id],
+  }),
+}));
+
+export const cmsMenusRelations = relations(cmsMenus, ({ one, many }) => ({
+  company: one(companies, {
+    fields: [cmsMenus.companyId],
+    references: [companies.id],
+  }),
+  items: many(cmsMenuItems),
+}));
+
+export const cmsMenuItemsRelations = relations(cmsMenuItems, ({ one, many }) => ({
+  menu: one(cmsMenus, {
+    fields: [cmsMenuItems.menuId],
+    references: [cmsMenus.id],
+  }),
+  parent: one(cmsMenuItems, {
+    fields: [cmsMenuItems.parentId],
+    references: [cmsMenuItems.id],
+  }),
+  children: many(cmsMenuItems, { relationName: "parent" }),
+  page: one(cmsPages, {
+    fields: [cmsMenuItems.pageId],
+    references: [cmsPages.id],
+  }),
+}));
+
+export const cmsFormSubmissionsRelations = relations(cmsFormSubmissions, ({ one }) => ({
+  company: one(companies, {
+    fields: [cmsFormSubmissions.companyId],
+    references: [companies.id],
+  }),
+  page: one(cmsPages, {
+    fields: [cmsFormSubmissions.pageId],
+    references: [cmsPages.id],
+  }),
+}));
+
 export const purchaseOrderItemRelations = relations(purchaseOrderItems, ({ one, many }) => ({
   purchaseOrder: one(purchaseOrders, {
     fields: [purchaseOrderItems.purchaseOrderId],
@@ -623,6 +860,18 @@ export const insertBankCategoryRuleSchema = createInsertSchema(bankCategoriesRul
 export const insertNotificationSchema = createInsertSchema(notifications).omit({ id: true, createdAt: true });
 export const insertNotificationPreferencesSchema = createInsertSchema(notificationPreferences).omit({ id: true, createdAt: true, updatedAt: true });
 
+// Esquemas para el módulo CMS
+export const insertCmsPageSchema = createInsertSchema(cmsPages).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertCmsCategorySchema = createInsertSchema(cmsCategories).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertCmsPageCategorySchema = createInsertSchema(cmsPageCategories).omit({ id: true });
+export const insertCmsTagSchema = createInsertSchema(cmsTags).omit({ id: true, createdAt: true });
+export const insertCmsPageTagSchema = createInsertSchema(cmsPageTags).omit({ id: true });
+export const insertCmsMediaSchema = createInsertSchema(cmsMedia).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertCmsBrandingSchema = createInsertSchema(cmsBranding).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertCmsMenuSchema = createInsertSchema(cmsMenus).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertCmsMenuItemSchema = createInsertSchema(cmsMenuItems).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertCmsFormSubmissionSchema = createInsertSchema(cmsFormSubmissions).omit({ id: true, createdAt: true });
+
 // Type exports
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
@@ -684,6 +933,28 @@ export type InsertNotification = z.infer<typeof insertNotificationSchema>;
 export type Notification = typeof notifications.$inferSelect;
 export type InsertNotificationPreferences = z.infer<typeof insertNotificationPreferencesSchema>;
 export type NotificationPreferences = typeof notificationPreferences.$inferSelect;
+
+// Tipos para CMS
+export type InsertCmsPage = z.infer<typeof insertCmsPageSchema>;
+export type CmsPage = typeof cmsPages.$inferSelect;
+export type InsertCmsCategory = z.infer<typeof insertCmsCategorySchema>;
+export type CmsCategory = typeof cmsCategories.$inferSelect;
+export type InsertCmsPageCategory = z.infer<typeof insertCmsPageCategorySchema>;
+export type CmsPageCategory = typeof cmsPageCategories.$inferSelect;
+export type InsertCmsTag = z.infer<typeof insertCmsTagSchema>;
+export type CmsTag = typeof cmsTags.$inferSelect;
+export type InsertCmsPageTag = z.infer<typeof insertCmsPageTagSchema>;
+export type CmsPageTag = typeof cmsPageTags.$inferSelect;
+export type InsertCmsMedia = z.infer<typeof insertCmsMediaSchema>;
+export type CmsMedia = typeof cmsMedia.$inferSelect;
+export type InsertCmsBranding = z.infer<typeof insertCmsBrandingSchema>;
+export type CmsBranding = typeof cmsBranding.$inferSelect;
+export type InsertCmsMenu = z.infer<typeof insertCmsMenuSchema>;
+export type CmsMenu = typeof cmsMenus.$inferSelect;
+export type InsertCmsMenuItem = z.infer<typeof insertCmsMenuItemSchema>;
+export type CmsMenuItem = typeof cmsMenuItems.$inferSelect;
+export type InsertCmsFormSubmission = z.infer<typeof insertCmsFormSubmissionSchema>;
+export type CmsFormSubmission = typeof cmsFormSubmissions.$inferSelect;
 
 // E-Learning Platform Tables
 export const courseTypes = pgEnum('course_type', ['food_safety', 'haccp', 'allergens', 'hygiene', 'management', 'customer_service']);
