@@ -253,6 +253,26 @@ export interface IStorage {
   createCmsFormSubmission(submission: InsertCmsFormSubmission): Promise<CmsFormSubmission>;
   deleteCmsFormSubmission(id: number): Promise<void>;
   
+  // Purchasing Module
+  getPurchaseOrders(companyId: number): Promise<any[]>;
+  getPurchaseOrder(id: number): Promise<any | undefined>;
+  createPurchaseOrder(order: any): Promise<any>;
+  updatePurchaseOrder(id: number, data: any): Promise<any | undefined>;
+  getPurchaseOrderItems(orderId: number): Promise<any[]>;
+  getPurchaseOrderItem(id: number): Promise<any | undefined>;
+  createPurchaseOrderItem(item: any): Promise<any>;
+  getGoodsReceipts(purchaseOrderId: number): Promise<any[]>;
+  getGoodsReceipt(id: number): Promise<any | undefined>;
+  createGoodsReceipt(receipt: any): Promise<any>;
+  getGoodsReceiptItems(receiptId: number): Promise<any[]>;
+  createGoodsReceiptItem(item: any): Promise<any>;
+  getSupplier(id: number): Promise<any | undefined>;
+  getCompanyAdmins(companyId: number): Promise<any[]>;
+  getLocationManagers(locationId: number): Promise<any[]>;
+  getInventoryItemByProductAndWarehouse(productId: number, warehouseId: number): Promise<any | undefined>;
+  updateInventoryItem(id: number, data: any): Promise<any | undefined>;
+  createInventoryItem(item: any): Promise<any>;
+  
   // Session storage
   sessionStore: any;
 }
