@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -15,9 +15,19 @@ import {
   Thermometer,
   Users,
   ArrowUpRight,
-  Calendar
+  Calendar,
+  BrainCircuit,
+  Lightbulb
 } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
+import { AnalysisCard } from "@/components/ai/analysis-card";
+import { 
+  analyzeAPPCCControl, 
+  type APPCCControlData, 
+  type APPCCAnalysisResult,
+  analyzeInventoryTrends,
+  type InventoryAnalysisData
+} from "@/lib/openai-service";
 
 export default function ClientDashboard() {
   const { user } = useAuth();
