@@ -1,221 +1,216 @@
-/**
- * Tipos para el módulo CMS/Constructor Web
- */
+// Tipos para el CMS y el editor de páginas
 
-// Tipos de página
-export type PageStatus = 'draft' | 'published' | 'archived';
-export type PageVisibility = 'public' | 'private' | 'internal';
-export type PageType = 'page' | 'blog_post' | 'course_page' | 'landing_page';
-
-// Datos de la página
-export interface PageData {
-  id?: number;
-  title: string;
-  slug: string;
-  content: string;
-  status: PageStatus;
-  visibility: PageVisibility;
-  type: PageType;
-  description?: string;
-  metaTitle?: string;
-  metaDescription?: string;
-  metaKeywords?: string;
-  thumbnailUrl?: string;
-  publishedAt?: string;
-  companyId: number;
-  author?: string;
-  featured?: boolean;
-  categoryIds?: number[];
-  tagIds?: number[];
-}
-
-// Tipos base de bloques
-export type BlockType = 
-  | 'text' 
-  | 'heading' 
-  | 'image' 
-  | 'html' 
-  | 'list'
-  | 'quote'
-  | 'divider'
-  | 'callout'
-  | 'ai';
-
-export type BlockAlignment = 'left' | 'center' | 'right';
-export type HeadingLevel = '1' | '2' | '3' | '4' | '5' | '6';
-export type ListType = 'ordered' | 'unordered';
-export type CalloutStyle = 'info' | 'warning' | 'success' | 'error' | 'default';
-
-// Interfaz base para todos los bloques
-export interface BaseBlock {
+// Tipo para un bloque de contenido genérico
+export interface Block {
   id: string;
-  type: BlockType;
+  type: string;
+  [key: string]: any; // Para permitir propiedades específicas de cada tipo de bloque
 }
 
-// Bloque de texto
-export interface TextBlockData extends BaseBlock {
+// Tipos para bloques específicos
+export interface TextBlockData extends Block {
   type: 'text';
   text: string;
-  alignment?: BlockAlignment;
 }
 
-// Bloque de encabezado
-export interface HeadingBlockData extends BaseBlock {
+export interface HeadingBlockData extends Block {
   type: 'heading';
   text: string;
-  level: HeadingLevel;
-  alignment?: BlockAlignment;
+  level: string; // 'h1', 'h2', 'h3', 'h4', 'h5', 'h6'
+  alignment?: 'left' | 'center' | 'right';
 }
 
-// Bloque de imagen
-export interface ImageBlockData extends BaseBlock {
+export interface ImageBlockData extends Block {
   type: 'image';
   src: string;
   alt: string;
   caption?: string;
-  alignment?: BlockAlignment;
+  alignment?: 'left' | 'center' | 'right';
 }
 
-// Bloque HTML
-export interface HTMLBlockData extends BaseBlock {
+export interface HtmlBlockData extends Block {
   type: 'html';
   content: string;
 }
 
-// Bloque de lista
-export interface ListBlockData extends BaseBlock {
-  type: 'list';
-  items: string[];
-  listType: ListType;
+export interface AiBlockData extends Block {
+  type: 'ai';
+  content: string;
 }
 
-// Bloque de cita
-export interface QuoteBlockData extends BaseBlock {
+export interface ListBlockData extends Block {
+  type: 'list';
+  items: string[];
+  listType: 'ordered' | 'unordered';
+}
+
+export interface QuoteBlockData extends Block {
   type: 'quote';
   text: string;
   citation?: string;
 }
 
-// Bloque divisor
-export interface DividerBlockData extends BaseBlock {
+export interface DividerBlockData extends Block {
   type: 'divider';
 }
 
-// Bloque de callout o alerta
-export interface CalloutBlockData extends BaseBlock {
+export interface CalloutBlockData extends Block {
   type: 'callout';
   title?: string;
   content: string;
-  style: CalloutStyle;
+  style?: 'info' | 'warning' | 'success' | 'error' | 'default';
 }
 
-// Bloque generado por IA
-export interface AiBlockData extends BaseBlock {
-  type: 'ai';
+// Tipo para los datos de una página
+export interface PageData {
+  id?: number;
+  title: string;
+  slug?: string;
+  description?: string;
+  content?: string;
+  blocks?: Block[];
+  companyId?: number;
+  categoryId?: number;
+  authorId?: number;
+  status: 'draft' | 'scheduled' | 'published' | 'archived';
+  visibility: 'public' | 'private' | 'internal';
+  type: 'page' | 'blog_post' | 'course_page' | 'landing_page';
+  featuredImage?: string;
+  publishDate?: string;
+  metaTitle?: string;
+  metaDescription?: string;
+  metaKeywords?: string;
+  tags?: string[];
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+// Tipo para los metadatos de la página
+export interface PageMetadata {
+  title: string;
+  description?: string;
+  keywords?: string[];
+  author?: string;
+  image?: string;
+}
+
+// Tipos para la previsualización
+export interface PreviewContextProps {
+  pageData: PageData;
+  blocks: Block[];
+}
+
+export interface ThemeSettings {
+  primaryColor: string;
+  secondaryColor?: string;
+  backgroundColor?: string;
+  textColor?: string;
+  fontFamily?: string;
+  headerStyle?: string;
+  footerStyle?: string;
+}
+
+// Tipos para el asistente de IA
+export interface AIAssistantMessage {
+  id: string;
+  role: 'user' | 'assistant' | 'system';
   content: string;
+  timestamp: number;
 }
 
-// Tipo unión para todos los tipos de bloques
-export type Block = 
-  | TextBlockData
-  | HeadingBlockData
-  | ImageBlockData
-  | HTMLBlockData
-  | ListBlockData
-  | QuoteBlockData
-  | DividerBlockData
-  | CalloutBlockData
-  | AiBlockData;
+export interface AIAssistantContext {
+  title?: string;
+  description?: string;
+  type?: string;
+  messages: AIAssistantMessage[];
+}
 
-// Datos de categorías
+export interface SavedPrompt {
+  id: string;
+  title: string;
+  prompt: string;
+  category: 'seo' | 'content' | 'marketing' | 'general';
+  useCount: number;
+}
+
+// Tipos para categorías y etiquetas
 export interface Category {
   id: number;
   name: string;
   slug: string;
   description?: string;
   parentId?: number;
-  companyId: number;
 }
 
-// Datos de etiquetas
 export interface Tag {
   id: number;
   name: string;
   slug: string;
-  companyId: number;
 }
 
-// Datos de menú
-export interface Menu {
+// Tipos para medios
+export interface Media {
   id: number;
   name: string;
-  location: string;
-  companyId: number;
-  items: MenuItem[];
+  fileName: string;
+  filePath: string;
+  fileSize: number;
+  mimeType: string;
+  width?: number;
+  height?: number;
+  altText?: string;
+  description?: string;
+  uploadedBy: number;
+  uploadedAt: string;
 }
 
-// Items de menú
-export interface MenuItem {
-  id: number;
-  menuId: number;
-  title: string;
-  url?: string;
-  pageId?: number;
-  parentId?: number;
-  order: number;
-  children?: MenuItem[];
-}
-
-// Datos de branding
+// Tipos para el sistema de branding
 export interface Branding {
-  id: number;
+  id?: number;
   companyId: number;
   logoUrl?: string;
   faviconUrl?: string;
-  primaryColor?: string;
-  secondaryColor?: string;
-  fontPrimary?: string;
-  fontSecondary?: string;
+  colorPrimary?: string;
+  colorSecondary?: string;
+  colorAccent?: string;
+  fontHeading?: string;
+  fontBody?: string;
   customCss?: string;
-  customJs?: string;
-  siteTitle?: string;
-  siteDescription?: string;
+  headerHtml?: string;
+  footerHtml?: string;
 }
 
-// Datos de archivos multimedia
-export interface Media {
-  id: number;
-  companyId: number;
-  url: string;
-  fileName: string;
-  fileType: string;
-  fileSize: number;
-  width?: number;
-  height?: number;
-  alt?: string;
-  title?: string;
-  uploadedAt: string;
-  uploadedBy: number;
-}
-
-// Datos de formularios
+// Tipo para envíos de formularios
 export interface FormSubmission {
   id: number;
   formId: string;
   pageId?: number;
+  name?: string;
+  email?: string;
+  phone?: string;
+  message?: string;
   data: Record<string, any>;
-  submittedAt: string;
+  createdAt: string;
   ip?: string;
-  companyId: number;
-  status: 'new' | 'read' | 'responded' | 'archived';
+  status: 'new' | 'read' | 'replied' | 'spam';
 }
 
-// Preferencias del editor
-export interface EditorPreference {
-  userId: number;
-  autoSave: boolean;
-  spellCheck: boolean;
-  showWordCount: boolean;
-  darkMode: boolean;
-  customizations?: Record<string, any>;
+// Tipo para menús
+export interface Menu {
+  id: number;
+  name: string;
+  location: string;
+  items: MenuItem[];
+}
+
+export interface MenuItem {
+  id: number;
+  menuId: number;
+  parentId?: number;
+  title: string;
+  url?: string;
+  pageId?: number;
+  order: number;
+  target?: '_self' | '_blank';
+  children?: MenuItem[];
 }

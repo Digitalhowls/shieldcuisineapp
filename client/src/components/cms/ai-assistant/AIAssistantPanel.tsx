@@ -23,7 +23,7 @@ interface AIAssistantPanelProps {
   pageTitle?: string;
   pageDescription?: string;
   pageType?: string;
-  onApplyContent?: (content: string) => void;
+  onAddContent?: (content: string) => void;
   onApplySeoTitle?: (title: string) => void;
   onApplySeoDescription?: (description: string) => void;
   onApplySeoKeywords?: (keywords: string) => void;
@@ -33,7 +33,7 @@ export function AIAssistantPanel({
   pageTitle = '',
   pageDescription = '',
   pageType = 'page',
-  onApplyContent,
+  onAddContent,
   onApplySeoTitle,
   onApplySeoDescription,
   onApplySeoKeywords,
@@ -87,8 +87,8 @@ export function AIAssistantPanel({
 
   // Funciones de aplicación de contenido
   const handleApplyContent = (content: string) => {
-    if (onApplyContent) {
-      onApplyContent(content);
+    if (onAddContent) {
+      onAddContent(content);
     }
   };
 

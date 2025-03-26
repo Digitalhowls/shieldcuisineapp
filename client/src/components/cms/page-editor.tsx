@@ -745,7 +745,7 @@ const PageEditor: React.FC<PageEditorProps> = ({ isNew = false, pageId }) => {
               pageTitle={pageData.title}
               pageDescription={pageData.description || ""}
               pageType={pageData.type}
-              onApplyContent={(content) => {
+              onAddContent={(content) => {
                 // Añadir un nuevo bloque con el contenido generado
                 const newBlock = {
                   id: `ai-block-${Date.now()}`,
