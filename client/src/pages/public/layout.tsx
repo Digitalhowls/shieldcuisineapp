@@ -113,7 +113,21 @@ const PublicLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => 
               {isMenuLoading ? (
                 <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
               ) : (
-                menu?.items?.map((item, index) => renderMenuItem(item, index))
+                <>
+                  <Link href="/public" className="px-4 py-2 text-foreground hover:text-primary transition-colors font-medium">
+                    Inicio
+                  </Link>
+                  <Link href="/public/sobre-nosotros" className="px-4 py-2 text-foreground hover:text-primary transition-colors font-medium">
+                    Sobre nosotros
+                  </Link>
+                  <Link href="/public/servicios" className="px-4 py-2 text-foreground hover:text-primary transition-colors font-medium">
+                    Servicios
+                  </Link>
+                  <Link href="/public/contacto" className="px-4 py-2 text-foreground hover:text-primary transition-colors font-medium">
+                    Contacto
+                  </Link>
+                  {menu?.items?.map((item, index) => renderMenuItem(item, index))}
+                </>
               )}
               
               {/* Botón de acceso a la plataforma */}
@@ -136,7 +150,21 @@ const PublicLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => 
                     {isMenuLoading ? (
                       <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
                     ) : (
-                      menu?.items?.map((item, index) => renderMenuItem(item, index, true))
+                      <>
+                        <Link href="/public" className="block py-3 px-4 border-b border-border/20 text-foreground hover:text-primary transition-colors font-medium">
+                          Inicio
+                        </Link>
+                        <Link href="/public/sobre-nosotros" className="block py-3 px-4 border-b border-border/20 text-foreground hover:text-primary transition-colors font-medium">
+                          Sobre nosotros
+                        </Link>
+                        <Link href="/public/servicios" className="block py-3 px-4 border-b border-border/20 text-foreground hover:text-primary transition-colors font-medium">
+                          Servicios
+                        </Link>
+                        <Link href="/public/contacto" className="block py-3 px-4 border-b border-border/20 text-foreground hover:text-primary transition-colors font-medium">
+                          Contacto
+                        </Link>
+                        {menu?.items?.map((item, index) => renderMenuItem(item, index, true))}
+                      </>
                     )}
                     
                     {/* Botón de acceso a la plataforma */}
@@ -187,17 +215,17 @@ const PublicLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => 
                   </Link>
                 </li>
                 <li>
-                  <Link href="/public/pagina/sobre-nosotros" className="text-muted-foreground hover:text-primary transition-colors">
+                  <Link href="/public/sobre-nosotros" className="text-muted-foreground hover:text-primary transition-colors">
                     Sobre nosotros
                   </Link>
                 </li>
                 <li>
-                  <Link href="/public/pagina/servicios" className="text-muted-foreground hover:text-primary transition-colors">
+                  <Link href="/public/servicios" className="text-muted-foreground hover:text-primary transition-colors">
                     Servicios
                   </Link>
                 </li>
                 <li>
-                  <Link href="/public/pagina/contacto" className="text-muted-foreground hover:text-primary transition-colors">
+                  <Link href="/public/contacto" className="text-muted-foreground hover:text-primary transition-colors">
                     Contacto
                   </Link>
                 </li>
