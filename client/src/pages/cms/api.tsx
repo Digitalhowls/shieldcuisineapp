@@ -846,7 +846,7 @@ def create_page(page_data):
                                 <FormControl>
                                   <Checkbox
                                     checked={field.value?.includes(permission)}
-                                    onCheckedChange={(checked) => {
+                                    onCheckedChange={(checked: boolean) => {
                                       if (checked) {
                                         field.onChange([...field.value, permission]);
                                       } else {

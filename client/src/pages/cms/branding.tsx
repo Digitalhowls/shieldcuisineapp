@@ -91,6 +91,17 @@ interface BrandingSettings {
   updatedAt?: string;
 }
 
+// El tipo que recibe la función de mutación
+type BrandingSettingsInput = Omit<BrandingSettings, 'footerText' | 'socialMedia'> & {
+  footerText?: string;
+  socialMedia?: {
+    facebook?: string;
+    twitter?: string;
+    instagram?: string;
+    linkedin?: string;
+  } | Record<string, never>;
+};
+
 // Esquema de validación para el formulario de branding
 const brandingFormSchema = z.object({
   companyName: z.string().min(1, "El nombre de la empresa es obligatorio"),
@@ -187,7 +198,7 @@ const BrandingPage: React.FC = () => {
 
   // Mutación para guardar configuración de branding
   const updateBrandingMutation = useMutation({
-    mutationFn: async (data: BrandingSettings) => {
+    mutationFn: async (data: BrandingSettingsInput) => {
       const endpoint = data.id 
         ? `/api/cms/branding/${data.id}` 
         : "/api/cms/branding";
@@ -288,6 +299,7 @@ const BrandingPage: React.FC = () => {
       id: brandingSettings?.id,
       companyId: user.companyId,
       socialMedia: values.socialMedia || {},
+      footerText: values.footerText || `© ${new Date().getFullYear()} Todos los derechos reservados.`,
     });
   };
 
