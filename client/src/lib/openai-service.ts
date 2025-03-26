@@ -1,8 +1,7 @@
-import OpenAI from "openai";
+import { apiRequest } from "./queryClient";
 
-// the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
 // En el cliente, accedemos a la API de OpenAI a través del backend
-const openai = new OpenAI();
+// que usa GPT-4o (el modelo más reciente lanzado el 13 de mayo de 2024)
 
 /**
  * Análisis de controles APPCC utilizando OpenAI
@@ -36,38 +35,21 @@ export interface APPCCAnalysisResult {
 
 export async function analyzeAPPCCControl(controlData: APPCCControlData): Promise<APPCCAnalysisResult> {
   try {
-    const prompt = `
-      Analiza el siguiente control APPCC (Análisis de Peligros y Puntos de Control Crítico) y proporciona:
-      1. Un resumen conciso del estado general
-      2. Recomendaciones específicas de acciones a tomar
-      3. Una puntuación de cumplimiento (0-100)
-      4. Identificación de áreas de riesgo
-      5. Insights basados en los datos proporcionados
-      
-      Datos del control:
-      ${JSON.stringify(controlData, null, 2)}
-      
-      Responde en formato JSON con las siguientes claves: summarySummary, recommendedActions (array), complianceScore (número), riskAreas (array), dataInsights.
-    `;
+    const requestData = {
+      controlData,
+      requestType: 'summary',
+      language: 'es'
+    };
 
-    const response = await openai.chat.completions.create({
-      model: "gpt-4o",
-      messages: [
-        { role: "system", content: "Eres un experto en seguridad alimentaria y sistemas APPCC." },
-        { role: "user", content: prompt }
-      ],
-      response_format: { type: "json_object" }
-    });
-
-    const content = response.choices[0].message.content || "{}";
-    const result = JSON.parse(content);
+    const response = await apiRequest('POST', '/api/ai/analyze/appcc', requestData);
+    const result = await response.json();
     
     return {
-      summarySummary: result.summarySummary || "No se pudo generar un resumen",
+      summarySummary: result.summary || "No se pudo generar un resumen",
       recommendedActions: result.recommendedActions || [],
       complianceScore: result.complianceScore || 0,
       riskAreas: result.riskAreas || [],
-      dataInsights: result.dataInsights || ""
+      dataInsights: result.insights || ""
     };
   } catch (error) {
     console.error("Error analizando control APPCC:", error);
@@ -101,31 +83,14 @@ export interface InventoryAnalysisResult {
 
 export async function analyzeInventoryTrends(inventoryData: InventoryAnalysisData): Promise<InventoryAnalysisResult> {
   try {
-    const prompt = `
-      Analiza los siguientes datos de inventario para el producto "${inventoryData.productName}" y proporciona:
-      1. Previsión de consumo diario basado en patrones históricos
-      2. Días hasta que se necesite reposición
-      3. Recomendación clara sobre reposición
-      4. Análisis de patrones de consumo
-      5. Anomalías o irregularidades detectadas
-      
-      Datos de inventario:
-      ${JSON.stringify(inventoryData, null, 2)}
-      
-      Responde en formato JSON con las siguientes claves: forecastConsumption (número), daysUntilRestock (número), restockRecommendation (texto), consumptionPatterns (texto), anomalies (array de textos).
-    `;
+    const requestData = {
+      productData: inventoryData,
+      requestType: 'forecast',
+      language: 'es'
+    };
 
-    const response = await openai.chat.completions.create({
-      model: "gpt-4o",
-      messages: [
-        { role: "system", content: "Eres un analista de inventario experto con conocimientos de gestión de cadena de suministro alimentario." },
-        { role: "user", content: prompt }
-      ],
-      response_format: { type: "json_object" }
-    });
-
-    const content = response.choices[0].message.content || "{}";
-    const result = JSON.parse(content);
+    const response = await apiRequest('POST', '/api/ai/analyze/inventory', requestData);
+    const result = await response.json();
     
     return {
       forecastConsumption: result.forecastConsumption || 0,
@@ -170,36 +135,14 @@ export interface PurchaseOrdersAnalysisResult {
 
 export async function analyzePurchaseOrders(poData: PurchaseOrdersData): Promise<PurchaseOrdersAnalysisResult> {
   try {
-    const prompt = `
-      Analiza los siguientes datos de órdenes de compra y proporciona:
-      1. Oportunidades de ahorro de costos
-      2. Evaluación del rendimiento de proveedores
-      3. Artículos comprados con mayor frecuencia
-      4. Patrones estacionales detectados
-      5. Recomendaciones de optimización
-      
-      Datos de órdenes de compra:
-      ${JSON.stringify(poData, null, 2)}
-      
-      Responde en formato JSON con las siguientes claves: 
-      costSavingOpportunities (array), 
-      supplierPerformance (objeto con proveedor como clave y objeto {score: número, notes: texto} como valor), 
-      frequentlyPurchasedItems (array), 
-      seasonalPatterns (texto), 
-      optimizationRecommendations (array).
-    `;
+    const requestData = {
+      ordersData: poData,
+      requestType: 'optimization',
+      language: 'es'
+    };
 
-    const response = await openai.chat.completions.create({
-      model: "gpt-4o",
-      messages: [
-        { role: "system", content: "Eres un analista de compras experto en la industria alimentaria." },
-        { role: "user", content: prompt }
-      ],
-      response_format: { type: "json_object" }
-    });
-
-    const content = response.choices[0].message.content || "{}";
-    const result = JSON.parse(content);
+    const response = await apiRequest('POST', '/api/ai/analyze/purchases', requestData);
+    const result = await response.json();
     
     return {
       costSavingOpportunities: result.costSavingOpportunities || [],

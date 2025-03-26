@@ -8,6 +8,7 @@ import { fromZodError } from "zod-validation-error";
 import { registerClientAuthRoutes } from "./routes/client-auth";
 import { registerClientDataRoutes } from "./routes/client-data";
 import { registerAIAnalysisRoutes } from "./routes/ai-analysis";
+import { registerAIServicesRoutes } from "./routes/ai-services";
 import { registerWooCommerceRoutes } from "./routes/woocommerce";
 import { registerBankingRoutes } from "./routes/banking";
 import { registerELearningRoutes } from "./routes/e-learning";
@@ -187,6 +188,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Registrar rutas para análisis con IA
   registerAIAnalysisRoutes(app);
+  registerAIServicesRoutes(app);
   
   // Registrar rutas para integración con WooCommerce
   registerWooCommerceRoutes(app);
