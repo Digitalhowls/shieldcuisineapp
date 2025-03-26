@@ -6,7 +6,7 @@ import { Gallery } from '../../components/cms/gallery';
 import { GalleryViewType } from '../../components/cms/gallery/index';
 import { GalleryImage } from '../../components/cms/block-editor/types';
 import { Button } from '@/components/ui/button';
-import AdminLayout from '../../components/layouts/admin-layout';
+import AdminLayout from '@/components/layouts/admin-layout';
 
 // Imágenes de ejemplo para la demostración
 const demoImages: GalleryImage[] = [
