@@ -98,7 +98,7 @@ interface BlockContainerProps {
   block: Block;
   index: number;
   moveBlock: (dragIndex: number, hoverIndex: number) => void;
-  updateBlock: (id: string, updatedContent: any) => void;
+  updateBlock: (id: string, updatedContent: any, updatedProperties?: any) => void;
   removeBlock: (id: string) => void;
   readOnly?: boolean;
 }
@@ -119,22 +119,9 @@ const BlockContainer: React.FC<BlockContainerProps> = ({
   
   // Actualizar el bloque con nuevas propiedades de animación
   const handleAnimationChange = (updatedBlock: Block) => {
-    // La función updateBlock espera el id y el contenido (no el bloque completo)
-    // Primero creamos una copia del bloque actual
-    const newBlock = { ...block, animation: updatedBlock.animation };
-    // Luego actualizamos el bloque conservando su contenido original
-    updateBlock(newBlock.id, block.content);
-    
-    // Necesitamos una forma de actualizar la propiedad animation del bloque
-    // Esto podría requerir modificar el método updateBlock en index.tsx
-    // Por ahora, enviamos un evento personalizado para manejarlo en el componente padre
-    const event = new CustomEvent('block-animation-change', { 
-      detail: { 
-        blockId: block.id, 
-        animation: updatedBlock.animation 
-      } 
-    });
-    document.dispatchEvent(event);
+    // Utilizamos el tercer parámetro de updateBlock para actualizar propiedades adicionales
+    // Esto mantiene el contenido original y actualiza solo la propiedad animation
+    updateBlock(block.id, block.content, { animation: updatedBlock.animation });
   };
 
   const renderBlockContent = () => {
@@ -1827,6 +1814,17 @@ const BlockContainer: React.FC<BlockContainerProps> = ({
               <DropdownMenuItem>
                 <Copy className="h-4 w-4 mr-2" />
                 <span>Duplicar</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => {
+                  const panel = document.getElementById(`animation-panel-${block.id}`);
+                  if (panel) {
+                    panel.classList.toggle('hidden');
+                  }
+                }}
+              >
+                <Wand2 className="h-4 w-4 mr-2" />
+                <span>Animaciones</span>
               </DropdownMenuItem>
               <DropdownMenuItem
                 className="text-destructive focus:text-destructive"
