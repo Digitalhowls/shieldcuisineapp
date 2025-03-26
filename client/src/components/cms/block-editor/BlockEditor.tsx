@@ -31,6 +31,7 @@ import TextBlock from "./blocks/TextBlock";
 import HeadingBlock from "./blocks/HeadingBlock";
 import ImageBlock from "./blocks/ImageBlock";
 import HtmlBlock from "./blocks/HtmlBlock";
+import { AiBlock } from "./blocks/AiBlock";
 
 export interface Block {
   id: string;
@@ -58,6 +59,12 @@ const DEFAULT_BLOCKS: {[key: string]: any} = {
     alt: "Imagen descriptiva",
     caption: "",
     alignment: "center",
+  },
+  ai: {
+    content: "",
+    prompt: "Escribe un texto sobre...",
+    tone: "profesional",
+    format: "html",
   },
   button: {
     text: "Botón",
@@ -136,7 +143,7 @@ const BLOCK_CATEGORIES = [
   },
   {
     name: "Avanzados",
-    blocks: ["html"]
+    blocks: ["html", "ai"]
   }
 ];
 
@@ -230,8 +237,9 @@ const BlockEditor: React.FC<BlockEditorProps> = ({
         {block.type === "text" && <TextBlock {...blockProps} data={block} />}
         {block.type === "image" && <ImageBlock {...blockProps} data={block} />}
         {block.type === "html" && <HtmlBlock {...blockProps} data={block} />}
+        {block.type === "ai" && <AiBlock {...blockProps} data={block} />}
         {/* Renderizamos un mensaje de error para tipos de bloques que aún no están implementados */}
-        {!["heading", "text", "image", "html"].includes(block.type) && (
+        {!["heading", "text", "image", "html", "ai"].includes(block.type) && (
           <div className="p-4 border border-destructive bg-destructive/10 rounded-md">
             <p className="text-sm text-destructive">
               Bloque de tipo <strong>{block.type}</strong> no implementado aún.
@@ -278,7 +286,7 @@ const BlockEditor: React.FC<BlockEditorProps> = ({
                               >
                                 <div className="flex flex-col items-start">
                                   <span className="font-medium capitalize">
-                                    {blockType === "html" ? "HTML" : blockType.charAt(0).toUpperCase() + blockType.slice(1)}
+                                    {blockType === "html" ? "HTML" : blockType === "ai" ? "IA" : blockType.charAt(0).toUpperCase() + blockType.slice(1)}
                                   </span>
                                 </div>
                               </Button>
@@ -334,7 +342,7 @@ const BlockEditor: React.FC<BlockEditorProps> = ({
                           >
                             <div className="flex flex-col items-start">
                               <span className="font-medium capitalize">
-                                {blockType === "html" ? "HTML" : blockType.charAt(0).toUpperCase() + blockType.slice(1)}
+                                {blockType === "html" ? "HTML" : blockType === "ai" ? "IA" : blockType.charAt(0).toUpperCase() + blockType.slice(1)}
                               </span>
                             </div>
                           </Button>

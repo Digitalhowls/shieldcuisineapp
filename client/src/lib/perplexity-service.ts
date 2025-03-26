@@ -1,9 +1,9 @@
 /**
- * Servicio para interactuar con la API de Perplexity AI
+ * Servicio para interactuar con la API de OpenAI
  * Permite generar contenido para usar en el CMS y el constructor web
  */
 
-export interface PerplexityResponse {
+export interface OpenAIResponse {
   id: string;
   model: string;
   object: string;
@@ -38,7 +38,7 @@ export interface GenerateContentOptions {
 }
 
 /**
- * Genera contenido utilizando la API de Perplexity
+ * Genera contenido utilizando la API de OpenAI
  */
 export async function generateContent(options: GenerateContentOptions): Promise<string> {
   const {
@@ -69,7 +69,7 @@ export async function generateContent(options: GenerateContentOptions): Promise<
   }
   
   try {
-    const response = await fetch('/api/ai/perplexity/generate', {
+    const response = await fetch('/api/ai/openai/generate', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -87,10 +87,10 @@ export async function generateContent(options: GenerateContentOptions): Promise<
       throw new Error(errorData.message || 'Error generando contenido');
     }
     
-    const data: PerplexityResponse = await response.json();
+    const data: OpenAIResponse = await response.json();
     return data.choices[0].message.content;
   } catch (error) {
-    console.error('Error llamando a la API de Perplexity:', error);
+    console.error('Error llamando a la API de OpenAI:', error);
     throw error;
   }
 }

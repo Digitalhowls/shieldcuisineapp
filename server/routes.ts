@@ -16,7 +16,7 @@ import { registerNotificationRoutes } from "./routes/notifications";
 import { registerPurchasingRoutes } from "./routes/purchasing";
 import { registerCmsRoutes } from "./routes/cms";
 import { registerCmsApiRoutes } from "./routes/cms-api";
-import { registerPerplexityApiRoutes } from "./routes/perplexity-api";
+import { registerOpenAIApiRoutes } from "./routes/openai-api";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Setup auth routes
@@ -213,8 +213,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Registrar rutas de API para el CMS
   registerCmsApiRoutes(app);
   
-  // Registrar rutas para la API de Perplexity AI
-  registerPerplexityApiRoutes(app);
+  // Registrar rutas para la API de OpenAI
+  registerOpenAIApiRoutes(app);
+  
+
 
   const httpServer = createServer(app);
   return httpServer;
