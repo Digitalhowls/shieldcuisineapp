@@ -2,6 +2,7 @@ import passport from "passport";
 import { Strategy as LocalStrategy } from "passport-local";
 import { Express } from "express";
 import session from "express-session";
+import cookieParser from "cookie-parser";
 import { hash, verify } from "@node-rs/bcrypt";
 import { User as SelectUser } from "@shared/schema";
 import createMemoryStore from "memorystore";
@@ -65,6 +66,8 @@ export function setupAuth(app: Express) {
   };
 
   app.set("trust proxy", 1);
+  // Configurar cookie-parser antes de session para que pueda leer las cookies
+  app.use(cookieParser());
   app.use(session(sessionSettings));
   app.use(passport.initialize());
   app.use(passport.session());
@@ -130,18 +133,62 @@ export function setupAuth(app: Express) {
   });
 
   app.post("/api/login", passport.authenticate("local"), (req, res) => {
+    // Establecer una cookie de respaldo para autenticación manual (solución temporal)
+    res.cookie('auth_token', JSON.stringify({
+      id: req.user!.id,
+      username: req.user!.username,
+      role: req.user!.role
+    }), {
+      maxAge: 24 * 60 * 60 * 1000, // 24 horas
+      httpOnly: false, // Para que sea accesible desde JS
+      path: '/',
+      sameSite: 'lax'
+    });
+    
+    // Responder con información del usuario
     res.status(200).json(req.user);
   });
 
   app.post("/api/logout", (req, res, next) => {
     req.logout((err) => {
       if (err) return next(err);
+      // Eliminar también la cookie de respaldo
+      res.clearCookie('auth_token', { path: '/' });
       res.sendStatus(200);
     });
   });
 
-  app.get("/api/user", (req, res) => {
-    if (!req.isAuthenticated()) return res.sendStatus(401);
-    res.json(req.user);
+  app.get("/api/user", async (req, res) => {
+    // Método principal: verificar sesión de Passport
+    if (req.isAuthenticated()) {
+      return res.json(req.user);
+    }
+    
+    // Método de respaldo: verificar cookie manual (solución temporal)
+    try {
+      const authCookie = req.cookies.auth_token;
+      if (authCookie) {
+        const userData = JSON.parse(authCookie);
+        if (userData && userData.id) {
+          // Buscar el usuario por ID como respaldo
+          const user = await directDb.getUserById(userData.id);
+          if (user) {
+            // Regenerar sesión de manera transparente
+            req.login(user, (err) => {
+              if (err) {
+                console.error("Error al regenerar sesión:", err);
+                return res.sendStatus(401);
+              }
+              return res.json(user);
+            });
+            return; // Importante para evitar múltiples respuestas
+          }
+        }
+      }
+      return res.sendStatus(401);
+    } catch (error) {
+      console.error("Error en autenticación de respaldo:", error);
+      return res.sendStatus(401);
+    }
   });
 }
