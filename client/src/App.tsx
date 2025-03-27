@@ -23,6 +23,7 @@ import CMSModule from "./pages/cms";
 import AnimationPlayground from "./pages/cms/animation-playground";
 import AnimatedBlocksDemo from "./pages/cms/animated-blocks-demo";
 import GalleryDemo from "./pages/cms/gallery-demo";
+import CMSRedirect from "./pages/cms/cms-redirect";
 
 // Nuevos módulos de interfaz dual
 import AdminModule from "./pages/admin"; // Panel de administración
@@ -78,6 +79,21 @@ function AppRouter() {
       <ProtectedRoute path="/compras/nueva" component={ComprasNueva} />
       <ProtectedRoute path="/compras/analisis" component={ComprasAnalisis} />
       <ProtectedRoute path="/compras/:id" component={ComprasDetalle} />
+      {/* Redirecciones del CMS para unificar rutas */}
+      <ProtectedRoute path="/admin/cms/pages">
+        {() => <CMSRedirect targetPath="/cms/paginas" />}
+      </ProtectedRoute>
+      <ProtectedRoute path="/admin/cms/categories">
+        {() => <CMSRedirect targetPath="/cms/categorias" />}
+      </ProtectedRoute>
+      <ProtectedRoute path="/admin/cms/media">
+        {() => <CMSRedirect targetPath="/cms/media" />}
+      </ProtectedRoute>
+      <ProtectedRoute path="/admin/cms/branding">
+        {() => <CMSRedirect targetPath="/cms/branding" />}
+      </ProtectedRoute>
+      
+      {/* Rutas normales del CMS */}
       <ProtectedRoute path="/cms" component={CMSModule} />
       <ProtectedRoute path="/cms/animation-playground" component={AnimationPlayground} />
       <ProtectedRoute path="/cms/animated-blocks-demo" component={AnimatedBlocksDemo} />

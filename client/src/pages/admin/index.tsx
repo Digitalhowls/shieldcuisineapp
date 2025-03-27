@@ -120,23 +120,23 @@ export default function AdminModule() {
     },
     {
       name: "Páginas",
-      href: "/admin/cms/pages",
-      active: location === "/admin/cms/pages",
+      href: "/cms/paginas", // Corregido para apuntar al módulo de cliente
+      active: location === "/admin/cms/pages" || location === "/cms/paginas",
     },
     {
       name: "Categorías",
-      href: "/admin/cms/categories",
-      active: location === "/admin/cms/categories",
+      href: "/cms/categorias", // Corregido para apuntar al módulo de cliente
+      active: location === "/admin/cms/categories" || location === "/cms/categorias",
     },
     {
       name: "Medios",
-      href: "/admin/cms/media",
-      active: location === "/admin/cms/media",
+      href: "/cms/media", // Corregido para apuntar al módulo de cliente
+      active: location === "/admin/cms/media" || location === "/cms/media",
     },
     {
       name: "Marca",
-      href: "/admin/cms/branding",
-      active: location === "/admin/cms/branding",
+      href: "/cms/branding", // Corregido para apuntar al módulo de cliente
+      active: location === "/admin/cms/branding" || location === "/cms/branding",
     },
   ];
 
