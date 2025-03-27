@@ -52,14 +52,15 @@ export function setupAuth(app: Express) {
   
   const sessionSettings: session.SessionOptions = {
     secret: sessionSecret,
-    resave: false,
-    saveUninitialized: false,
+    resave: true, // Cambiado a true para garantizar la persistencia
+    saveUninitialized: true, // Cambiado a true para mantener sesiones anónimas
     store: memoryStore,
     cookie: {
       maxAge: 1000 * 60 * 60 * 24 * 7, // 1 week
       httpOnly: true,
-      secure: false,
-      sameSite: 'lax'
+      secure: process.env.NODE_ENV === 'production', // Solo seguro en producción
+      sameSite: 'lax',
+      path: '/' // Asegurar que la cookie sea válida para todas las rutas
     }
   };
 

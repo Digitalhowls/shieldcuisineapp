@@ -1,21 +1,29 @@
 import React, { useEffect } from "react";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import { Loader2 } from "lucide-react";
+import { useAuth } from "@/hooks/use-auth";
 
 interface CMSRedirectProps {
   targetPath: string;
 }
 
-// Componente para redirigir entre rutas del CMS
+// Componente para redirigir entre rutas del CMS preservando la sesión
 const CMSRedirect: React.FC<CMSRedirectProps> = ({ targetPath }) => {
+  const [, navigate] = useLocation();
+  const { user } = useAuth();
+  
   useEffect(() => {
-    // Usamos el componente Link para mantener el estado de la aplicación
-    // y preservar la sesión durante la redirección
-    const linkElement = document.getElementById("redirect-link");
-    if (linkElement) {
-      linkElement.click();
+    // Verificamos que el usuario esté autenticado antes de redirigir
+    if (user) {
+      // Pequeño retraso para asegurar que todos los efectos sean procesados
+      const timer = setTimeout(() => {
+        // Usamos la navegación programática que mantiene el estado y la sesión
+        navigate(targetPath);
+      }, 500);
+      
+      return () => clearTimeout(timer);
     }
-  }, [targetPath]);
+  }, [user, targetPath, navigate]);
   
   return (
     <div className="flex items-center justify-center min-h-screen">
@@ -23,7 +31,9 @@ const CMSRedirect: React.FC<CMSRedirectProps> = ({ targetPath }) => {
         <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto mb-4" />
         <p className="text-muted-foreground">Redireccionando a {targetPath}...</p>
         <Link href={targetPath}>
-          <a id="redirect-link" className="hidden">Continuar</a>
+          <a id="redirect-link" className="text-primary hover:underline mt-4 inline-block">
+            Si no eres redirigido automáticamente, haz clic aquí
+          </a>
         </Link>
       </div>
     </div>
