@@ -122,11 +122,11 @@ export class SimpleStorage implements ISimpleStorage {
         password: user.password,
         name: user.name,
         email: user.email,
-        role: user.role,
+        role: user.role || 'employee',
         active: true,
         lastLogin: null,
-        companyId: null,
-        locationId: null,
+        companyId: user.companyId || null,
+        locationId: user.locationId || null,
         createdAt: new Date()
       };
     }

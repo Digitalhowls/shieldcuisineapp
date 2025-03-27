@@ -38,20 +38,20 @@ async function comparePasswords(supplied: string, stored: string) {
 }
 
 export function setupAuth(app: Express) {
-  // Generate a random secret for this session
-  const sessionSecret = process.env.SESSION_SECRET || "shield-cuisine-secret-" + Math.random().toString(36).substring(2, 15);
+  // Generate a fixed secret for the session to avoid issues with restarts
+  const sessionSecret = process.env.SESSION_SECRET || "shield-cuisine-fixed-secret-key-for-dev";
   
   console.log("Configuring session store...");
   
   const sessionSettings: session.SessionOptions = {
     secret: sessionSecret,
-    resave: true, // Cambiado a true para garantizar la persistencia
-    saveUninitialized: true, // Cambiado a true para mantener sesiones anónimas
+    resave: true,
+    saveUninitialized: true,
     store: simpleStorage.sessionStore,
     cookie: {
       maxAge: 1000 * 60 * 60 * 24 * 7, // 1 week
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production', // Solo seguro en producción
+      secure: false, // Desactivado en desarrollo para evitar problemas
       sameSite: 'lax',
       path: '/' // Asegurar que la cookie sea válida para todas las rutas
     }
