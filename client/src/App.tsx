@@ -1,18 +1,18 @@
 import { Switch, Route, Router as WouterRouter } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
-import { Toaster } from "@/components/ui/toaster";
-import HomePage from "@/shared/features/home-page";
-import NotFound from "@/pages/not-found";
-import AuthPage from "@/shared/features/auth/pages/auth-page";
-import { ProtectedRoute } from "@/shared/components/protected-route";
-import { AuthProvider } from "@/shared/hooks/use-auth";
+import { Toaster } from "./components/ui/toaster";
+import HomePage from "./shared/features/home-page";
+import NotFound from "./pages/not-found";
+import AuthPage from "./shared/features/auth/pages/auth-page";
+import { ProtectedRoute } from "./shared/components/protected-route";
+import { AuthProvider } from "./shared/hooks/use-auth";
 
 // Mantenemos los imports de las rutas antiguas para asegurar compatibilidad durante la migración
 import AppccModule from "./pages/appcc";
 import AlmacenModule from "./pages/almacen";
 import TransparenciaModule from "./pages/transparencia";
-import ClientePortal from "@/pages/cliente";
+import ClientePortal from "./pages/cliente";
 import BancaModule from "./pages/banca";
 import FormacionModule from "./pages/formacion";
 import NotificacionesPage from "./pages/configuracion/notificaciones";
@@ -32,11 +32,11 @@ import AdminModule from "./pages/admin"; // Panel de administración
 import ClientModule from "./pages/client"; // Panel de cliente
 
 // Páginas públicas
-import PublicIndex from "@/pages/public/index";
-import BlogPage from "@/pages/public/blog";
-import BlogPostPage from "@/pages/public/blog-post";
-import ShopEquipmentPage from "@/pages/public/shop-equipment";
-import ShopModulesPage from "@/pages/public/shop-modules";
+import PublicIndex from "./pages/public/index";
+import BlogPage from "./pages/public/blog";
+import BlogPostPage from "./pages/public/blog-post";
+import ShopEquipmentPage from "./pages/public/shop-equipment";
+import ShopModulesPage from "./pages/public/shop-modules";
 
 function AppRouter() {
   return (

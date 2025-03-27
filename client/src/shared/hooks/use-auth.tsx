@@ -5,10 +5,10 @@ import {
   UseMutationResult,
 } from "@tanstack/react-query";
 import { insertUserSchema, User as SelectUser } from "@shared/schema";
-import { getQueryFn, apiRequest, queryClient } from "@/lib/queryClient";
-import { useToast } from "@/hooks/use-toast";
+import { getQueryFn, apiRequest, queryClient } from "../../lib/queryClient";
+import { useToast } from "../../hooks/use-toast";
 import { z } from "zod";
-import { hasValidAuthCookie, getAuthToken, setAuthToken, removeAuthToken } from "@/lib/cookie-auth";
+import { hasValidAuthCookie, getAuthToken, setAuthToken, removeAuthToken } from "../../lib/cookie-auth";
 
 // Constantes para almacenamiento local
 const AUTH_USER_KEY = 'shield_cuisine_user';
