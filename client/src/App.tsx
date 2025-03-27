@@ -2,11 +2,13 @@ import { Switch, Route, Router as WouterRouter } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
-import HomePage from "@/pages/home-page";
+import HomePage from "@/shared/features/home-page";
 import NotFound from "@/pages/not-found";
-import AuthPage from "@/pages/auth-page";
-import { ProtectedRoute } from "./lib/protected-route";
-import { AuthProvider } from "./hooks/use-auth";
+import AuthPage from "@/shared/features/auth/pages/auth-page";
+import { ProtectedRoute } from "@/shared/components/protected-route";
+import { AuthProvider } from "@/shared/hooks/use-auth";
+
+// Mantenemos los imports de las rutas antiguas para asegurar compatibilidad durante la migración
 import AppccModule from "./pages/appcc";
 import AlmacenModule from "./pages/almacen";
 import TransparenciaModule from "./pages/transparencia";
@@ -94,7 +96,7 @@ function AppRouter() {
       <ProtectedRoute path="/cms/gallery-demo" component={GalleryDemo} />
       <ProtectedRoute path="/cms/:rest*" component={CMSModule} />
       
-      {/* Rutas públicas */}
+      {/* Ruta de autenticación actualizada */}
       <Route path="/auth" component={AuthPage} />
       
       {/* Portal de cliente (acceso por token) */}
