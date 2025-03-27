@@ -153,6 +153,7 @@ export function setupAuth(app: Express) {
   app.get("/api/user", async (req, res) => {
     // Método principal: verificar sesión de Passport
     if (req.isAuthenticated()) {
+      console.log("Usuario autenticado via sesión:", req.user.username);
       return res.json(req.user);
     }
     
@@ -160,23 +161,46 @@ export function setupAuth(app: Express) {
     try {
       const authCookie = req.cookies.auth_token;
       if (authCookie) {
+        console.log("Encontrada cookie de autenticación, intentando recuperar sesión");
         const userData = JSON.parse(authCookie);
         if (userData && userData.id) {
           // Buscar el usuario por ID como respaldo
           const user = await simpleStorage.getUser(userData.id);
           if (user) {
+            console.log("Usuario recuperado desde cookie:", user.username);
             // Regenerar sesión de manera transparente
-            req.login(user, (err) => {
-              if (err) {
-                console.error("Error al regenerar sesión:", err);
-                return res.sendStatus(401);
-              }
-              return res.json(user);
+            return new Promise<void>((resolve) => {
+              req.login(user, (err) => {
+                if (err) {
+                  console.error("Error al regenerar sesión:", err);
+                  res.sendStatus(401);
+                  resolve();
+                } else {
+                  // Actualizar la cookie para ampliar su duración
+                  res.cookie('auth_token', JSON.stringify({
+                    id: user.id,
+                    username: user.username,
+                    role: user.role
+                  }), {
+                    maxAge: 24 * 60 * 60 * 1000, // 24 horas
+                    httpOnly: false, // Para que sea accesible desde JS
+                    path: '/',
+                    sameSite: 'lax'
+                  });
+                  
+                  console.log("Sesión regenerada correctamente para:", user.username);
+                  res.json(user);
+                  resolve();
+                }
+              });
             });
-            return; // Importante para evitar múltiples respuestas
+          } else {
+            console.log("No se encontró usuario con ID:", userData.id);
           }
         }
       }
+      
+      console.log("No hay información de sesión válida");
       return res.sendStatus(401);
     } catch (error) {
       console.error("Error en autenticación de respaldo:", error);

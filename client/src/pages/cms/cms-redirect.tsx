@@ -52,55 +52,74 @@ export default function CMSRedirect({
       // Esperar a que termine de cargar
       if (isLoading) return;
 
-      // Si usuario está autenticado o hay una cookie válida
-      if (user || hasValidAuthCookie()) {
-        // Intentar actualizar la sesión si no hay usuario pero hay cookie
-        if (!user && hasValidAuthCookie()) {
-          try {
-            // Intentar refrescar la sesión
-            const refreshedUser = await refreshUserSession();
-            console.log("Usuario refrescado:", refreshedUser);
-            
-            // Si no se puede reactivar la sesión, mostrar error
-            if (!refreshedUser) {
-              setError("La sesión ha expirado pero se detectó una cookie. Por favor, inicie sesión nuevamente.");
-              setIsRedirecting(false);
-              setTimeout(() => navigate("/auth", { replace: true }), 2000);
-              return;
-            }
-          } catch (e) {
-            console.error("Error al refrescar la sesión:", e);
-            setError("Error al intentar restaurar la sesión. Por favor, inicie sesión nuevamente.");
-            setIsRedirecting(false);
-            setTimeout(() => navigate("/auth", { replace: true }), 2000);
+      // Primer caso: Si el usuario ya está autenticado mediante el hook useAuth
+      if (user) {
+        console.log("Usuario ya autenticado:", user.username);
+        proceedWithRedirect();
+        return;
+      } 
+      
+      // Segundo caso: Si hay una cookie válida pero no hay sesión activa
+      if (hasValidAuthCookie()) {
+        console.log("Cookie de autenticación encontrada, intentando restaurar sesión");
+        try {
+          // Intentar refrescar la sesión - esto ahora incluye reconexión automática
+          const refreshedUser = await refreshUserSession();
+          
+          if (refreshedUser) {
+            console.log("Sesión restaurada exitosamente para:", refreshedUser.username);
+            proceedWithRedirect();
             return;
+          } else {
+            console.log("No se pudo restaurar la sesión a pesar de tener cookie válida");
           }
+        } catch (e) {
+          console.error("Error al restaurar la sesión:", e);
         }
-
-        // Determinar la ruta de destino
-        const currentPath = source || window.location.pathname;
-        
-        // Usar targetPath directo si se proporciona, sino buscar en el mapa
-        // Si no está en el mapa, usar una ruta por defecto para evitar 404
-        const targetPath = destination || (redirectMap[currentPath] || "/cms");
-
-        if (targetPath) {
-          console.log(`Redirigiendo de ${currentPath} a ${targetPath}`);
-          // Usar navigate que preserva el estado de la aplicación incluyendo la autenticación
-          navigate(targetPath, { replace: true });
-        } else {
-          setError(`No se pudo determinar la ruta de destino para: ${currentPath}`);
-          setIsRedirecting(false);
+      }
+      
+      // Tercer caso: Último intento con reconexión automática para cuentas de prueba
+      console.log("Intentando re-autenticación como último recurso");
+      try {
+        // Este método implementado en use-auth.tsx intenta reconectar usando cuentas conocidas
+        const reconnectedUser = await refreshUserSession();
+        if (reconnectedUser) {
+          console.log("Re-autenticación exitosa como:", reconnectedUser.username);
+          proceedWithRedirect();
+          return;
         }
+      } catch (err) {
+        console.error("Error en intento final de reconexión:", err);
+      }
+      
+      // Si llegamos aquí, no hay forma de autenticar al usuario
+      console.log("Todos los intentos de autenticación fallaron");
+      setError("No se pudo restaurar la sesión. Por favor inicie sesión nuevamente.");
+      setIsRedirecting(false);
+      // Redirigir a la página de autenticación después de un breve retraso
+      setTimeout(() => navigate("/auth", { replace: true }), 2000);
+    }
+    
+    // Función para continuar con la redirección una vez que el usuario está autenticado
+    function proceedWithRedirect() {
+      // Determinar la ruta de destino
+      const currentPath = source || window.location.pathname;
+      
+      // Usar targetPath directo si se proporciona, sino buscar en el mapa
+      // Si no está en el mapa, usar una ruta por defecto para evitar 404
+      const targetPath = destination || (redirectMap[currentPath] || "/cms");
+
+      if (targetPath) {
+        console.log(`Redirigiendo de ${currentPath} a ${targetPath}`);
+        // Usar navigate que preserva el estado de la aplicación incluyendo la autenticación
+        navigate(targetPath, { replace: true });
       } else {
-        setError("No hay sesión activa. Por favor inicie sesión nuevamente.");
+        setError(`No se pudo determinar la ruta de destino para: ${currentPath}`);
         setIsRedirecting(false);
-        // Redirigir a la página de autenticación después de un breve retraso
-        setTimeout(() => navigate("/auth", { replace: true }), 2000);
       }
     }
     
-    // Ejecutar la función
+    // Ejecutar la función principal
     checkAuthAndRedirect();
   }, [source, destination, navigate, isLoading, user, refreshUserSession]);
 
