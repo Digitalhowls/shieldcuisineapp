@@ -111,7 +111,7 @@ const quizFormSchema = z.object({
   courseId: z.string({
     required_error: "El curso es requerido.",
   }),
-  passingScore: z.string().transform((val) => parseInt(val, 10)),
+  passingScore: z.number(),
   timeLimit: z.string().optional(),
   isRequired: z.boolean().default(true),
   published: z.boolean().default(false),
