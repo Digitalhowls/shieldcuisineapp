@@ -498,6 +498,17 @@ export const cmsPageTags = pgTable("cms_page_tags", {
   tagId: integer("tag_id").notNull().references(() => cmsTags.id, { onDelete: 'cascade' }),
 });
 
+export const cmsMediaCategories = pgTable("cms_media_categories", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  slug: text("slug").notNull(),
+  description: text("description"),
+  parentId: integer("parent_id").references(() => cmsMediaCategories.id),
+  companyId: integer("company_id").notNull().references(() => companies.id),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
 export const cmsMedia = pgTable("cms_media", {
   id: serial("id").primaryKey(),
   filename: text("filename").notNull(),
@@ -511,10 +522,19 @@ export const cmsMedia = pgTable("cms_media", {
   height: integer("height"),
   alt: text("alt"),
   title: text("title"),
+  description: text("description"),
+  folder: text("folder").default(""),
+  tags: text("tags").array(),
   companyId: integer("company_id").notNull().references(() => companies.id),
   uploadedBy: integer("uploaded_by").notNull().references(() => users.id),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const cmsMediaToCategories = pgTable("cms_media_to_categories", {
+  id: serial("id").primaryKey(),
+  mediaId: integer("media_id").notNull().references(() => cmsMedia.id, { onDelete: 'cascade' }),
+  categoryId: integer("category_id").notNull().references(() => cmsMediaCategories.id, { onDelete: 'cascade' }),
 });
 
 export const cmsBranding = pgTable("cms_branding", {
@@ -729,7 +749,31 @@ export const cmsPageTagsRelations = relations(cmsPageTags, ({ one }) => ({
   }),
 }));
 
-export const cmsMediaRelations = relations(cmsMedia, ({ one }) => ({
+export const cmsMediaCategoriesRelations = relations(cmsMediaCategories, ({ one, many }) => ({
+  company: one(companies, {
+    fields: [cmsMediaCategories.companyId],
+    references: [companies.id],
+  }),
+  parent: one(cmsMediaCategories, {
+    fields: [cmsMediaCategories.parentId],
+    references: [cmsMediaCategories.id],
+  }),
+  children: many(cmsMediaCategories, { relationName: "parent" }),
+  media: many(cmsMediaToCategories),
+}));
+
+export const cmsMediaToCategoriesRelations = relations(cmsMediaToCategories, ({ one }) => ({
+  media: one(cmsMedia, {
+    fields: [cmsMediaToCategories.mediaId],
+    references: [cmsMedia.id],
+  }),
+  category: one(cmsMediaCategories, {
+    fields: [cmsMediaToCategories.categoryId],
+    references: [cmsMediaCategories.id],
+  }),
+}));
+
+export const cmsMediaRelations = relations(cmsMedia, ({ one, many }) => ({
   company: one(companies, {
     fields: [cmsMedia.companyId],
     references: [companies.id],
@@ -738,6 +782,7 @@ export const cmsMediaRelations = relations(cmsMedia, ({ one }) => ({
     fields: [cmsMedia.uploadedBy],
     references: [users.id],
   }),
+  categories: many(cmsMediaToCategories),
 }));
 
 export const cmsBrandingRelations = relations(cmsBranding, ({ one }) => ({
@@ -867,6 +912,8 @@ export const insertCmsPageCategorySchema = createInsertSchema(cmsPageCategories)
 export const insertCmsTagSchema = createInsertSchema(cmsTags).omit({ id: true, createdAt: true });
 export const insertCmsPageTagSchema = createInsertSchema(cmsPageTags).omit({ id: true });
 export const insertCmsMediaSchema = createInsertSchema(cmsMedia).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertCmsMediaCategorySchema = createInsertSchema(cmsMediaCategories).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertCmsMediaToCategorySchema = createInsertSchema(cmsMediaToCategories).omit({ id: true });
 export const insertCmsBrandingSchema = createInsertSchema(cmsBranding).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertCmsMenuSchema = createInsertSchema(cmsMenus).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertCmsMenuItemSchema = createInsertSchema(cmsMenuItems).omit({ id: true, createdAt: true, updatedAt: true });
@@ -947,6 +994,10 @@ export type InsertCmsPageTag = z.infer<typeof insertCmsPageTagSchema>;
 export type CmsPageTag = typeof cmsPageTags.$inferSelect;
 export type InsertCmsMedia = z.infer<typeof insertCmsMediaSchema>;
 export type CmsMedia = typeof cmsMedia.$inferSelect;
+export type InsertCmsMediaCategory = z.infer<typeof insertCmsMediaCategorySchema>;
+export type CmsMediaCategory = typeof cmsMediaCategories.$inferSelect;
+export type InsertCmsMediaToCategory = z.infer<typeof insertCmsMediaToCategorySchema>;
+export type CmsMediaToCategory = typeof cmsMediaToCategories.$inferSelect;
 export type InsertCmsBranding = z.infer<typeof insertCmsBrandingSchema>;
 export type CmsBranding = typeof cmsBranding.$inferSelect;
 export type InsertCmsMenu = z.infer<typeof insertCmsMenuSchema>;
