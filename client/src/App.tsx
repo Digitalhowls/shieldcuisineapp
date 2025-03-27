@@ -80,10 +80,12 @@ function AppRouter() {
       <ProtectedRoute path="/compras/analisis" component={ComprasAnalisis} />
       <ProtectedRoute path="/compras/:id" component={ComprasDetalle} />
       {/* Redirecciones del CMS para unificar rutas */}
+      <ProtectedRoute path="/admin/cms" component={() => <CMSRedirect source="/admin/cms" destination="/cms" />} />
       <ProtectedRoute path="/admin/cms/pages" component={() => <CMSRedirect source="/admin/cms/pages" destination="/cms/paginas" />} />
       <ProtectedRoute path="/admin/cms/categories" component={() => <CMSRedirect source="/admin/cms/categories" destination="/cms/categorias" />} />
       <ProtectedRoute path="/admin/cms/media" component={() => <CMSRedirect source="/admin/cms/media" destination="/cms/media" />} />
       <ProtectedRoute path="/admin/cms/branding" component={() => <CMSRedirect source="/admin/cms/branding" destination="/cms/configuracion" />} />
+      <ProtectedRoute path="/admin/cms/:rest*" component={() => <CMSRedirect source={window.location.pathname} destination="/cms" />} />
       
       {/* Rutas normales del CMS */}
       <ProtectedRoute path="/cms" component={CMSModule} />

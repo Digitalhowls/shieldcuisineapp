@@ -7,12 +7,15 @@ import { hasValidAuthCookie } from "@/lib/cookie-auth";
 // Mapa de redirecciones entre rutas antiguas y nuevas
 const redirectMap: Record<string, string> = {
   // Admin Routes
+  "/admin/cms": "/cms",
   "/admin/cms/pages": "/cms/paginas",
   "/admin/cms/media": "/cms/media",
   "/admin/cms/settings": "/cms/configuracion",
+  "/admin/cms/configuracion": "/cms/configuracion", // Agregada para consistencia
   "/admin/cms/blog": "/cms/blog",
   "/admin/cms/editor": "/cms/editor",
   "/admin/cms/categories": "/cms/categorias",
+  "/admin/cms/categorias": "/cms/categorias", // Agregada para consistencia en español
   "/admin/cms/branding": "/cms/configuracion",
   
   // Client Routes (si es necesario)
@@ -20,7 +23,7 @@ const redirectMap: Record<string, string> = {
   "/cms/media": "/admin/cms/media",
   "/cms/configuracion": "/admin/cms/settings",
   "/cms/blog": "/admin/cms/blog",
-  "/cms/editor": "/admin/cms/editor",
+  "/cms/editor": "/admin/cms/editor", 
   "/cms/categorias": "/admin/cms/categories",
 };
 
@@ -48,7 +51,10 @@ export default function CMSRedirect({
     if (!isLoading) {
       if (user || hasValidAuthCookie()) {
         const currentPath = source || window.location.pathname;
-        const targetPath = destination || redirectMap[currentPath];
+        // Usar targetPath directo si se proporciona, sino buscar en el mapa
+        // Si no está en el mapa, usar una ruta por defecto para evitar 404
+        const targetPath = destination || 
+                           (redirectMap[currentPath] || "/cms");
 
         if (targetPath) {
           console.log(`Redirigiendo de ${currentPath} a ${targetPath}`);
