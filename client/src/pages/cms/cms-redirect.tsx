@@ -1,5 +1,5 @@
 import React, { useEffect } from "react";
-import { useLocation } from "wouter";
+import { Link } from "wouter";
 import { Loader2 } from "lucide-react";
 
 interface CMSRedirectProps {
@@ -8,18 +8,23 @@ interface CMSRedirectProps {
 
 // Componente para redirigir entre rutas del CMS
 const CMSRedirect: React.FC<CMSRedirectProps> = ({ targetPath }) => {
-  const [, setLocation] = useLocation();
-  
   useEffect(() => {
-    // Redirigir a la ruta especificada después de que el componente se monte
-    setLocation(targetPath);
-  }, [targetPath, setLocation]);
+    // Usamos el componente Link para mantener el estado de la aplicación
+    // y preservar la sesión durante la redirección
+    const linkElement = document.getElementById("redirect-link");
+    if (linkElement) {
+      linkElement.click();
+    }
+  }, [targetPath]);
   
   return (
     <div className="flex items-center justify-center min-h-screen">
       <div className="text-center">
         <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto mb-4" />
-        <p className="text-muted-foreground">Redireccionando...</p>
+        <p className="text-muted-foreground">Redireccionando a {targetPath}...</p>
+        <Link href={targetPath}>
+          <a id="redirect-link" className="hidden">Continuar</a>
+        </Link>
       </div>
     </div>
   );
