@@ -25,6 +25,7 @@ import {
 import { useAuth } from "@/shared/hooks/use-auth";
 import AdminDashboard from "./dashboard";
 import AdminCMS from "./cms";
+import LearningModule from "./learning";
 
 // Componente de navegación para panel de administrador
 const NavItem = ({ href, icon, label, active, onClick }: any) => {
@@ -300,6 +301,10 @@ export default function AdminModule() {
               {location === "/admin/cms/categories" && "CMS - Categorías"}
               {location === "/admin/cms/media" && "CMS - Medios"}
               {location === "/admin/cms/branding" && "CMS - Marca"}
+              {location === "/admin/learning/courses" && "E-Learning - Cursos"}
+              {location === "/admin/learning/lessons" && "E-Learning - Lecciones"}
+              {location === "/admin/learning/quizzes" && "E-Learning - Cuestionarios"}
+              {location.startsWith("/admin/learning") && !location.includes("/courses") && !location.includes("/lessons") && !location.includes("/quizzes") && "E-Learning"}
               {location === "/admin/settings" && "Configuración"}
               {location === "/admin/api" && "API"}
             </h1>
@@ -319,6 +324,12 @@ export default function AdminModule() {
             <Route path="/admin/dashboard" component={AdminDashboard} />
             <Route path="/admin/cms" component={AdminCMS} />
             <Route path="/admin/cms/:rest*" component={AdminCMS} />
+            {/* Agregamos la ruta para el módulo de aprendizaje */}
+            <Route path="/admin/learning" component={() => {
+              window.location.href = "/admin/learning/courses";
+              return <div>Redirigiendo...</div>;
+            }} />
+            <Route path="/admin/learning/:rest*" component={LearningModule} />
             <Route path="/admin">
               {/* Redirección por defecto al dashboard */}
               {() => {
