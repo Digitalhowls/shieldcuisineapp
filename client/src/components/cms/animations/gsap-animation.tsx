@@ -1,7 +1,14 @@
 import React, { ReactNode, CSSProperties, useRef, useEffect } from 'react';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
-import { AnimationConfig, AnimationEffect, AnimationDirection, AnimationEasing } from './animation-config';
+import { 
+  AnimationConfig, 
+  AnimationEffect, 
+  AnimationDirection, 
+  AnimationEasing,
+  AnimationDuration,
+  AnimationDelay
+} from './animation-config';
 import { getGsapProps } from './animation-utils';
 
 // Registrar ScrollTrigger
@@ -13,8 +20,8 @@ gsap.registerPlugin(ScrollTrigger);
 export interface GSAPAnimationProps {
   children: ReactNode;
   effect?: AnimationEffect;
-  duration?: string | number;
-  delay?: string | number;
+  duration?: AnimationDuration;
+  delay?: AnimationDelay;
   repeat?: number;
   threshold?: number;
   intensity?: number;

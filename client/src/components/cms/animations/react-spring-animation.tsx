@@ -1,6 +1,13 @@
 import React, { ReactNode, CSSProperties } from 'react';
 import { animated, useSpring } from '@react-spring/web';
-import { AnimationConfig, AnimationEffect, AnimationDirection, AnimationEasing } from './animation-config';
+import { 
+  AnimationConfig, 
+  AnimationEffect, 
+  AnimationDirection, 
+  AnimationEasing,
+  AnimationDuration,
+  AnimationDelay
+} from './animation-config';
 import { getReactSpringProps } from './animation-utils';
 
 /**
@@ -9,8 +16,8 @@ import { getReactSpringProps } from './animation-utils';
 export interface ReactSpringAnimationProps {
   children: ReactNode;
   effect?: AnimationEffect;
-  duration?: string | number;
-  delay?: string | number;
+  duration?: AnimationDuration;
+  delay?: AnimationDelay;
   repeat?: number;
   intensity?: number;
   direction?: AnimationDirection;

@@ -33,6 +33,9 @@ import ImageBlock from "./blocks/ImageBlock";
 import HtmlBlock from "./blocks/HtmlBlock";
 import { AiBlock } from "./blocks/AiBlock";
 
+import { Block as BlockType } from './types';
+
+// Editor-specific Block interface
 export interface Block {
   id: string;
   type: string;
@@ -233,11 +236,11 @@ const BlockEditor: React.FC<BlockEditorProps> = ({
     // Renderiza el componente según el tipo de bloque
     return (
       <BlockContainer {...blockProps} type={block.type}>
-        {block.type === "heading" && <HeadingBlock {...blockProps} data={block} />}
-        {block.type === "text" && <TextBlock {...blockProps} data={block} />}
-        {block.type === "image" && <ImageBlock {...blockProps} data={block} />}
-        {block.type === "html" && <HtmlBlock {...blockProps} data={block} />}
-        {block.type === "ai" && <AiBlock {...blockProps} data={block} />}
+        {block.type === "heading" && <HeadingBlock {...blockProps} data={block as any} />}
+        {block.type === "text" && <TextBlock {...blockProps} data={block as any} />}
+        {block.type === "image" && <ImageBlock {...blockProps} data={block as any} />}
+        {block.type === "html" && <HtmlBlock {...blockProps} data={block as any} />}
+        {block.type === "ai" && <AiBlock {...blockProps} data={block as any} />}
         {/* Renderizamos un mensaje de error para tipos de bloques que aún no están implementados */}
         {!["heading", "text", "image", "html", "ai"].includes(block.type) && (
           <div className="p-4 border border-destructive bg-destructive/10 rounded-md">

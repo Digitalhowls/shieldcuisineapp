@@ -1,6 +1,13 @@
 import React, { ReactNode, CSSProperties } from 'react';
 import { motion } from 'framer-motion';
-import { AnimationConfig, AnimationEffect, AnimationDirection, AnimationEasing } from './animation-config';
+import { 
+  AnimationConfig, 
+  AnimationEffect, 
+  AnimationDirection, 
+  AnimationEasing,
+  AnimationDuration,
+  AnimationDelay
+} from './animation-config';
 import { getFramerMotionProps } from './animation-utils';
 
 /**
@@ -9,8 +16,8 @@ import { getFramerMotionProps } from './animation-utils';
 export interface FramerMotionAnimationProps {
   children: ReactNode;
   effect?: AnimationEffect;
-  duration?: string | number;
-  delay?: string | number;
+  duration?: AnimationDuration;
+  delay?: AnimationDelay;
   repeat?: number;
   threshold?: number;
   intensity?: number;
@@ -18,6 +25,7 @@ export interface FramerMotionAnimationProps {
   easing?: AnimationEasing;
   className?: string;
   onClick?: () => void;
+  style?: CSSProperties;
   // Para animaciones activadas por scroll
   scrollTrigger?: boolean;
   viewportOnce?: boolean;
@@ -56,9 +64,9 @@ export const FramerMotionAnimation: React.FC<FramerMotionAnimationProps> = ({
   
   // Convertir la configuración a propiedades de Framer Motion
   const motionProps = getFramerMotionProps({
-    effect,
-    duration,
-    delay,
+    effect: effect as AnimationEffect,
+    duration: duration as AnimationDuration,
+    delay: delay as AnimationDelay,
     repeat,
     intensity,
     direction,

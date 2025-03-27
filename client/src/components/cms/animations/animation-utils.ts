@@ -13,11 +13,19 @@ import {
 /**
  * Transformar configuración genérica a propiedades específicas de Framer Motion
  */
-export function getFramerMotionProps(config: Partial<AnimationConfig>) {
+export function getFramerMotionProps(config: {
+  effect: AnimationEffect;
+  duration: AnimationDuration;
+  delay: AnimationDelay;
+  repeat?: number;
+  intensity?: number;
+  direction?: AnimationDirection;
+  easing?: AnimationEasing;
+}) {
   const {
-    effect = 'none',
-    duration = 'normal',
-    delay = 'none',
+    effect,
+    duration,
+    delay,
     repeat = 0,
     intensity = 1,
     direction = 'none',

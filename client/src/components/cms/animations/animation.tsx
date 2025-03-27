@@ -18,11 +18,9 @@ import LottieAnimation from './lottie-animation';
 /**
  * Propiedades para el componente Animation
  */
-export interface AnimationProps {
+export interface AnimationProps extends Partial<AnimationConfig> {
   children: ReactNode;
-  // Configuración de animación
-  config?: Partial<AnimationConfig>;
-  // Biblioteca a utilizar
+  // Biblioteca a utilizar (opcional, sobrescribe config.library)
   library?: AnimationLibrary;
   // Clases CSS adicionales
   className?: string;
@@ -40,12 +38,36 @@ export interface AnimationProps {
  */
 export const Animation: React.FC<AnimationProps> = ({
   children,
-  config = defaultAnimationConfig,
   library,
   className = '',
   onClick,
-  style
+  style,
+  effect,
+  duration,
+  delay,
+  repeat,
+  threshold,
+  intensity,
+  direction,
+  easing,
+  scrollTrigger,
+  ...restProps
 }) => {
+  // Configurar animación con las propiedades directas y las por defecto
+  const config = {
+    ...defaultAnimationConfig,
+    effect: effect || defaultAnimationConfig.effect,
+    duration: duration || defaultAnimationConfig.duration,
+    delay: delay || defaultAnimationConfig.delay,
+    repeat: repeat ?? defaultAnimationConfig.repeat,
+    threshold: threshold ?? defaultAnimationConfig.threshold,
+    intensity: intensity ?? defaultAnimationConfig.intensity,
+    direction: direction || defaultAnimationConfig.direction,
+    easing: easing || defaultAnimationConfig.easing,
+    scrollTrigger: scrollTrigger ?? defaultAnimationConfig.scrollTrigger,
+    library: defaultAnimationConfig.library
+  };
+  
   // Biblioteca a utilizar (preferencia por la específica, luego la de config)
   const animationLibrary = library || config.library || 'framer-motion';
   
