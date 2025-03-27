@@ -5,8 +5,7 @@ import session from "express-session";
 import cookieParser from "cookie-parser";
 import { hash, verify } from "@node-rs/bcrypt";
 import { User as SelectUser } from "@shared/schema";
-import createMemoryStore from "memorystore";
-import * as directDb from "./direct-db";
+import { simpleStorage } from "./simple-storage";
 
 declare global {
   namespace Express {
@@ -45,17 +44,11 @@ export function setupAuth(app: Express) {
   
   console.log("Configuring session store...");
   
-  // Use MemoryStore directly for simplicity
-  const MemoryStore = createMemoryStore(session);
-  const memoryStore = new MemoryStore({
-    checkPeriod: 86400000 // Prune expired entries every 24h
-  });
-  
   const sessionSettings: session.SessionOptions = {
     secret: sessionSecret,
     resave: true, // Cambiado a true para garantizar la persistencia
     saveUninitialized: true, // Cambiado a true para mantener sesiones anónimas
-    store: memoryStore,
+    store: simpleStorage.sessionStore,
     cookie: {
       maxAge: 1000 * 60 * 60 * 24 * 7, // 1 week
       httpOnly: true,
@@ -76,7 +69,7 @@ export function setupAuth(app: Express) {
     new LocalStrategy(async (username, password, done) => {
       try {
         console.log(`Attempting login for user: ${username}`);
-        const user = await directDb.getUserByUsername(username);
+        const user = await simpleStorage.getUserByUsername(username);
         console.log(`User found:`, user ? `ID: ${user.id}` : "No user found");
         
         if (!user) {
@@ -104,7 +97,7 @@ export function setupAuth(app: Express) {
   passport.serializeUser((user, done) => done(null, user.id));
   passport.deserializeUser(async (id: number, done) => {
     try {
-      const user = await directDb.getUserById(id);
+      const user = await simpleStorage.getUser(id);
       done(null, user);
     } catch (err) {
       done(err);
@@ -113,12 +106,12 @@ export function setupAuth(app: Express) {
 
   app.post("/api/register", async (req, res, next) => {
     try {
-      const existingUser = await directDb.getUserByUsername(req.body.username);
+      const existingUser = await simpleStorage.getUserByUsername(req.body.username);
       if (existingUser) {
         return res.status(400).send("El nombre de usuario ya existe");
       }
 
-      const user = await directDb.createUser({
+      const user = await simpleStorage.createUser({
         ...req.body,
         password: await hashPassword(req.body.password),
       });
@@ -171,7 +164,7 @@ export function setupAuth(app: Express) {
         const userData = JSON.parse(authCookie);
         if (userData && userData.id) {
           // Buscar el usuario por ID como respaldo
-          const user = await directDb.getUserById(userData.id);
+          const user = await simpleStorage.getUser(userData.id);
           if (user) {
             // Regenerar sesión de manera transparente
             req.login(user, (err) => {

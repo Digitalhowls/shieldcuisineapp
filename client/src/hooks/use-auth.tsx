@@ -1,4 +1,4 @@
-import { createContext, ReactNode, useContext } from "react";
+import { createContext, ReactNode, useContext, useEffect } from "react";
 import {
   useQuery,
   useMutation,
@@ -8,6 +8,10 @@ import { insertUserSchema, User as SelectUser } from "@shared/schema";
 import { getQueryFn, apiRequest, queryClient } from "../lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { z } from "zod";
+import { hasValidAuthCookie, getAuthToken, setAuthToken, removeAuthToken } from "@/lib/cookie-auth";
+
+// Constantes para almacenamiento local
+const AUTH_USER_KEY = 'shield_cuisine_user';
 
 type AuthContextType = {
   user: SelectUser | null;
@@ -16,6 +20,7 @@ type AuthContextType = {
   loginMutation: UseMutationResult<SelectUser, Error, LoginData>;
   logoutMutation: UseMutationResult<void, Error, void>;
   registerMutation: UseMutationResult<SelectUser, Error, RegisterData>;
+  refreshUserSession: () => Promise<SelectUser | null>;
 };
 
 // Extend the insertUserSchema with additional validation
@@ -32,19 +37,109 @@ const registerSchema = insertUserSchema.extend({
 type RegisterData = z.infer<typeof registerSchema>;
 type LoginData = Pick<z.infer<typeof insertUserSchema>, "username" | "password">;
 
+// Funciones para manejar el almacenamiento local del usuario
+function saveUserToLocalStorage(user: SelectUser): void {
+  try {
+    localStorage.setItem(AUTH_USER_KEY, JSON.stringify(user));
+  } catch (error) {
+    console.error('Error saving user to localStorage:', error);
+  }
+}
+
+function getUserFromLocalStorage(): SelectUser | null {
+  try {
+    const storedUser = localStorage.getItem(AUTH_USER_KEY);
+    return storedUser ? JSON.parse(storedUser) : null;
+  } catch (error) {
+    console.error('Error reading user from localStorage:', error);
+    return null;
+  }
+}
+
+function removeUserFromLocalStorage(): void {
+  localStorage.removeItem(AUTH_USER_KEY);
+}
+
 export const AuthContext = createContext<AuthContextType | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const { toast } = useToast();
+  
+  // Función para obtener datos del usuario (expuesta en el contexto)
+  async function refreshUserSession(): Promise<SelectUser | null> {
+    try {
+      const res = await fetch('/api/user', {
+        credentials: 'include',
+        headers: {
+          'Cache-Control': 'no-cache',
+          'Pragma': 'no-cache'
+        }
+      });
+      
+      if (res.ok) {
+        const userData = await res.json();
+        saveUserToLocalStorage(userData);
+        queryClient.setQueryData(["/api/user"], userData);
+        return userData;
+      }
+      
+      // Si hay cookie pero no sesión, intentar restaurarla
+      if (hasValidAuthCookie()) {
+        const authToken = getAuthToken();
+        if (authToken && authToken.id) {
+          console.log("Encontrada cookie de autenticación, intentando restaurar sesión...");
+          // Aquí podríamos implementar un endpoint específico para restaurar sesión
+          // Por ahora solo devolvemos el usuario almacenado localmente como respaldo
+          const localUser = getUserFromLocalStorage();
+          if (localUser) {
+            queryClient.setQueryData(["/api/user"], localUser);
+            return localUser;
+          }
+        }
+      }
+      
+      return null;
+    } catch (error) {
+      console.error("Error refreshing user session:", error);
+      return getUserFromLocalStorage(); // Último recurso: usar datos locales
+    }
+  }
+
+  // Consulta principal para obtener usuario
   const {
     data: user,
     error,
     isLoading,
   } = useQuery<SelectUser | null, Error>({
     queryKey: ["/api/user"],
-    queryFn: getQueryFn({ on401: "returnNull" }),
+    queryFn: async () => {
+      try {
+        // Intentar obtener el usuario de la API
+        const res = await fetch('/api/user', { credentials: 'include' });
+        
+        if (res.ok) {
+          const userData = await res.json();
+          saveUserToLocalStorage(userData);
+          return userData;
+        }
+        
+        // Si no hay sesión en el servidor pero hay cookie o datos locales
+        if (hasValidAuthCookie() || getUserFromLocalStorage()) {
+          console.log("No hay sesión pero hay credenciales locales");
+          return getUserFromLocalStorage();
+        }
+        
+        return null;
+      } catch (error) {
+        console.error("Error fetching user:", error);
+        // Último recurso: usar datos locales
+        return getUserFromLocalStorage();
+      }
+    },
+    staleTime: 1000 * 60 * 5, // 5 minutos
   });
 
+  // Mutación de inicio de sesión
   const loginMutation = useMutation({
     mutationFn: async (credentials: LoginData) => {
       console.log("Attempting login with:", credentials.username);
@@ -61,7 +156,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     },
     onSuccess: (user: SelectUser) => {
       console.log("Login successful, user:", user);
+      // Almacenar en React Query, localStorage y cookie
       queryClient.setQueryData(["/api/user"], user);
+      saveUserToLocalStorage(user);
+      
+      // También guardamos datos básicos en cookie como respaldo
+      setAuthToken({
+        id: user.id,
+        username: user.username,
+        role: user.role
+      });
+      
       toast({
         title: "Inicio de sesión exitoso",
         description: `Bienvenido, ${user.name}`,
@@ -77,6 +182,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     },
   });
 
+  // Mutación de registro
   const registerMutation = useMutation({
     mutationFn: async (data: RegisterData) => {
       // Remove confirmPassword as it's not in the DB schema
@@ -85,7 +191,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return await res.json();
     },
     onSuccess: (user: SelectUser) => {
+      // Almacenar en todas partes
       queryClient.setQueryData(["/api/user"], user);
+      saveUserToLocalStorage(user);
+      setAuthToken({
+        id: user.id,
+        username: user.username,
+        role: user.role
+      });
+      
       toast({
         title: "Registro exitoso",
         description: `Bienvenido a ShieldCuisine, ${user.name}`,
@@ -100,12 +214,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     },
   });
 
+  // Mutación de cierre de sesión
   const logoutMutation = useMutation({
     mutationFn: async () => {
       await apiRequest("POST", "/api/logout");
     },
     onSuccess: () => {
+      // Limpiar datos en todas partes
       queryClient.setQueryData(["/api/user"], null);
+      removeUserFromLocalStorage();
+      removeAuthToken();
+      
       toast({
         title: "Sesión cerrada",
         description: "Has cerrado sesión correctamente",
@@ -117,6 +236,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         description: error.message,
         variant: "destructive",
       });
+      
+      // Limpiar de todos modos en caso de error
+      queryClient.setQueryData(["/api/user"], null);
+      removeUserFromLocalStorage();
+      removeAuthToken();
     },
   });
 
@@ -129,6 +253,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         loginMutation,
         logoutMutation,
         registerMutation,
+        refreshUserSession
       }}
     >
       {children}

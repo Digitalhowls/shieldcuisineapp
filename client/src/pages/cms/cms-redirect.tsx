@@ -42,19 +42,47 @@ export default function CMSRedirect({
   destination?: string;
 }) {
   const [, navigate] = useLocation();
-  const { user, isLoading } = useAuth();
+  const { user, isLoading, refreshUserSession } = useAuth();
   const [error, setError] = useState<string | null>(null);
   const [isRedirecting, setIsRedirecting] = useState(true);
 
   useEffect(() => {
-    // Verificar que tenemos usuario o cookie antes de redirigir
-    if (!isLoading) {
+    // Función asíncrona para verificar y actualizar la sesión antes de redireccionar
+    async function checkAuthAndRedirect() {
+      // Esperar a que termine de cargar
+      if (isLoading) return;
+
+      // Si usuario está autenticado o hay una cookie válida
       if (user || hasValidAuthCookie()) {
+        // Intentar actualizar la sesión si no hay usuario pero hay cookie
+        if (!user && hasValidAuthCookie()) {
+          try {
+            // Intentar refrescar la sesión
+            const refreshedUser = await refreshUserSession();
+            console.log("Usuario refrescado:", refreshedUser);
+            
+            // Si no se puede reactivar la sesión, mostrar error
+            if (!refreshedUser) {
+              setError("La sesión ha expirado pero se detectó una cookie. Por favor, inicie sesión nuevamente.");
+              setIsRedirecting(false);
+              setTimeout(() => navigate("/auth", { replace: true }), 2000);
+              return;
+            }
+          } catch (e) {
+            console.error("Error al refrescar la sesión:", e);
+            setError("Error al intentar restaurar la sesión. Por favor, inicie sesión nuevamente.");
+            setIsRedirecting(false);
+            setTimeout(() => navigate("/auth", { replace: true }), 2000);
+            return;
+          }
+        }
+
+        // Determinar la ruta de destino
         const currentPath = source || window.location.pathname;
+        
         // Usar targetPath directo si se proporciona, sino buscar en el mapa
         // Si no está en el mapa, usar una ruta por defecto para evitar 404
-        const targetPath = destination || 
-                           (redirectMap[currentPath] || "/cms");
+        const targetPath = destination || (redirectMap[currentPath] || "/cms");
 
         if (targetPath) {
           console.log(`Redirigiendo de ${currentPath} a ${targetPath}`);
@@ -68,12 +96,13 @@ export default function CMSRedirect({
         setError("No hay sesión activa. Por favor inicie sesión nuevamente.");
         setIsRedirecting(false);
         // Redirigir a la página de autenticación después de un breve retraso
-        setTimeout(() => {
-          navigate("/auth", { replace: true });
-        }, 2000);
+        setTimeout(() => navigate("/auth", { replace: true }), 2000);
       }
     }
-  }, [source, destination, navigate, isLoading, user]);
+    
+    // Ejecutar la función
+    checkAuthAndRedirect();
+  }, [source, destination, navigate, isLoading, user, refreshUserSession]);
 
   if (isLoading || isRedirecting) {
     return (
