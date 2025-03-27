@@ -1,9 +1,9 @@
 import React from "react";
 import { Route, Switch, useLocation } from "wouter";
 // Importamos las versiones simplificadas para evitar problemas con módulos duplicados
-import CoursesPage from "./simple-courses";
-import LessonsPage from "./simple-lessons";
-import QuizzesPage from "./simple-quizzes";
+import SimpleCourses from "./simple-courses";
+import SimpleLessons from "./simple-lessons";
+import SimpleQuizzes from "./simple-quizzes";
 
 export default function LearningModule() {
   const [location, setLocation] = useLocation();
@@ -69,9 +69,9 @@ export default function LearningModule() {
 
       <div className="container mx-auto p-4">
         <Switch>
-          <Route path="/admin/learning/courses" component={CoursesPage} />
-          <Route path="/admin/learning/lessons" component={LessonsPage} />
-          <Route path="/admin/learning/quizzes" component={QuizzesPage} />
+          <Route path="/admin/learning/courses" component={SimpleCourses} />
+          <Route path="/admin/learning/lessons" component={SimpleLessons} />
+          <Route path="/admin/learning/quizzes" component={SimpleQuizzes} />
         </Switch>
       </div>
     </div>

@@ -9,7 +9,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 
-export default function LessonsPage() {
+function SimpleLessons() {
   return (
     <div className="container mx-auto p-4">
       <div className="flex justify-between items-center mb-6">
@@ -40,3 +40,6 @@ export default function LessonsPage() {
     </div>
   );
 }
+
+// Exportamos la función principal como predeterminada
+export default SimpleLessons;
