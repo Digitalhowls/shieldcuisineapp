@@ -191,7 +191,7 @@ const mockCourses: Course[] = [
   },
 ];
 
-export default function CoursesPage() {
+function Courses() {
   const { toast } = useToast();
   const [courses, setCourses] = useState<Course[]>(mockCourses);
   const [isAddingCourse, setIsAddingCourse] = useState(false);
@@ -706,6 +706,5 @@ export default function CoursesPage() {
   );
 }
 
-export default function CoursesPage() {
-  return <Courses />;
-}
+// Exportamos la función principal como predeterminada
+export default Courses;

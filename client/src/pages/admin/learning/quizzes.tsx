@@ -323,7 +323,7 @@ const mockQuizzes: Quiz[] = [
   },
 ];
 
-export default function QuizzesPage() {
+function Quizzes() {
   const { toast } = useToast();
   const [quizzes, setQuizzes] = useState<Quiz[]>(mockQuizzes);
   const [isAddingQuiz, setIsAddingQuiz] = useState(false);
@@ -1150,6 +1150,5 @@ export default function QuizzesPage() {
   );
 }
 
-export default function QuizzesPage() {
-  return <Quizzes />;
-}
+// Exportamos la función principal como predeterminada
+export default Quizzes;

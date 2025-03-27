@@ -232,7 +232,7 @@ const mockLessons: Lesson[] = [
   },
 ];
 
-export default function LessonsPage() {
+function Lessons() {
   const { toast } = useToast();
   const [lessons, setLessons] = useState<Lesson[]>(mockLessons);
   const [isAddingLesson, setIsAddingLesson] = useState(false);
@@ -903,6 +903,5 @@ export default function LessonsPage() {
   );
 }
 
-export default function LessonsPage() {
-  return <Lessons />;
-}
+// Exportamos la función principal como predeterminada
+export default Lessons;

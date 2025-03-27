@@ -5,9 +5,11 @@ Esta hoja de ruta establece el plan de mejoras técnicas y estructurales para la
 ## Fase 1: Estructura y Organización (Corto plazo)
 
 ### 1.1 Reorganización de carpetas
-- [ ] Crear estructura clara con separación `client/src/admin` y `client/src/client`
-- [ ] Mover componentes existentes a la nueva estructura
-- [ ] Crear carpeta `client/src/shared` para lógica común entre interfaces
+- [x] Crear estructura clara con separación `client/src/admin` y `client/src/client`
+- [x] Mover componentes existentes a la nueva estructura
+- [x] Crear carpeta `client/src/shared` para lógica común entre interfaces
+  - [x] Mover componentes de autenticación a carpetas compartidas
+  - [ ] Mover otros componentes comunes a carpetas compartidas
 
 ### 1.2 Corrección de exportaciones duplicadas
 - [ ] Revisar y corregir todos los archivos con múltiples `export default`
