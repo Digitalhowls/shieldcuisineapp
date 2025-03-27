@@ -116,7 +116,7 @@ const apiKeyFormSchema = z.object({
 type ApiKeyFormValues = z.infer<typeof apiKeyFormSchema>;
 
 // Componente principal
-const ApiPage: React.FC = () => {
+export default function ApiPage() {
   const { toast } = useToast();
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState("keys");
@@ -973,4 +973,3 @@ def create_page(page_data):
   );
 };
 
-export default ApiPage;

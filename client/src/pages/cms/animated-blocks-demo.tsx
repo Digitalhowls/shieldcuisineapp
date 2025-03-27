@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import Animation from '@/components/cms/animations/animation';
 
-const AnimatedBlocksDemo = () => {
+export default function AnimatedBlocksDemo() {
   const demoBlocks = [
     {
       title: 'Fade In',
@@ -110,6 +110,4 @@ const AnimatedBlocksDemo = () => {
       </div>
     </CmsLayout>
   );
-};
-
-export default AnimatedBlocksDemo;
+}

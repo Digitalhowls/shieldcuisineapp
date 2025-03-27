@@ -8,7 +8,7 @@ import AnimationDemo from '@/components/cms/animations/animation-demo';
 import BlockEditor from '@/components/cms/block-editor';
 import { PageContent } from '@/components/cms/block-editor';
 
-const AnimationPlayground = () => {
+export default function AnimationPlayground() {
   const [content, setContent] = useState<PageContent>({
     blocks: [
       {
@@ -127,6 +127,4 @@ const AnimationPlayground = () => {
       </div>
     </CmsLayout>
   );
-};
-
-export default AnimationPlayground;
+}

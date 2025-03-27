@@ -151,7 +151,7 @@ const commonFonts = [
 ];
 
 // Componente principal
-const BrandingPage: React.FC = () => {
+export default function BrandingPage() {
   const { toast } = useToast();
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState("general");
@@ -1121,4 +1121,3 @@ const BrandingPage: React.FC = () => {
   );
 };
 
-export default BrandingPage;

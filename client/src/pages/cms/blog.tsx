@@ -82,7 +82,7 @@ interface BlogPost {
 
 type DialogMode = "create" | "edit" | "view" | "delete" | "preview" | null;
 
-const BlogPage: React.FC = () => {
+export default function BlogPage() {
   const { toast } = useToast();
   const { user } = useAuth();
   const [dialogMode, setDialogMode] = useState<DialogMode>(null);
@@ -422,6 +422,5 @@ const BlogPage: React.FC = () => {
       </Dialog>
     </div>
   );
-};
+}
 
-export default BlogPage;
