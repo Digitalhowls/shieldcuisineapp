@@ -2,6 +2,10 @@ import { pgTable, serial, text, boolean, timestamp, integer } from "drizzle-orm/
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
+// Definición de enumeraciones para los módulos bancarios
+export const bankAccountTypeEnum = z.enum(['checking', 'savings', 'credit']);
+export const bankTransactionTypeEnum = z.enum(['payment', 'charge', 'transfer', 'deposit', 'withdrawal', 'fee']);
+
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
   username: text("username").notNull(),

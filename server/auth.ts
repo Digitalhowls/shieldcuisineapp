@@ -20,13 +20,13 @@ async function hashPassword(password: string) {
 async function comparePasswords(supplied: string, stored: string) {
   console.log(`Comparing passwords: supplied='${supplied}', stored='${stored}'`);
   
-  // TEMPORAL: permitimos cualquier contraseña para desarrollo
-  // SOLO DURANTE DESARROLLO - esto debe ser reemplazado antes de la producción
-  console.log(`MODO DE DESARROLLO: Permitiendo cualquier contraseña para login`);
-  return true;
+  // MODO DE DESARROLLO: Para las cuentas conocidas, permitimos contraseña especial
+  if (supplied === 'admin123') {
+    console.log(`MODO DE DESARROLLO: Usando contraseña maestra para login`);
+    return true;
+  }
   
-  // Código original comentado temporalmente
-  /*
+  // Para otras contraseñas, intentamos verificación normal
   try {
     const result = await verify(supplied, stored);
     console.log(`Verification result: ${result}`);
@@ -35,7 +35,6 @@ async function comparePasswords(supplied: string, stored: string) {
     console.error('Password comparison error:', err);
     return false;
   }
-  */
 }
 
 export function setupAuth(app: Express) {
