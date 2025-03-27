@@ -20,9 +20,11 @@ import {
 
 interface AdminLayoutProps {
   children: ReactNode;
+  title?: string;
+  description?: string;
 }
 
-const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
+const AdminLayout: React.FC<AdminLayoutProps> = ({ children, title, description }) => {
   const [location] = useLocation();
   const { user, logoutMutation } = useAuth();
   const [sidebarOpen, setSidebarOpen] = React.useState(false);
@@ -122,7 +124,15 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
 
         {/* Contenido de la página */}
         <div className="flex-1">
-          {children}
+          {(title || description) && (
+            <div className="py-6 px-6 lg:px-8 border-b">
+              {title && <h1 className="text-2xl font-semibold">{title}</h1>}
+              {description && <p className="text-muted-foreground mt-1">{description}</p>}
+            </div>
+          )}
+          <div className={`${title || description ? 'p-6 lg:p-8' : ''}`}>
+            {children}
+          </div>
         </div>
       </main>
 

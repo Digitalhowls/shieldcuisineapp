@@ -17,6 +17,7 @@ import { registerPurchasingRoutes } from "./routes/purchasing";
 import { registerCmsRoutes } from "./routes/cms";
 import { registerCmsApiRoutes } from "./routes/cms-api";
 import { registerOpenAIApiRoutes } from "./routes/openai-api";
+import cmsModuleRoutes from "./routes/cms/index";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Setup auth routes
@@ -212,6 +213,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Registrar rutas de API para el CMS
   registerCmsApiRoutes(app);
+  
+  // Registrar rutas para los submódulos de CMS
+  app.use("/api/cms", cmsModuleRoutes);
   
   // Registrar rutas para la API de OpenAI
   registerOpenAIApiRoutes(app);

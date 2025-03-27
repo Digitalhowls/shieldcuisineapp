@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import AdminLayout from "@/components/layouts/admin-layout";
 import MediaLibrary from "@/components/cms/media/MediaLibrary";
 import MediaCategoryManager from "@/components/cms/media/MediaCategoryManager";
-import { Settings, Grid3, FolderTree } from "lucide-react";
+import { Settings, Grid, FolderTree } from "lucide-react";
 
 const MediaManagerPage = () => {
   const [activeTab, setActiveTab] = useState("library");
@@ -18,7 +18,7 @@ const MediaManagerPage = () => {
         <div className="flex justify-between items-end">
           <TabsList>
             <TabsTrigger value="library" className="gap-2">
-              <Grid3 size={16} />
+              <Grid size={16} />
               <span>Biblioteca</span>
             </TabsTrigger>
             <TabsTrigger value="categories" className="gap-2">

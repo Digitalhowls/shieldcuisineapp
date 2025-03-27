@@ -1,11 +1,13 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useCallback } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
-import { Input } from "@/components/ui/input";
+import { useDropzone } from "react-dropzone";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
+
 import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
 import {
   Select,
   SelectContent,
@@ -13,23 +15,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Progress } from "@/components/ui/progress";
 import {
-  Card,
-  CardContent,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import {
-  UploadCloud,
-  X,
   AlertCircle,
-  Check,
-  Loader2,
-  Image,
-  FileVideo,
+  Upload,
+  File,
   FileText,
-  File
+  FileImage,
+  FileVideo,
+  X,
+  Check,
 } from "lucide-react";
 
 interface MediaCategory {
@@ -43,433 +38,345 @@ interface MediaCategory {
   updatedAt: string;
 }
 
-interface MediaUploaderProps {
-  onUploadComplete: () => void;
+type MediaUploaderProps = {
+  onClose: () => void;
+  onSuccess?: () => void;
+  onUploadComplete?: () => void;
   categories?: MediaCategory[];
-  maxFiles?: number;
-  maxSizeMB?: number;
-  allowedTypes?: string[];
-}
+  companyId?: number;
+};
 
-interface FileWithPreview extends File {
+type FileWithStatus = File & {
   id: string;
-  preview?: string;
   progress: number;
+  status: "pending" | "uploading" | "success" | "error";
+  preview?: string;
   error?: string;
-  status: 'pending' | 'uploading' | 'success' | 'error';
-}
+};
 
 const MediaUploader: React.FC<MediaUploaderProps> = ({
+  onClose,
+  onSuccess,
   onUploadComplete,
   categories = [],
-  maxFiles = 10,
-  maxSizeMB = 10,
-  allowedTypes = ["image/*", "video/*", "application/pdf", "application/zip", "text/plain"],
+  companyId,
 }) => {
-  const { toast } = useToast();
   const { user } = useAuth();
-  const [files, setFiles] = useState<FileWithPreview[]>([]);
-  const [dragActive, setDragActive] = useState(false);
-  const [uploading, setUploading] = useState(false);
-  const [selectedCategories, setSelectedCategories] = useState<number[]>([]);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const [files, setFiles] = useState<FileWithStatus[]>([]);
+  const [selectedCategory, setSelectedCategory] = useState<string>("");
+  const [isUploading, setIsUploading] = useState(false);
 
-  const maxSizeBytes = maxSizeMB * 1024 * 1024;
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files.length > 0) {
-      addFiles(Array.from(e.target.files));
-    }
+  // Función para generar un ID único
+  const generateId = () => {
+    return crypto.randomUUID();
   };
 
-  const handleDrag = (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (e.type === "dragenter" || e.type === "dragover") {
-      setDragActive(true);
-    } else if (e.type === "dragleave") {
-      setDragActive(false);
-    }
-  };
-
-  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setDragActive(false);
-    
-    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-      addFiles(Array.from(e.dataTransfer.files));
-    }
-  };
-
-  const addFiles = (newFiles: File[]) => {
-    if (files.length + newFiles.length > maxFiles) {
-      toast({
-        title: "Demasiados archivos",
-        description: `No puedes subir más de ${maxFiles} archivos a la vez`,
-        variant: "destructive",
-      });
-      return;
-    }
-
-    const validatedFiles = newFiles.map((file) => {
-      // Validar tipo de archivo
-      const isValidType = allowedTypes.some((type) => {
-        if (type.endsWith('/*')) {
-          const mainType = type.split('/')[0];
-          return file.type.startsWith(`${mainType}/`);
-        }
-        return file.type === type;
-      });
-
-      // Validar tamaño
-      const isValidSize = file.size <= maxSizeBytes;
-
-      const fileWithPreview = {
-        ...file,
-        id: crypto.randomUUID(),
-        progress: 0,
-        status: 'pending' as const,
-      };
-
-      if (!isValidType) {
-        fileWithPreview.error = "Tipo de archivo no permitido";
-        fileWithPreview.status = "error";
-      } else if (!isValidSize) {
-        fileWithPreview.error = `El archivo excede el tamaño máximo de ${maxSizeMB}MB`;
-        fileWithPreview.status = "error";
-      }
-
-      // Generar vista previa para imágenes
+  // Configuración del dropzone
+  const onDrop = useCallback((acceptedFiles: File[]) => {
+    const newFiles = acceptedFiles.map((file) => {
+      // Solo crear previsualizaciones para imágenes
+      let preview = undefined;
       if (file.type.startsWith("image/")) {
-        fileWithPreview.preview = URL.createObjectURL(file);
+        preview = URL.createObjectURL(file);
       }
 
-      return fileWithPreview;
+      return Object.assign(file, {
+        id: generateId(),
+        progress: 0,
+        status: "pending",
+        preview,
+      });
     });
 
-    setFiles((prev) => [...prev, ...validatedFiles]);
-  };
+    setFiles((current) => [...current, ...newFiles]);
+  }, []);
 
+  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+    onDrop,
+    accept: {
+      "image/*": [],
+      "video/*": [],
+      "application/pdf": [],
+      "application/msword": [],
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document": [],
+      "application/vnd.ms-excel": [],
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": [],
+      "text/plain": [],
+      "text/html": [],
+      "text/css": [],
+      "text/javascript": [],
+    },
+    maxSize: 100 * 1024 * 1024, // 100MB
+  });
+
+  // Función para eliminar un archivo de la lista
   const removeFile = (id: string) => {
-    setFiles((prev) => {
-      const newFiles = prev.filter((f) => f.id !== id);
-      const fileToRemove = prev.find((f) => f.id === id);
-      
-      // Revocar URL de vista previa
-      if (fileToRemove?.preview) {
-        URL.revokeObjectURL(fileToRemove.preview);
-      }
-      
-      return newFiles;
+    setFiles((current) => {
+      const updatedFiles = current.filter((file) => file.id !== id);
+      return updatedFiles;
     });
   };
 
-  const handleUpload = async () => {
-    if (files.length === 0) return;
-    
-    const filesToUpload = files.filter((f) => f.status === "pending");
-    if (filesToUpload.length === 0) return;
-    
-    setUploading(true);
-    
-    let hasError = false;
-    
-    // Crear una copia para actualizar el progreso
-    const updatedFiles = [...files];
-    
-    for (let i = 0; i < filesToUpload.length; i++) {
-      const file = filesToUpload[i];
+  // Función para subir un archivo
+  const uploadFile = async (file: FileWithStatus) => {
+    try {
+      // Actualizar el estado a "uploading"
+      setFiles((current) =>
+        current.map((f) =>
+          f.id === file.id ? { ...f, status: "uploading" } : f
+        )
+      );
+
       const formData = new FormData();
       formData.append("file", file);
-      formData.append("companyId", user?.companyId?.toString() || "");
-      
-      if (selectedCategories.length > 0) {
-        selectedCategories.forEach(categoryId => {
-          formData.append("categories[]", categoryId.toString());
-        });
+      if (selectedCategory) {
+        formData.append("categoryId", selectedCategory);
       }
+      if (companyId) {
+        formData.append("companyId", companyId.toString());
+      } else if (user?.companyId) {
+        formData.append("companyId", user.companyId.toString());
+      }
+
+      const response = await fetch("/api/cms/media/upload", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Error al subir el archivo");
+      }
+
+      // Actualizar el estado a "success"
+      setFiles((current) =>
+        current.map((f) =>
+          f.id === file.id ? { ...f, status: "success", progress: 100 } : f
+        )
+      );
+
+      return await response.json();
+    } catch (error: any) {
+      console.error("Error al subir archivo:", error);
       
-      try {
-        // Actualizar estado a 'uploading'
-        const fileIndex = updatedFiles.findIndex((f) => f.id === file.id);
-        updatedFiles[fileIndex].status = "uploading";
-        setFiles([...updatedFiles]);
-        
-        const response = await fetch("/api/cms/media/upload", {
-          method: "POST",
-          body: formData,
+      // Actualizar el estado a "error"
+      setFiles((current) =>
+        current.map((f) =>
+          f.id === file.id ? { ...f, status: "error", error: error.message || "Error desconocido" } : f
+        )
+      );
+      
+      throw error;
+    }
+  };
+
+  // Función para subir todos los archivos
+  const uploadAllFiles = async () => {
+    if (files.length === 0) return;
+
+    setIsUploading(true);
+    let successCount = 0;
+    let errorCount = 0;
+
+    try {
+      const promises = files
+        .filter((file) => file.status === "pending")
+        .map(async (file) => {
+          try {
+            await uploadFile(file);
+            successCount++;
+          } catch (error) {
+            errorCount++;
+          }
         });
-        
-        if (!response.ok) {
-          throw new Error("Error al subir el archivo");
-        }
-        
-        // Actualizar estado a 'success'
-        updatedFiles[fileIndex].status = "success";
-        updatedFiles[fileIndex].progress = 100;
-        setFiles([...updatedFiles]);
-        
-      } catch (error) {
-        hasError = true;
-        
-        // Actualizar estado a 'error'
-        const fileIndex = updatedFiles.findIndex((f) => f.id === file.id);
-        updatedFiles[fileIndex].status = "error";
-        updatedFiles[fileIndex].error = error instanceof Error ? error.message : "Error desconocido";
-        setFiles([...updatedFiles]);
-        
+
+      await Promise.all(promises);
+
+      // Invalidar la caché para actualizar la vista
+      queryClient.invalidateQueries({ queryKey: ["/api/cms/media"] });
+
+      if (successCount > 0) {
         toast({
-          title: "Error",
-          description: `No se pudo subir el archivo ${file.name}`,
+          title: `${successCount} ${successCount === 1 ? "archivo subido" : "archivos subidos"} correctamente`,
+          description: errorCount > 0 ? `${errorCount} ${errorCount === 1 ? "archivo falló" : "archivos fallaron"}` : undefined,
+        });
+      } else if (errorCount > 0) {
+        toast({
+          title: "Error al subir archivos",
+          description: `Ningún archivo se pudo subir correctamente`,
           variant: "destructive",
         });
       }
-    }
-    
-    setUploading(false);
-    
-    if (!hasError) {
+
+      // Si todos se subieron con éxito, cerrar el diálogo
+      if (errorCount === 0 && successCount > 0) {
+        if (onSuccess) onSuccess();
+        if (onUploadComplete) onUploadComplete();
+      }
+    } catch (error: any) {
       toast({
-        title: "Subida completada",
-        description: `Se han subido ${filesToUpload.length} archivo(s) correctamente`,
+        title: "Error",
+        description: error.message || "Ocurrió un error al subir los archivos",
+        variant: "destructive",
       });
-      onUploadComplete();
+    } finally {
+      setIsUploading(false);
     }
   };
 
-  const handleSelectCategory = (categoryId: string) => {
-    const id = parseInt(categoryId);
-    if (selectedCategories.includes(id)) {
-      setSelectedCategories(selectedCategories.filter(c => c !== id));
-    } else {
-      setSelectedCategories([...selectedCategories, id]);
-    }
-  };
-
-  const clearFileInput = () => {
-    if (fileInputRef.current) {
-      fileInputRef.current.value = "";
-    }
-  };
-
-  // Renderizar estado de cada archivo
-  const renderFileStatus = (file: FileWithPreview) => {
-    switch (file.status) {
-      case "uploading":
-        return (
-          <div className="flex items-center text-primary">
-            <Loader2 className="h-4 w-4 animate-spin mr-1" />
-            <span className="text-xs">Subiendo</span>
-          </div>
-        );
-      case "success":
-        return (
-          <div className="flex items-center text-green-600">
-            <Check className="h-4 w-4 mr-1" />
-            <span className="text-xs">Completado</span>
-          </div>
-        );
-      case "error":
-        return (
-          <div className="flex items-center text-red-600">
-            <AlertCircle className="h-4 w-4 mr-1" />
-            <span className="text-xs">Error</span>
-          </div>
-        );
-      default:
-        return (
-          <div className="flex items-center text-muted-foreground">
-            <span className="text-xs">Pendiente</span>
-          </div>
-        );
-    }
-  };
-
-  // Renderizar icono según tipo de archivo
-  const renderFileIcon = (file: FileWithPreview) => {
-    if (file.type.startsWith("image/")) {
-      return file.preview ? (
-        <img
-          src={file.preview}
-          alt={file.name}
-          className="h-10 w-10 object-cover rounded"
-        />
-      ) : (
-        <Image className="h-8 w-8 text-blue-500" />
-      );
-    } else if (file.type.startsWith("video/")) {
+  // Función para obtener un icono según el tipo de archivo
+  const getFileIcon = (mimeType: string) => {
+    if (mimeType.startsWith("image/")) {
+      return <FileImage className="h-8 w-8 text-blue-500" />;
+    } else if (mimeType.startsWith("video/")) {
       return <FileVideo className="h-8 w-8 text-red-500" />;
-    } else if (file.type === "application/pdf" || file.type.includes("text/")) {
+    } else if (
+      mimeType === "application/pdf" ||
+      mimeType.includes("text/") ||
+      mimeType.includes("document")
+    ) {
       return <FileText className="h-8 w-8 text-orange-500" />;
     } else {
       return <File className="h-8 w-8 text-gray-500" />;
     }
   };
 
-  return (
-    <div className="space-y-4">
-      {/* Área de arrastrar y soltar */}
-      <div
-        className={`border-2 border-dashed rounded-md ${
-          dragActive ? "border-primary bg-primary/5" : "border-muted-foreground/25"
-        } transition-colors duration-200 py-8 flex flex-col items-center justify-center`}
-        onDragEnter={handleDrag}
-        onDragOver={handleDrag}
-        onDragLeave={handleDrag}
-        onDrop={handleDrop}
-      >
-        <UploadCloud
-          className={`h-10 w-10 mb-2 ${
-            dragActive ? "text-primary" : "text-muted-foreground"
-          }`}
-        />
-        <p className="text-sm font-medium mb-1">
-          Arrastra archivos aquí o haz clic para seleccionar
-        </p>
-        <p className="text-xs text-muted-foreground mb-3">
-          Subir hasta {maxFiles} archivos (máx. {maxSizeMB}MB cada uno)
-        </p>
-        <Button
-          onClick={() => fileInputRef.current?.click()}
-          variant="outline"
-          size="sm"
-          disabled={uploading}
-        >
-          Seleccionar archivos
-        </Button>
-        <Input
-          type="file"
-          multiple
-          ref={fileInputRef}
-          onChange={handleFileChange}
-          onClick={clearFileInput}
-          className="hidden"
-          disabled={uploading}
-          accept={allowedTypes.join(",")}
-        />
-      </div>
+  // Renderizar la lista de archivos
+  const renderFiles = () => {
+    if (files.length === 0) {
+      return null;
+    }
 
-      {/* Lista de archivos seleccionados */}
-      {files.length > 0 && (
-        <Card>
-          <CardHeader className="py-3">
-            <CardTitle className="text-base">Archivos seleccionados ({files.length})</CardTitle>
-          </CardHeader>
-          <CardContent className="p-0">
-            <ul className="divide-y">
-              {files.map((file) => (
-                <li key={file.id} className="p-3 flex items-center justify-between">
-                  <div className="flex items-center space-x-3 min-w-0">
-                    {renderFileIcon(file)}
-                    <div className="min-w-0 flex-1">
-                      <p className="text-sm truncate" title={file.name}>
-                        {file.name}
-                      </p>
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs text-muted-foreground">
-                          {(file.size / 1024 / 1024).toFixed(2)} MB
-                        </span>
-                        {renderFileStatus(file)}
-                      </div>
-                      {file.status === "uploading" && (
-                        <Progress
-                          value={file.progress}
-                          className="h-1 mt-1"
-                        />
-                      )}
-                      {file.error && (
-                        <p className="text-xs text-red-600 mt-1">
-                          {file.error}
-                        </p>
-                      )}
-                    </div>
+    return (
+      <div className="mt-4 space-y-2">
+        <h3 className="text-sm font-medium">Archivos seleccionados</h3>
+        <div className="space-y-3 max-h-80 overflow-y-auto pr-2">
+          {files.map((file) => (
+            <div
+              key={file.id}
+              className="flex items-center space-x-3 p-2 border rounded-md bg-background"
+            >
+              <div className="flex-shrink-0">
+                {file.preview ? (
+                  <div className="h-12 w-12 rounded overflow-hidden">
+                    <img
+                      src={file.preview}
+                      alt={file.name}
+                      className="h-full w-full object-cover"
+                    />
                   </div>
+                ) : (
+                  <div className="h-12 w-12 flex items-center justify-center">
+                    {getFileIcon(file.type)}
+                  </div>
+                )}
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium truncate" title={file.name}>
+                  {file.name}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {(file.size / 1024).toFixed(1)} KB
+                </p>
+                {file.status === "uploading" && (
+                  <Progress value={file.progress} className="h-1 mt-1" />
+                )}
+                {file.status === "error" && (
+                  <p className="text-xs text-destructive flex items-center mt-1">
+                    <AlertCircle className="h-3 w-3 mr-1" />
+                    {file.error || "Error al subir el archivo"}
+                  </p>
+                )}
+              </div>
+              <div className="flex-shrink-0">
+                {file.status === "success" ? (
+                  <Check className="h-5 w-5 text-green-500" />
+                ) : file.status === "error" ? (
+                  <AlertCircle className="h-5 w-5 text-destructive" />
+                ) : (
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="h-8 w-8"
-                    disabled={file.status === "uploading"}
                     onClick={() => removeFile(file.id)}
+                    disabled={isUploading}
                   >
                     <X className="h-4 w-4" />
                   </Button>
-                </li>
-              ))}
-            </ul>
-          </CardContent>
-          <CardFooter className="flex justify-between pt-4">
-            <div className="flex flex-col space-y-2">
-              {categories.length > 0 && (
-                <div className="space-y-2">
-                  <Label htmlFor="categories">Categorías</Label>
-                  <Select onValueChange={handleSelectCategory}>
-                    <SelectTrigger className="w-60">
-                      <SelectValue placeholder="Seleccionar categoría" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {categories.map((category) => (
-                        <SelectItem
-                          key={category.id}
-                          value={category.id.toString()}
-                        >
-                          {category.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  {selectedCategories.length > 0 && (
-                    <div className="flex flex-wrap gap-1 mt-2">
-                      {selectedCategories.map((categoryId) => {
-                        const category = categories.find(c => c.id === categoryId);
-                        return category ? (
-                          <Badge key={category.id} variant="secondary" className="flex items-center gap-1">
-                            {category.name}
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-4 w-4 p-0"
-                              onClick={() => setSelectedCategories(selectedCategories.filter(id => id !== categoryId))}
-                            >
-                              <X className="h-3 w-3" />
-                            </Button>
-                          </Badge>
-                        ) : null;
-                      })}
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setFiles([])}
-                disabled={uploading}
-              >
-                Limpiar todo
-              </Button>
-              <Button
-                size="sm"
-                onClick={handleUpload}
-                disabled={uploading || files.every(f => f.status !== "pending")}
-              >
-                {uploading ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Subiendo...
-                  </>
-                ) : (
-                  <>
-                    <UploadCloud className="mr-2 h-4 w-4" />
-                    Subir {files.filter(f => f.status === "pending").length} archivo(s)
-                  </>
                 )}
-              </Button>
+              </div>
             </div>
-          </CardFooter>
-        </Card>
+          ))}
+        </div>
+      </div>
+    );
+  };
+
+  return (
+    <div className="space-y-4">
+      <div
+        {...getRootProps()}
+        className={`border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-colors ${
+          isDragActive
+            ? "border-primary bg-primary/5"
+            : "border-muted-foreground/20 hover:border-primary/50 hover:bg-muted/50"
+        }`}
+      >
+        <input {...getInputProps()} />
+        <Upload className="h-10 w-10 mx-auto mb-4 text-muted-foreground" />
+        <p className="text-sm text-muted-foreground mb-1">
+          Arrastra archivos aquí o haz clic para seleccionar
+        </p>
+        <p className="text-xs text-muted-foreground">
+          Imágenes, videos, documentos y otros archivos (máx. 100MB)
+        </p>
+      </div>
+
+      {renderFiles()}
+
+      {files.length > 0 && (
+        <div className="space-y-4 mt-4">
+          <div>
+            <Label htmlFor="category">Categoría (opcional)</Label>
+            <Select
+              value={selectedCategory}
+              onValueChange={setSelectedCategory}
+            >
+              <SelectTrigger id="category">
+                <SelectValue placeholder="Seleccionar categoría" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="">Sin categoría</SelectItem>
+                {categories.map((category) => (
+                  <SelectItem key={category.id} value={category.id.toString()}>
+                    {category.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="flex items-center justify-end space-x-2">
+            <Button
+              variant="outline"
+              onClick={onClose}
+              disabled={isUploading}
+            >
+              Cancelar
+            </Button>
+            <Button
+              onClick={uploadAllFiles}
+              disabled={isUploading || files.length === 0}
+              className="gap-2"
+            >
+              <Upload className="h-4 w-4" />
+              <span>
+                {isUploading ? "Subiendo..." : "Subir archivos"}
+              </span>
+            </Button>
+          </div>
+        </div>
       )}
     </div>
   );
