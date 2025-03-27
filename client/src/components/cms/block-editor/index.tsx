@@ -73,6 +73,7 @@ const BlockEditor: React.FC<BlockEditorProps> = ({
   const { toast } = useToast();
   // Estado para los bloques
   const [content, setContent] = useState<PageContent>({ blocks: [] });
+  const [activeBlockId, setActiveBlockId] = useState<string | null>(null);
   
   // Inicializar con el contenido proporcionado
   useEffect(() => {
@@ -290,13 +291,77 @@ const BlockEditor: React.FC<BlockEditorProps> = ({
                 {content.blocks.map((block, index) => (
                   <BlockContainer
                     key={block.id}
+                    id={block.id}
+                    type={block.type}
                     block={block}
                     index={index}
-                    moveBlock={moveBlock}
+                    isActive={activeBlockId === block.id}
+                    onActivate={() => setActiveBlockId(block.id)}
+                    onDeactivate={() => setActiveBlockId(null)}
+                    onMove={moveBlock}
+                    onDelete={() => removeBlock(block.id)}
+                    onDuplicate={() => {
+                      // Crear una copia del bloque
+                      const newBlock = {
+                        ...block,
+                        id: uuidv4()
+                      };
+                      
+                      // Insertar después del bloque actual
+                      const newBlocks = [...content.blocks];
+                      newBlocks.splice(index + 1, 0, newBlock);
+                      
+                      const newContent = { ...content, blocks: newBlocks };
+                      setContent(newContent);
+                      
+                      if (onChange) {
+                        onChange(newContent);
+                      }
+                    }}
                     updateBlock={updateBlock}
-                    removeBlock={removeBlock}
                     readOnly={readOnly}
-                  />
+                  >
+                    {/* Contenido visual del bloque según su tipo */}
+                    <div className="block-content">
+                      {block.type === 'heading' && (
+                        <div className={`heading-${block.content.level || 'h2'}`}>
+                          {block.content.text || 'Título'}
+                        </div>
+                      )}
+                      
+                      {block.type === 'paragraph' && (
+                        <p>{block.content.text || 'Texto del párrafo'}</p>
+                      )}
+                      
+                      {block.type === 'image' && (
+                        <div className="image-block">
+                          {block.content.src ? (
+                            <img 
+                              src={block.content.src} 
+                              alt={block.content.alt || ''} 
+                              className="max-w-full"
+                            />
+                          ) : (
+                            <div className="border-2 border-dashed border-gray-300 rounded-md p-12 text-center">
+                              <p className="text-muted-foreground">Selecciona una imagen</p>
+                            </div>
+                          )}
+                          {block.content.caption && (
+                            <p className="text-sm text-muted-foreground mt-2">{block.content.caption}</p>
+                          )}
+                        </div>
+                      )}
+                      
+                      {/* Placeholder para otros tipos de bloques */}
+                      {!['heading', 'paragraph', 'image'].includes(block.type) && (
+                        <div className="p-4 border rounded-md bg-muted/20">
+                          <p className="text-sm text-muted-foreground">
+                            Bloque de tipo: <strong>{block.type}</strong>
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  </BlockContainer>
                 ))}
               </div>
             )}

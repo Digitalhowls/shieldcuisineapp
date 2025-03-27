@@ -1,4 +1,4 @@
-import React, { useRef } from "react";
+import React, { useRef, useState } from "react";
 import { useDrag, useDrop } from "react-dnd";
 import { Trash2, Copy, Move, Settings, ChevronUp, ChevronDown } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -12,17 +12,22 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
+import BlockSettingsPanel from "./block-settings-panel";
+import { BlockType } from "./types";
+
 interface BlockContainerProps {
   id: string;
   type: string;
   index: number;
   isActive: boolean;
   children: React.ReactNode;
+  block?: any; // Datos del bloque
   onActivate: () => void;
   onDeactivate: () => void;
   onMove: (dragIndex: number, hoverIndex: number) => void;
   onDelete: () => void;
   onDuplicate: () => void;
+  updateBlock?: (id: string, content: any) => void; // Función para actualizar el contenido del bloque
   readOnly?: boolean;
 }
 
@@ -38,14 +43,17 @@ const BlockContainer: React.FC<BlockContainerProps> = ({
   index,
   isActive,
   children,
+  block,
   onActivate,
   onDeactivate,
   onMove,
   onDelete,
   onDuplicate,
+  updateBlock,
   readOnly = false,
 }) => {
   const ref = useRef<HTMLDivElement>(null);
+  const [isSettingsPanelOpen, setIsSettingsPanelOpen] = useState(false);
   
   // Configuración de Drag and Drop
   const [{ isDragging }, drag, preview] = useDrag({
@@ -236,6 +244,17 @@ const BlockContainer: React.FC<BlockContainerProps> = ({
               <Button
                 size="icon"
                 variant="ghost"
+                className="h-7 w-7 text-blue-500 hover:text-blue-600 hover:bg-blue-50"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setIsSettingsPanelOpen(true);
+                }}
+              >
+                <Settings className="h-4 w-4" />
+              </Button>
+              <Button
+                size="icon"
+                variant="ghost"
                 className="h-7 w-7 text-amber-500 hover:text-amber-600 hover:bg-amber-50"
                 onClick={(e) => {
                   e.stopPropagation();
@@ -267,6 +286,21 @@ const BlockContainer: React.FC<BlockContainerProps> = ({
       )}
       
       <div className={`p-2 ${isActive ? "z-20 relative" : ""}`}>{children}</div>
+      
+      {/* Panel de configuración lateral */}
+      {!readOnly && block && updateBlock && (
+        <BlockSettingsPanel
+          blockType={type as BlockType}
+          blockData={block.content}
+          onChange={(newContent) => {
+            if (updateBlock) {
+              updateBlock(id, newContent);
+            }
+          }}
+          isVisible={isSettingsPanelOpen}
+          onClose={() => setIsSettingsPanelOpen(false)}
+        />
+      )}
     </motion.div>
   );
 };

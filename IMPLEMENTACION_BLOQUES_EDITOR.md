@@ -1,334 +1,234 @@
-# IMPLEMENTACIÓN DE BLOQUES EN EL EDITOR CMS
+# Implementación de Bloques para el Editor CMS
 
-Este documento describe en detalle la implementación de los diferentes tipos de bloques en el editor visual del CMS, incluyendo su estructura, propiedades y consideraciones técnicas.
+Este documento describe los tipos de bloques disponibles en el editor del CMS de ShieldCuisine, su estructura y funcionalidades.
 
-## 1. ARQUITECTURA DE BLOQUES
+## Tipos de Bloques
 
-### 1.1 Estructura Base
+El editor de ShieldCuisine es un sistema modular basado en bloques que permite la construcción de páginas mediante drag & drop. Los siguientes tipos de bloques están disponibles:
 
-Cada bloque sigue esta estructura base:
+### 1. Bloques de Texto
+
+#### Párrafo
+- Editor de texto enriquecido con opciones básicas
+- Soporte para enlaces, negritas, cursivas, subrayados
+- Opción de justificación y sangría
+
+#### Título
+- 6 niveles de título (H1-H6)
+- Opciones de estilo (tamaño, color, alineación)
+- Identificador automático para anclajes
+
+#### Lista
+- Listas ordenadas y no ordenadas
+- Listas anidadas
+- Marcadores personalizables
+
+#### Cita
+- Estilo de blockquote personalizable
+- Opción para atribución de autor
+- Variantes de diseño disponibles
+
+### 2. Bloques Multimedia
+
+#### Imagen
+- Carga desde biblioteca de medios
+- Recorte y ajuste integrado
+- Opciones de alineación y tamaño
+- Texto alternativo para accesibilidad
+- Lightbox opcional
+
+#### Galería
+- Diferentes layouts (grid, masonry, slider)
+- Opciones de espaciado y bordes
+- Lightbox integrado
+
+#### Vídeo
+- Soporte para vídeos subidos o embebidos (YouTube, Vimeo)
+- Opciones de reproducción automática, controles, etc.
+- Poster personalizable
+
+#### Audio
+- Reproductor de audio con controles
+- Soporte para archivos MP3, WAV, etc.
+- Visualización opcional de forma de onda
+
+### 3. Bloques de Interacción
+
+#### Botón
+- Personalización completa (color, tamaño, bordes)
+- Opciones de animación hover
+- Enlaces internos/externos o ejecución de acciones
+
+#### Formulario
+- Constructor de formularios drag & drop
+- Validación de campos
+- Integración con sistema de notificaciones
+- Anti-spam y CAPTCHA
+
+#### Acordeón/Tabs
+- Contenido colapsable
+- Personalización de diseño y comportamiento
+- Anidación de bloques dentro de cada sección
+
+### 4. Bloques Dinámicos
+
+#### Lista de Entradas
+- Muestra entradas de blog filtradas
+- Opciones de paginación, filtrado y ordenación
+- Múltiples layouts disponibles
+
+#### Cursos
+- Muestra cursos disponibles o seleccionados
+- Opciones de visualización (grid, lista, carrusel)
+- Filtrado por categoría, niveles, etc.
+
+#### Productos
+- Integración con WooCommerce
+- Diversos layouts de visualización
+- Filtrado por categoría, precio, etc.
+
+### 5. Bloques de Diseño
+
+#### Separador
+- Líneas, iconos o elementos decorativos
+- Personalización de estilo y espaciado
+
+#### Columnas
+- División flexible del contenido
+- Ajuste de ancho por breakpoint
+- Opción de fondo y bordes por columna
+
+#### Contenedor
+- Agrupa bloques con un estilo común
+- Opciones de fondo, bordes, sombras, etc.
+- Márgenes y rellenos personalizables
+
+### 6. Bloques Avanzados
+
+#### HTML Personalizado
+- Inserción directa de código HTML
+- Modo seguro para evitar scripts maliciosos
+
+#### Embebido
+- Inserción de cualquier contenido embebible (tweets, posts de Instagram, etc.)
+- Ajuste de ancho y altura
+- Caché opcional para mejorar rendimiento
+
+#### AI Content
+- Generación de contenido con IA
+- Opciones para tono, extensión, etc.
+- Edición posterior del contenido generado
+
+## Estructura Técnica
+
+Cada bloque sigue esta estructura técnica:
 
 ```typescript
 interface Block {
-  id: string;          // Identificador único (UUID v4)
-  type: BlockType;     // Tipo de bloque (heading, paragraph, etc.)
-  content: any;        // Contenido específico del bloque
+  id: string;           // Identificador único
+  type: string;         // Tipo de bloque
+  content: any;         // Contenido específico del bloque
+  settings: Settings;   // Configuración visual y comportamiento
+  metadata: Metadata;   // Datos adicionales no visuales
+}
+
+interface Settings {
+  layout?: string;      // Variante de layout si aplica
+  alignment?: string;   // Alineación del contenido
+  background?: Background; // Fondo (color, degradado, imagen)
+  spacing?: Spacing;    // Márgenes y padding
+  typography?: Typography; // Configuración de texto si aplica
+  responsive?: Responsive; // Comportamiento en diferentes dispositivos
+}
+
+interface Metadata {
+  createdAt: string;    // Fecha de creación
+  updatedAt: string;    // Fecha de última modificación
+  visibility?: string;  // Visibilidad condicional
+  animations?: Animation[]; // Animaciones asociadas
+  customClasses?: string[]; // Clases CSS personalizadas
 }
 ```
 
-### 1.2 Sistema de Renderizado
+## Sistema de Drag & Drop
 
-El componente `BlockContainer.tsx` utiliza un patrón de renderizado condicional basado en el tipo de bloque:
+El sistema de drag & drop utiliza `react-dnd` para permitir:
 
-```typescript
-renderBlockContent = () => {
-  switch (block.type) {
-    case 'heading': 
-      return <HeadingBlockContent {...props} />;
-    case 'paragraph':
-      return <ParagraphBlockContent {...props} />;
-    // ... otros tipos de bloques
+1. Añadir nuevos bloques desde el selector
+2. Reordenar bloques existentes
+3. Mover bloques entre contenedores y columnas
+4. Duplicar bloques con todas sus propiedades
+
+Cada bloque tiene:
+- Manejadores de arrastre
+- Menú contextual (duplicar, eliminar, etc.)
+- Indicadores visuales durante el arrastre
+
+## Guardado y Persistencia
+
+Los bloques se serializan a JSON para su almacenamiento en la base de datos, incluyendo:
+
+```json
+{
+  "blocks": [
+    {
+      "id": "block-1",
+      "type": "heading",
+      "content": {
+        "text": "Título de la página",
+        "level": 1
+      },
+      "settings": {
+        "alignment": "center",
+        "typography": {
+          "font": "Roboto",
+          "size": 32,
+          "weight": 700
+        }
+      }
+    },
+    // Más bloques...
+  ],
+  "version": "1.0",
+  "metadata": {
+    "lastSaved": "2025-02-15T12:30:00Z",
+    "author": "admin"
   }
-};
-```
-
-## 2. BLOQUES IMPLEMENTADOS
-
-### 2.1 Bloque de Título (`heading`)
-
-**Propiedades:**
-```typescript
-{
-  text: string;        // Texto del título
-  level: 'h1' | 'h2' | 'h3' | 'h4'; // Nivel jerárquico
 }
 ```
 
-**Interfaz de edición:**
-- Campo de texto para el contenido
-- Selector para nivel de título (H1-H4)
+## Renderizado y Visualización
 
-**Consideraciones:**
-- H1 debería usarse una sola vez por página (SEO)
-- El nivel de título refleja la jerarquía de contenido
+El contenido estructurado en bloques se renderiza de dos formas:
 
-### 2.2 Bloque de Párrafo (`paragraph`)
+1. **Editor**: Con controles, manejadores y panel de opciones
+2. **Vista pública**: Solo el contenido final optimizado
 
-**Propiedades:**
-```typescript
-{
-  text: string;        // Texto del párrafo
-}
-```
+La vista previa permite alternar entre diferentes tamaños de pantalla para verificar el diseño responsivo.
 
-**Interfaz de edición:**
-- Área de texto con múltiples líneas
-- Soporte para saltos de línea
+## Extensibilidad
 
-**Consideraciones:**
-- Soporte futuro para formato básico (negrita, cursiva, enlaces)
+El sistema permite crear bloques personalizados mediante:
 
-### 2.3 Bloque de Imagen (`image`)
+1. Definición del esquema del bloque
+2. Componente de edición
+3. Componente de renderizado
+4. Controles de configuración
 
-**Propiedades:**
-```typescript
-{
-  src: string;         // URL de la imagen
-  alt: string;         // Texto alternativo (accesibilidad)
-  caption: string;     // Pie de foto opcional
-}
-```
+Los bloques personalizados aparecen en el selector junto a los bloques estándar.
 
-**Interfaz de edición:**
-- Campo para URL de imagen
-- Botón para seleccionar desde biblioteca
-- Campos para texto alternativo y pie de foto
+## Integración con la Biblioteca de Medios
 
-**Consideraciones:**
-- Integración pendiente con la biblioteca de medios
-- Posible adición de propiedades de tamaño y alineación
+Los bloques multimedia (imagen, galería, video) se integran con la biblioteca de medios para:
 
-### 2.4 Bloque de Galería (`gallery`)
+1. Seleccionar archivos existentes
+2. Subir nuevos archivos durante la edición
+3. Organizar los archivos por categorías
+4. Filtrar por tipo de archivo
 
-**Propiedades:**
-```typescript
-{
-  images: Array<{
-    src: string;       // URL de la imagen
-    alt: string;       // Texto alternativo
-    caption?: string;  // Pie de foto opcional
-  }>;
-}
-```
+## Próximas Mejoras
 
-**Interfaz de edición:**
-- Lista de imágenes con posibilidad de reordenar
-- Botón para añadir nuevas imágenes
-- Campos para cada imagen (similar al bloque de imagen)
-
-**Consideraciones:**
-- Implementación pendiente de la interfaz completa
-- Opciones futuras para estilo de galería (grid, carrusel, mosaico)
-
-### 2.5 Bloque de Botón (`button`)
-
-**Propiedades:**
-```typescript
-{
-  text: string;        // Texto del botón
-  url: string;         // URL de destino
-  variant: 'default' | 'outline' | 'ghost' | 'link'; // Estilo visual
-}
-```
-
-**Interfaz de edición:**
-- Campo para texto del botón
-- Campo para URL de destino
-- Selector de variante visual
-
-**Consideraciones:**
-- Posible adición de opciones de tamaño
-- Integración con sistema de navegación interna
-
-### 2.6 Bloque de Vídeo (`video`)
-
-**Propiedades:**
-```typescript
-{
-  src: string;         // URL del video
-  type: 'youtube' | 'vimeo' | 'file'; // Tipo de fuente
-  autoplay?: boolean;  // Reproducción automática
-  controls?: boolean;  // Mostrar controles
-}
-```
-
-**Interfaz de edición:**
-- Campo para URL de video
-- Selector de tipo de fuente
-- Opciones de configuración (autoplay, controles)
-
-**Consideraciones:**
-- Implementación pendiente de la interfaz completa
-- Gestión de aspectos de privacidad y rendimiento
-
-### 2.7 Bloque de Divisor (`divider`)
-
-**Propiedades:**
-```typescript
-{
-  style: 'solid' | 'dashed' | 'dotted' | 'double'; // Estilo de línea
-}
-```
-
-**Interfaz de edición:**
-- Selector de estilo visual
-
-**Consideraciones:**
-- Posible adición de opciones de color y grosor
-- Uso semántico apropiado en HTML
-
-### 2.8 Bloque de Cita (`quote`)
-
-**Propiedades:**
-```typescript
-{
-  text: string;        // Texto de la cita
-  author: string;      // Autor de la cita
-}
-```
-
-**Interfaz de edición:**
-- Área de texto para la cita
-- Campo para el autor
-
-**Consideraciones:**
-- Representación semántica con elementos `<blockquote>` y `<cite>`
-- Posible adición de estilos visuales predefinidos
-
-### 2.9 Bloque de Lista (`list`)
-
-**Propiedades:**
-```typescript
-{
-  items: string[];     // Elementos de la lista
-  type: 'ordered' | 'unordered'; // Tipo de lista
-}
-```
-
-**Interfaz de edición:**
-- Campo para cada elemento con posibilidad de añadir/eliminar
-- Selector de tipo de lista
-
-**Consideraciones:**
-- Implementación pendiente de la interfaz completa
-- Posible soporte futuro para listas anidadas
-
-### 2.10 Bloque de HTML personalizado (`html`)
-
-**Propiedades:**
-```typescript
-{
-  code: string;        // Código HTML personalizado
-}
-```
-
-**Interfaz de edición:**
-- Editor de código con resaltado de sintaxis
-
-**Consideraciones:**
-- Medidas de seguridad para el código HTML insertado
-- Advertencias sobre posibles problemas de accesibilidad o renderizado
-
-### 2.11 Bloque de Formulario de Contacto (`contact-form`)
-
-**Propiedades:**
-```typescript
-{
-  title: string;       // Título del formulario
-  fields: Array<{
-    name: string;      // Nombre del campo
-    label: string;     // Etiqueta visible
-    type: 'text' | 'email' | 'textarea' | 'select' | 'checkbox'; // Tipo
-    required: boolean; // Obligatorio u opcional
-    options?: string[]; // Opciones para select
-  }>;
-  submitLabel: string; // Texto del botón de envío
-  successMessage: string; // Mensaje de éxito tras envío
-}
-```
-
-**Interfaz de edición:**
-- Campo para título del formulario
-- Gestor de campos con posibilidad de añadir/eliminar/reordenar
-- Configuración para cada campo
-- Campos para mensajes y etiquetas
-
-**Consideraciones:**
-- Implementación pendiente de la interfaz completa
-- Integración con sistema de procesamiento de formularios
-- Gestión de GDPR y consentimiento de datos
-
-## 3. EXTENSIÓN DEL SISTEMA DE BLOQUES
-
-### 3.1 Proceso para Añadir Nuevos Tipos de Bloques
-
-1. **Definir el tipo**: Añadir el nuevo tipo a la unión `BlockType`
-2. **Implementar contenido predeterminado**: Añadir en la función `addBlock` del editor
-3. **Crear componente de renderizado**: Implementar en `BlockContainer.tsx`
-4. **Añadir a la barra de herramientas**: Incluir en `BlockToolbar.tsx`
-5. **Documentar propiedades y uso**: Actualizar la documentación
-
-### 3.2 Ideas para Futuros Bloques
-
-- **Acordeón**: Contenido expandible/colapsable
-- **Pestañas**: Contenido organizado en pestañas
-- **Mapa**: Integración con servicios de mapas
-- **Contador**: Números animados para estadísticas
-- **Descargas**: Enlaces a archivos con estadísticas
-- **Slider/Carrusel**: Contenido deslizable
-- **Testimonios**: Diseño específico para opiniones de clientes
-- **Redes Sociales**: Integración con feeds de redes sociales
-- **Calendario/Eventos**: Visualización de fechas y eventos
-- **Gráficos**: Visualización de datos
-
-## 4. ASPECTOS TÉCNICOS
-
-### 4.1 Gestión de Estado
-
-- Uso de `useState` para el contenido principal
-- Funciones `useCallback` para operaciones con bloques
-- Sincronización con el formulario principal vía props
-
-### 4.2 Drag & Drop
-
-- Implementado con `react-dnd` y `react-dnd-html5-backend`
-- Función `moveBlock` para la reorganización
-- Interfaz visual durante el arrastre
-
-### 4.3 Serialización/Deserialización
-
-- Almacenamiento como JSON en la base de datos
-- Parsing en el efecto `useEffect` al inicializar
-- Manejo de formatos incorrectos con fallback
-
-### 4.4 Rendimiento
-
-- Uso de `key` en listas para optimizar rendering
-- Operaciones inmutables para actualización de estado
-- Potencial para memoización de componentes pesados
-
-## 5. USABILIDAD Y ACCESIBILIDAD
-
-### 5.1 Consideraciones de Usabilidad
-
-- Interfaz intuitiva con botones claros
-- Retroalimentación visual durante interacciones
-- Barra de herramientas con acciones contextuales
-- Vista previa en tiempo real
-
-### 5.2 Consideraciones de Accesibilidad
-
-- Contraste adecuado en la interfaz
-- Etiquetas descriptivas en controles
-- Manejo de teclado para todas las operaciones
-- Fomento de prácticas accesibles (como textos alt)
-
-## 6. PRUEBAS Y GARANTÍA DE CALIDAD
-
-### 6.1 Pruebas Manuales
-
-- Verificación de todas las operaciones CRUD por bloque
-- Pruebas de responsividad en diferentes dispositivos
-- Validación de la experiencia de usuario
-
-### 6.2 Pruebas Automatizadas
-
-- Tests end-to-end para flujos principales
-- Tests unitarios para funciones críticas
-- Tests de integración para la interacción con la API
-
-### 6.3 Control de Calidad
-
-- Revisión de código por pares
-- Documentación actualizada
-- Guía de estilo y patrones consistentes
+1. Bloques templatizados (secciones prediseñadas)
+2. Sistema de revisiones para restaurar versiones anteriores
+3. Colaboración en tiempo real
+4. Mejora de la experiencia móvil para edición in-situ

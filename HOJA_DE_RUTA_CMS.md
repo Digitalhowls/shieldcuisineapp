@@ -1,181 +1,131 @@
-# HOJA DE RUTA: CMS Y CONSTRUCTOR WEB
+# Hoja de Ruta: Módulo CMS
 
-## 1. ARQUITECTURA DEL CMS
+## Visión General
+El módulo CMS de ShieldCuisine es una solución completa para la gestión de contenido que permite a los negocios de alimentación crear y gestionar su presencia digital de forma autónoma, sin depender de servicios externos como WordPress.
 
-### 1.1 Estructura de Componentes
-- **Gestión de Páginas** (`client/src/pages/cms/paginas.tsx`)
-  - Vista general de páginas creadas
-  - CRUD completo (Crear, Leer, Actualizar, Eliminar)
-  - Filtrado por estado y tipo
-- **Editor de Páginas** (`client/src/components/cms/page-editor.tsx`)
-  - Formulario completo con pestañas
-  - Información básica (título, slug, descripción)
-  - Configuración (estado, visibilidad, tipo)
-  - Editor de contenido (visual/HTML)
-  - SEO (metaTitle, metaDescription)
-- **Editor de Bloques** (`client/src/components/cms/block-editor/*`)
-  - `index.tsx`: Componente principal y tipos
-  - `BlockToolbar.tsx`: Barra de herramientas para añadir bloques
-  - `BlockContainer.tsx`: Contenedor de bloques con opciones
-  - `EmptyState.tsx`: Estado vacío al iniciar una nueva página
+## Fases de Desarrollo
 
-### 1.2 Modelos de Datos
-- `PageContent`: Estructura principal del contenido
-  ```typescript
-  interface PageContent {
-    blocks: Block[];
-    settings?: {
-      layout?: 'full' | 'boxed';
-      spacing?: 'tight' | 'normal' | 'loose';
-      background?: string;
-    };
-  }
-  ```
-- `Block`: Bloque individual de contenido
-  ```typescript
-  interface Block {
-    id: string;
-    type: BlockType;
-    content: any;
-  }
-  ```
-- `BlockType`: Tipos de bloques soportados
-  ```typescript
-  type BlockType = 
-    | 'heading'
-    | 'paragraph'
-    | 'image'
-    | 'gallery'
-    | 'button'
-    | 'video'
-    | 'divider'
-    | 'quote'
-    | 'list'
-    | 'html'
-    | 'contact-form';
-  ```
+### Fase 1: Infraestructura Base ✅
+- [x] Definición del esquema de base de datos para contenidos
+- [x] Creación de la estructura modular del CMS
+- [x] Implementación del sistema de autenticación y permisos
+- [x] Configuración de rutas API básicas
 
-### 1.3 Almacenamiento
-- Los datos se almacenan en PostgreSQL a través de tablas definidas en `shared/schema.ts`:
-  - `cmsPages`: Páginas del CMS
-  - `cmsCategories`: Categorías para organizar contenido
-  - `cmsTags`: Etiquetas para clasificar contenido
-  - `cmsMedia`: Biblioteca de medios
-  - `cmsBranding`: Configuración de marca
-  - `cmsMenus`: Menús de navegación
-  - `cmsFormSubmissions`: Envíos de formularios
+### Fase 2: Gestión de Medios ✅
+- [x] Biblioteca de medios con vista de cuadrícula/lista
+- [x] Uploader con soporte drag & drop
+- [x] Sistema de categorías para organización
+- [x] Optimización automática de imágenes
+- [x] Visualización y filtrado por tipo
 
-## 2. EDITOR DE BLOQUES
+### Fase 3: Editor de Bloques ⚙️
+- [x] Estructura base del editor
+- [x] Bloques de texto básicos (párrafo, título, lista)
+- [x] Bloques multimedia (imagen, galería, vídeo)
+- [x] Sistema drag & drop para reordenamiento
+- [ ] Panel de configuración lateral para bloques
+- [ ] Guardado y recuperación del contenido
 
-### 2.1 Funcionalidades Implementadas
-- **Sistema Drag & Drop**: Reorganización de bloques mediante arrastrar y soltar
-- **Herramientas de Edición**: Barra de herramientas con bloques comunes y avanzados
-- **Contenido Dinámico**: Edición y actualización en tiempo real
-- **Persistencia**: Almacenamiento como JSON en la base de datos
-- **Vista Previa**: Previsualización del contenido final
+### Fase 4: Páginas y Blog 🔄
+- [ ] Estructura de páginas y directorio
+- [ ] Sistema de blog con categorías y etiquetas
+- [ ] Campos SEO (metadatos, slug personalizado)
+- [ ] Programación de publicaciones
+- [ ] Vista previa de contenido desde administración
 
-### 2.2 Tipos de Bloques Disponibles
-- **Básicos**:
-  - `heading`: Títulos (H1-H4)
-  - `paragraph`: Párrafos de texto
-  - `image`: Imágenes con caption
-  - `button`: Botones interactivos
-- **Avanzados**:
-  - `gallery`: Galerías de imágenes
-  - `video`: Integración de videos
-  - `divider`: Separadores visuales
-  - `quote`: Citas destacadas
-  - `list`: Listas ordenadas y no ordenadas
-  - `html`: Código HTML personalizado
-  - `contact-form`: Formularios de contacto
+### Fase 5: Mejoras del Editor 📝
+- [ ] Bloques avanzados (tabs, acordeón, carrusel)
+- [ ] Bloques dinámicos (listados de entradas, cursos)
+- [ ] Bloques HTML y embebido de contenido externo
+- [ ] Historial de revisiones y control de versiones
+- [ ] Templates y secciones prediseñadas
 
-### 2.3 Flujo de Interacción del Editor
-1. **Creación**: El usuario selecciona "Nueva página" o edita una existente
-2. **Edición**: Uso del editor visual para añadir/editar bloques
-3. **Organización**: Reordenación de bloques mediante drag & drop
-4. **Configuración**: Ajuste de propiedades específicas de cada bloque
-5. **Vista Previa**: Visualización del resultado final antes de publicar
-6. **Publicación**: Cambio de estado a "publicado" y disponibilidad en web
+### Fase 6: Personalización y Branding 🎨
+- [ ] Configuración de logo y favicon
+- [ ] Selector de paleta de colores
+- [ ] Biblioteca de tipografías (Google Fonts)
+- [ ] Personalización de dominio o subdominio
+- [ ] Configuraciones globales de estilo
 
-## 3. PLAN DE IMPLEMENTACIÓN COMPLETA
+### Fase 7: Integración con Módulos 🧩
+- [ ] Conexión con módulo de cursos para publicación
+- [ ] Integración con portal de transparencia
+- [ ] Conectividad con WooCommerce
+- [ ] Vinculación al sistema de notificaciones
+- [ ] Integración con módulo de facturación
 
-### 3.1 Fase 1: Infraestructura Base (Completada)
-- ✅ Estructura de datos en PostgreSQL
-- ✅ Componentes UI base con Shadcn
-- ✅ Sistema de autenticación y autorización
-- ✅ Gestor de páginas básico
-- ✅ Editor visual con bloques fundamentales
+### Fase 8: API y Extensibilidad 🔌
+- [ ] API REST completa para acceso externo
+- [ ] Documentación OpenAPI/Swagger
+- [ ] Sistema de webhooks para eventos
+- [ ] Tokens de autenticación para API
+- [ ] Soporte para headless CMS
 
-### 3.2 Fase 2: Mejoras del Editor (En progreso)
-- ⬜ Completar todos los tipos de bloques
-- ⬜ Añadir estilos personalizados a bloques
-- ⬜ Mejorar sistema drag & drop con animaciones
-- ⬜ Implementar historial de cambios (undo/redo)
-- ⬜ Sistema de plantillas predefinidas
+### Fase 9: Performance y SEO 🚀
+- [ ] Optimización de rendimiento (carga diferida)
+- [ ] Generación automática de sitemap.xml
+- [ ] Implementación Schema.org
+- [ ] Configuración de Open Graph para redes sociales
+- [ ] Soporte para microformatos
 
-### 3.3 Fase 3: Gestión de Medios
-- ⬜ Biblioteca de medios completa
-- ⬜ Carga y optimización de imágenes
-- ⬜ Organización por carpetas
-- ⬜ Recorte y edición básica de imágenes
-- ⬜ Integración con el editor de bloques
+### Fase 10: Inteligencia Artificial 🧠
+- [ ] Generación de contenido asistida por IA
+- [ ] Sugerencias de mejora SEO
+- [ ] Análisis de legibilidad y accesibilidad
+- [ ] Traducción automática preliminar
+- [ ] Asistente de diseño inteligente
 
-### 3.4 Fase 4: Sistema de Temas y Personalización
-- ⬜ Editor de temas global
-- ⬜ Personalización de colores y tipografías
-- ⬜ Configuración de espaciados y layouts
-- ⬜ Componentes reutilizables
-- ⬜ Exportación e importación de temas
+## Estado Actual
 
-### 3.5 Fase 5: Gestión de Menús y Navegación
-- ⬜ Creación y edición de menús visuales
-- ⬜ Asignación de ubicaciones para menús
-- ⬜ Anidación de elementos de menú
-- ⬜ Integración con páginas existentes
+El módulo CMS se encuentra actualmente en la **Fase 3** de desarrollo, con las siguientes características implementadas:
 
-### 3.6 Fase 6: SEO y Rendimiento
-- ⬜ Panel de SEO avanzado
-- ⬜ Análisis de contenido para SEO
-- ⬜ Generación de sitemap
-- ⬜ Optimización de rendimiento front-end
-- ⬜ Caché de páginas generadas
+### Implementado ✅
+- Sistema completo de gestión de medios con categorización
+- Estructura base del editor de bloques
+- Bloques fundamentales de texto y multimedia
+- API para gestión de categorías de medios
+- Integración con autenticación
 
-### 3.7 Fase 7: API y Extensibilidad
-- ⬜ API REST completa para gestión de contenido
-- ⬜ Sistema de hooks para extensiones
-- ⬜ Documentación API
-- ⬜ Ejemplos de integraciones
-- ⬜ SDK para desarrolladores
+### En Progreso 🔄
+- Sistema drag & drop para reordenamiento de bloques
+- Panel de configuración de bloques
+- Guardado y recuperación de contenido
+- Implementación de botones de acción en bloques
+- Edición contextual in-situ
 
-## 4. CASOS DE USO Y PRUEBAS
+### Próximos Pasos 📋
+1. Completar funcionalidades del editor de bloques
+2. Implementar la estructura de páginas y blog
+3. Crear vista previa de páginas en construcción
+4. Desarrollar sistema de revisiones básico
+5. Implementar campos y herramientas SEO
 
-### 4.1 Casos de Uso Principales
-- Creación de páginas web corporativas
-- Publicación de artículos de blog
-- Generación de landing pages
-- Diseño de páginas de cursos
-- Construcción de formularios personalizados
+## Integraciones Principales
 
-### 4.2 Pruebas Automatizadas
-- **Tests de Navegación** (`tests/basic-navigation.spec.js`)
-- **Tests de Autenticación** (`tests/auth.spec.js`)
-- **Tests del Módulo CMS** (`tests/cms-module.spec.js`)
-- **Tests de API** (`tests/api.spec.js`)
+El CMS se conectará con otros módulos de ShieldCuisine:
 
-## 5. INTEGRACIÓN CON OTROS MÓDULOS
+1. **Módulo de Cursos**: Publicación de cursos como páginas públicas o entradas de blog.
+2. **Portal de Transparencia**: Generación de páginas públicas con datos relevantes.
+3. **WooCommerce**: Sincronización con productos y categorías.
+4. **Sistema de Notificaciones**: Alertas sobre cambios y publicaciones.
+5. **Branding Global**: Compartir configuraciones de estilo con otros módulos.
 
-### 5.1 APPCC
-- Visualización de registros APPCC
-- Personalización de informes públicos
+## Consideraciones Técnicas
 
-### 5.2 E-Learning
-- Publicación de material de cursos
-- Presentación de contenido formativo
+- **Frontend**: React + React DnD para sistema de bloques
+- **Backend**: Node.js + Express con PostgreSQL
+- **Imágenes**: Optimización y almacenamiento eficiente
+- **SSR/SSG**: Generación de páginas estáticas para SEO
+- **API**: Estructura RESTful con documentación completa
 
-### 5.3 Transparencia Portal
-- Generación de páginas públicas
-- Visualización de datos de seguridad alimentaria
+## Monetización
 
-### 5.4 WooCommerce
-- Sincronización de contenido con tienda
-- Diseño de páginas de producto
+El módulo CMS formará parte de los planes de suscripción de ShieldCuisine:
+
+1. **CMS Básico** (15€/mes): Páginas + blog + branding básico
+2. **CMS Pro** (29€/mes): + Cursos públicos + dominio propio + API + SEO avanzado
+3. **CMS White Label** (49-99€/mes): Full branding sin ShieldCuisine visible
+
+---
+
+Esta hoja de ruta se actualizará periódicamente para reflejar el progreso y ajustar las prioridades según las necesidades del proyecto.

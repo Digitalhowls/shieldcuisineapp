@@ -35,5 +35,5 @@ export default defineConfig({
     },
   ],
   outputDir: 'test-results',
-  testMatch: '**/*.spec.js',
+  testMatch: '**/*.{spec,test}.js',
 });
