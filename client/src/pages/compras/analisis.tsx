@@ -38,7 +38,7 @@ interface AnalysisResponse {
   charts?: any;
 }
 
-const PurchaseAnalysis = () => {
+function PurchaseAnalysis() {
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("supplier_performance");
   const [timeframe, setTimeframe] = useState("last_month");
@@ -311,6 +311,6 @@ const PurchaseAnalysis = () => {
       </div>
     </Layout>
   );
-};
+}
 
 export default PurchaseAnalysis;

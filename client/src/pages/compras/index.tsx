@@ -50,7 +50,7 @@ const getStatusText = (status: string) => {
   return statusMap[status] || status;
 };
 
-const ComprasIndex = () => {
+function ComprasIndex() {
   const [, setLocation] = useLocation();
   const [activeTab, setActiveTab] = useState("todas");
   const [searchQuery, setSearchQuery] = useState("");
@@ -326,6 +326,6 @@ const ComprasIndex = () => {
       </Tabs>
     </div>
   );
-};
+}
 
 export default ComprasIndex;

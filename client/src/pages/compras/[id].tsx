@@ -132,7 +132,7 @@ const getStatusIcon = (status: string) => {
 };
 
 // Componente principal
-const ComprasDetalle = () => {
+function ComprasDetalle() {
   const [, params] = useRoute('/compras/:id');
   const orderId = params?.id ? parseInt(params.id) : 0;
   const [, setLocation] = useLocation();

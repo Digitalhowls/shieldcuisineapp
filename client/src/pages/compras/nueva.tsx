@@ -60,7 +60,7 @@ const orderSchema = z.object({
 
 type OrderFormValues = z.infer<typeof orderSchema>;
 
-const ComprasNueva = () => {
+function ComprasNueva() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
 
