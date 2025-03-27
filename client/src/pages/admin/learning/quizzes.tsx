@@ -1149,3 +1149,7 @@ export default function QuizzesPage() {
     </div>
   );
 }
+
+export default function QuizzesPage() {
+  return <Quizzes />;
+}

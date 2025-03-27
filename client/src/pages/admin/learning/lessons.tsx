@@ -902,3 +902,7 @@ export default function LessonsPage() {
     </div>
   );
 }
+
+export default function LessonsPage() {
+  return <Lessons />;
+}

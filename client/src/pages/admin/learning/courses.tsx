@@ -705,3 +705,7 @@ export default function CoursesPage() {
     </div>
   );
 }
+
+export default function CoursesPage() {
+  return <Courses />;
+}

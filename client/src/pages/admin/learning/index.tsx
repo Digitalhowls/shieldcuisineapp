@@ -1,9 +1,9 @@
 import React from "react";
 import { Route, Switch, useLocation } from "wouter";
-// Importamos las páginas del módulo e-learning
-import CoursesPage from "./courses";
-import LessonsPage from "./lessons";
-import QuizzesPage from "./quizzes";
+// Importamos las versiones simplificadas para evitar problemas con módulos duplicados
+import CoursesPage from "./simple-courses";
+import LessonsPage from "./simple-lessons";
+import QuizzesPage from "./simple-quizzes";
 
 export default function LearningModule() {
   const [location, setLocation] = useLocation();
