@@ -42,7 +42,7 @@ const demoImages: GalleryImage[] = [
   }
 ];
 
-const GalleryDemo: React.FC = () => {
+export default function GalleryDemo() {
   const { toast } = useToast();
   const [viewType, setViewType] = useState<GalleryViewType>('grid');
   const [columns, setColumns] = useState<2 | 3 | 4>(3);
@@ -188,6 +188,4 @@ const GalleryDemo: React.FC = () => {
       </div>
     </AdminLayout>
   );
-};
-
-export default GalleryDemo;
+}

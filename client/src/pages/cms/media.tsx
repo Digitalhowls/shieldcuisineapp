@@ -81,7 +81,7 @@ const formatFileSize = (bytes: number): string => {
 };
 
 // Componente principal
-const MediaPage: React.FC = () => {
+export default function MediaPage() {
   const { toast } = useToast();
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState("all");
@@ -689,4 +689,3 @@ const RenderMediaGrid: React.FC<MediaGridProps> = ({
   );
 };
 
-export default MediaPage;

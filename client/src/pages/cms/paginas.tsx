@@ -65,7 +65,7 @@ interface Page {
 type DialogMode = "create" | "edit" | "view" | "delete" | "preview" | null;
 
 // Componente principal
-const PaginasPage: React.FC = () => {
+export default function PaginasPage() {
   const { toast } = useToast();
   const { user } = useAuth();
   const [dialogMode, setDialogMode] = useState<DialogMode>(null);
@@ -460,4 +460,3 @@ const PaginasPage: React.FC = () => {
   );
 };
 
-export default PaginasPage;

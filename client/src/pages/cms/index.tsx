@@ -20,10 +20,10 @@ import BlockEditor from "@/components/cms/block-editor";
 /**
  * Componente para la página de edición de una página individual
  */
-const EditorPage: React.FC<{
+function EditorPage({ pageId, onBack }: {
   pageId?: string;
   onBack: () => void;
-}> = ({ pageId, onBack }) => {
+}) {
   const { toast } = useToast();
   const isNew = !pageId;
   
@@ -65,7 +65,7 @@ const EditorPage: React.FC<{
 /**
  * Componente para el listado y gestión de páginas
  */
-const PaginasPage: React.FC = () => {
+function PaginasPage() {
   const { toast } = useToast();
   const [editingPageId, setEditingPageId] = useState<string | null>(null);
   const [isCreating, setIsCreating] = useState(false);
@@ -170,7 +170,7 @@ const PaginasPage: React.FC = () => {
 /**
  * Componente temporal de blog hasta que se implemente
  */
-const BlogPage: React.FC = () => {
+function BlogPage() {
   return (
     <div className="container mx-auto py-6">
       <h1 className="text-3xl font-bold tracking-tight">Blog</h1>
@@ -187,7 +187,7 @@ const BlogPage: React.FC = () => {
 /**
  * Componente principal del dashboard del CMS
  */
-const CMSDashboard: React.FC = () => {
+function CMSDashboard() {
   return (
     <div className="container mx-auto py-6">
       <h1 className="text-3xl font-bold tracking-tight">Dashboard CMS</h1>
@@ -216,7 +216,7 @@ const CMSDashboard: React.FC = () => {
  * Módulo principal del CMS
  * Maneja el enrutamiento interno dentro del módulo CMS
  */
-const CMSModule: React.FC = () => {
+export default function CMSModule() {
   const [location] = useLocation();
   
   return (
@@ -241,6 +241,4 @@ const CMSModule: React.FC = () => {
       </Route>
     </Switch>
   );
-};
-
-export default CMSModule;
+}
