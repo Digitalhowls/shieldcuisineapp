@@ -12,9 +12,9 @@ Esta hoja de ruta establece el plan de mejoras técnicas y estructurales para la
   - [ ] Mover otros componentes comunes a carpetas compartidas
 
 ### 1.2 Corrección de exportaciones duplicadas
-- [ ] Revisar y corregir todos los archivos con múltiples `export default`
-- [ ] Estandarizar la forma de exportar componentes en todos los módulos
-- [ ] Documentar convenciones de exportación para futuro desarrollo
+- [x] Revisar y corregir todos los archivos con múltiples `export default`
+- [x] Estandarizar la forma de exportar componentes en todos los módulos
+- [x] Documentar convenciones de exportación para futuro desarrollo
 
 ### 1.3 Validación de tipos
 - [ ] Corregir errores de tipado en componentes

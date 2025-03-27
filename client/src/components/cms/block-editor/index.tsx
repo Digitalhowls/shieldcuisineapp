@@ -11,39 +11,24 @@ import { Separator } from '@/components/ui/separator';
 import { Card, CardContent } from '@/components/ui/card';
 import { Save, Eye } from 'lucide-react';
 
-// Tipos de bloques disponibles
-export type BlockType = 
-  | 'heading'
-  | 'paragraph'
-  | 'image'
-  | 'gallery'
-  | 'button'
-  | 'video'
-  | 'divider'
-  | 'quote'
-  | 'list'
-  | 'html'
-  | 'contact-form'
-  | 'table';
-
-// Interfaz para un bloque genérico
-export interface Block {
-  id: string;
-  type: BlockType;
-  content: any;
-  animation?: {
-    effect?: string;
-    duration?: string | number;
-    delay?: string | number;
-    repeat?: number;
-    threshold?: number;
-    intensity?: number;
-    direction?: string;
-    easing?: string;
-    scrollTrigger?: boolean;
-    library?: string;
-  };
-}
+import {
+  Block,
+  BlockType,
+  BlockContent,
+  HeadingContent,
+  ParagraphContent,
+  ImageContent,
+  GalleryContent,
+  ButtonContent,
+  VideoContent,
+  QuoteContent,
+  ListContent,
+  HtmlContent,
+  FormContent,
+  TableContent,
+  DividerContent,
+  ContactFormContent
+} from './types';
 
 // Interfaz para el contenido de la página completa
 export interface PageContent {
@@ -134,20 +119,27 @@ const BlockEditor: React.FC<BlockEditorProps> = ({
         newBlock.content = { text: 'Cita', author: '' };
         break;
       case 'list':
-        newBlock.content = { items: ['Elemento 1'], type: 'unordered' };
+        newBlock.content = { 
+          items: [{ text: 'Elemento 1', level: 0 }], 
+          type: 'unordered' 
+        };
         break;
       case 'html':
         newBlock.content = { code: '<!-- Inserta tu código HTML aquí -->' };
         break;
       case 'contact-form':
-        newBlock.content = { 
+        // Casting explícito a ContactFormContent y luego se asigna a BlockContent
+        const contactForm: ContactFormContent = { 
           title: 'Formulario de contacto',
           fields: [
             { name: 'name', label: 'Nombre', type: 'text', required: true },
             { name: 'email', label: 'Email', type: 'email', required: true },
             { name: 'message', label: 'Mensaje', type: 'textarea', required: true }
-          ]
+          ],
+          successMessage: 'Gracias por contactarnos',
+          errorMessage: 'Hubo un error al enviar el formulario'
         };
+        newBlock.content = contactForm as BlockContent;
         break;
       case 'table':
         newBlock.content = {
@@ -179,7 +171,9 @@ const BlockEditor: React.FC<BlockEditorProps> = ({
     }
   }, [content, onChange]);
 
-  const updateBlock = useCallback((id: string, updatedContent: any, updatedProperties?: any) => {
+  type BlockUpdateProperties = Partial<Omit<Block, 'id' | 'type' | 'content'>>;
+
+  const updateBlock = useCallback((id: string, updatedContent: BlockContent, updatedProperties?: BlockUpdateProperties) => {
     const newBlocks = content.blocks.map(block => {
       if (block.id === id) {
         // Si hay propiedades adicionales para actualizar (como animation), las incluimos
@@ -229,7 +223,14 @@ const BlockEditor: React.FC<BlockEditorProps> = ({
     }
   }, [content, onChange]);
 
-  const updateSettings = useCallback((settings: any) => {
+  interface PageSettings {
+    layout?: 'full' | 'boxed';
+    spacing?: 'tight' | 'normal' | 'loose';
+    background?: string;
+    [key: string]: any; // Para permitir configuraciones adicionales
+  }
+
+  const updateSettings = useCallback((settings: Partial<PageSettings>) => {
     const newContent = { ...content, settings: { ...content.settings, ...settings } };
     setContent(newContent);
     
@@ -324,21 +325,21 @@ const BlockEditor: React.FC<BlockEditorProps> = ({
                     {/* Contenido visual del bloque según su tipo */}
                     <div className="block-content">
                       {block.type === 'heading' && (
-                        <div className={`heading-${block.content.level || 'h2'}`}>
-                          {block.content.text || 'Título'}
+                        <div className={`heading-${(block.content as HeadingContent).level || 'h2'}`}>
+                          {(block.content as HeadingContent).text || 'Título'}
                         </div>
                       )}
                       
                       {block.type === 'paragraph' && (
-                        <p>{block.content.text || 'Texto del párrafo'}</p>
+                        <p>{(block.content as ParagraphContent).text || 'Texto del párrafo'}</p>
                       )}
                       
                       {block.type === 'image' && (
                         <div className="image-block">
-                          {block.content.src ? (
+                          {(block.content as ImageContent).src ? (
                             <img 
-                              src={block.content.src} 
-                              alt={block.content.alt || ''} 
+                              src={(block.content as ImageContent).src} 
+                              alt={(block.content as ImageContent).alt || ''} 
                               className="max-w-full"
                             />
                           ) : (
@@ -346,14 +347,38 @@ const BlockEditor: React.FC<BlockEditorProps> = ({
                               <p className="text-muted-foreground">Selecciona una imagen</p>
                             </div>
                           )}
-                          {block.content.caption && (
-                            <p className="text-sm text-muted-foreground mt-2">{block.content.caption}</p>
+                          {(block.content as ImageContent).caption && (
+                            <p className="text-sm text-muted-foreground mt-2">{(block.content as ImageContent).caption}</p>
                           )}
                         </div>
                       )}
                       
+                      {/* Visualización para formulario de contacto */}
+                      {block.type === 'contact-form' && (
+                        <div className="p-4 border rounded-md">
+                          <h3 className="text-lg font-medium mb-2">
+                            {(block.content as ContactFormContent).title}
+                          </h3>
+                          <div className="space-y-2">
+                            {((block.content as ContactFormContent).fields || []).map((field: { label: string; required?: boolean; type: string; }, i: number) => (
+                              <div key={i} className="flex flex-col">
+                                <p className="text-sm font-medium mb-1">
+                                  {field.label}{field.required && ' *'}
+                                </p>
+                                <div className="h-8 bg-muted/20 rounded-md"></div>
+                              </div>
+                            ))}
+                            <div className="mt-4">
+                              <div className="bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2 rounded-md inline-flex items-center justify-center text-sm font-medium">
+                                Enviar
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                      
                       {/* Placeholder para otros tipos de bloques */}
-                      {!['heading', 'paragraph', 'image'].includes(block.type) && (
+                      {!['heading', 'paragraph', 'image', 'contact-form'].includes(block.type) && (
                         <div className="p-4 border rounded-md bg-muted/20">
                           <p className="text-sm text-muted-foreground">
                             Bloque de tipo: <strong>{block.type}</strong>

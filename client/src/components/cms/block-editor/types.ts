@@ -2,6 +2,9 @@
  * Tipos para el editor de bloques
  */
 
+/**
+ * Definición de tipos de bloques disponibles
+ */
 export type BlockType = 
   | 'heading'
   | 'paragraph'
@@ -14,24 +17,43 @@ export type BlockType =
   | 'divider'
   | 'list'
   | 'html'
-  | 'form';
+  | 'form'
+  | 'contact-form';
+
+// Unión de todos los posibles tipos de contenido
+export type BlockContent =
+  | HeadingContent
+  | ParagraphContent
+  | ImageContent
+  | GalleryContent
+  | ButtonContent
+  | QuoteContent
+  | TableContent
+  | VideoContent
+  | DividerContent
+  | ListContent
+  | HtmlContent
+  | FormContent
+  | ContactFormContent;
+
+export interface AnimationOptions {
+  effect?: string;
+  duration?: string | number;
+  delay?: string | number;
+  repeat?: number;
+  intensity?: number;
+  direction?: string;
+  easing?: string;
+  library?: string;
+  threshold?: number;
+  scrollTrigger?: boolean;
+}
 
 export interface Block {
   id: string;
   type: BlockType;
-  content: any;
-  animation?: {
-    effect?: string;
-    duration?: string | number;
-    delay?: string | number;
-    repeat?: number;
-    intensity?: number;
-    direction?: string;
-    easing?: string;
-    library?: string;
-    threshold?: number;
-    scrollTrigger?: boolean;
-  };
+  content: BlockContent;
+  animation?: AnimationOptions;
 }
 
 /**
@@ -138,6 +160,14 @@ export interface FormFieldContent {
   defaultValue?: string;
 }
 
+export interface ContactFormFieldContent {
+  name: string;
+  label: string;
+  type: 'text' | 'email' | 'textarea' | 'select' | 'checkbox' | 'radio';
+  required?: boolean;
+  options?: { value: string; label: string }[];
+}
+
 export interface FormContent {
   fields: FormFieldContent[];
   submitButtonText: string;
@@ -145,6 +175,14 @@ export interface FormContent {
   errorMessage?: string;
   redirectUrl?: string;
   emailNotification?: boolean;
+}
+
+export interface ContactFormContent {
+  title: string;
+  fields: ContactFormFieldContent[];
+  successMessage?: string;
+  errorMessage?: string;
+  redirectUrl?: string;
 }
 
 export interface MediaItem {
