@@ -1,10 +1,14 @@
-import { pgTable, serial, text, boolean, timestamp, integer } from "drizzle-orm/pg-core";
+import { pgTable, serial, text, boolean, timestamp, integer, varchar, foreignKey, json } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
 // Definición de enumeraciones para los módulos bancarios
 export const bankAccountTypeEnum = z.enum(['checking', 'savings', 'credit']);
 export const bankTransactionTypeEnum = z.enum(['payment', 'charge', 'transfer', 'deposit', 'withdrawal', 'fee']);
+
+// Definición de enumeraciones para el módulo E-Learning
+export const courseLevelEnum = z.enum(['basic', 'intermediate', 'advanced']);
+export const lessonTypeEnum = z.enum(['text', 'video', 'interactive', 'quiz']);
 
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
@@ -172,3 +176,202 @@ export const insertCmsPageSchema = createInsertSchema(cmsPages, {
 
 export type CmsPage = typeof cmsPages.$inferSelect;
 export type InsertCmsPage = z.infer<typeof insertCmsPageSchema>;
+
+// E-Learning Courses
+export const courses = pgTable("courses", {
+  id: serial("id").primaryKey(),
+  title: text("title").notNull(),
+  description: text("description").notNull(),
+  category: text("category").notNull(),
+  level: text("level").notNull(), // Usar courseLevelEnum
+  duration: text("duration").notNull(),
+  published: boolean("published").notNull().default(false),
+  featuredImage: text("featured_image"),
+  companyId: integer("company_id"),
+  createdBy: integer("created_by").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertCourseSchema = createInsertSchema(courses)
+  .omit({ id: true, createdAt: true, updatedAt: true });
+
+export type Course = typeof courses.$inferSelect;
+export type InsertCourse = z.infer<typeof insertCourseSchema>;
+
+// E-Learning Lessons
+export const lessons = pgTable("lessons", {
+  id: serial("id").primaryKey(),
+  title: text("title").notNull(),
+  content: text("content").notNull(),
+  courseId: integer("course_id").notNull(),
+  lessonType: text("lesson_type").notNull().default("text"), // Usar lessonTypeEnum
+  duration: text("duration").notNull(),
+  order: integer("order").notNull(),
+  videoUrl: text("video_url"),
+  attachments: text("attachments"), // JSON string with file info
+  published: boolean("published").notNull().default(false),
+  createdBy: integer("created_by").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertLessonSchema = createInsertSchema(lessons, {
+  attachments: z.string().optional().refine(
+    (val) => {
+      if (!val) return true;
+      try {
+        JSON.parse(val);
+        return true;
+      } catch (e) {
+        return false;
+      }
+    },
+    { message: "Attachments must be a valid JSON string" }
+  ),
+}).omit({ id: true, createdAt: true, updatedAt: true });
+
+export type Lesson = typeof lessons.$inferSelect;
+export type InsertLesson = z.infer<typeof insertLessonSchema>;
+
+// E-Learning Quizzes
+export const quizzes = pgTable("quizzes", {
+  id: serial("id").primaryKey(),
+  title: text("title").notNull(),
+  description: text("description").notNull(),
+  courseId: integer("course_id").notNull(),
+  passingScore: integer("passing_score").notNull().default(70),
+  timeLimit: text("time_limit"),
+  isRequired: boolean("is_required").notNull().default(true),
+  published: boolean("published").notNull().default(false),
+  createdBy: integer("created_by").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertQuizSchema = createInsertSchema(quizzes)
+  .omit({ id: true, createdAt: true, updatedAt: true });
+
+export type Quiz = typeof quizzes.$inferSelect;
+export type InsertQuiz = z.infer<typeof insertQuizSchema>;
+
+// E-Learning Quiz Questions
+export const quizQuestions = pgTable("quiz_questions", {
+  id: serial("id").primaryKey(),
+  quizId: integer("quiz_id").notNull(),
+  question: text("question").notNull(),
+  options: text("options").notNull(), // JSON string with options and correct answers
+  explanation: text("explanation"),
+  order: integer("order").notNull().default(1),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertQuizQuestionSchema = createInsertSchema(quizQuestions, {
+  options: z.string().refine(
+    (val) => {
+      try {
+        JSON.parse(val);
+        return true;
+      } catch (e) {
+        return false;
+      }
+    },
+    { message: "Options must be a valid JSON string" }
+  ),
+}).omit({ id: true, createdAt: true, updatedAt: true });
+
+export type QuizQuestion = typeof quizQuestions.$inferSelect;
+export type InsertQuizQuestion = z.infer<typeof insertQuizQuestionSchema>;
+
+// E-Learning Student Progress
+export const studentProgress = pgTable("student_progress", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  courseId: integer("course_id").notNull(),
+  lessonId: integer("lesson_id"),
+  quizId: integer("quiz_id"),
+  status: text("status").notNull().default("in_progress"), // not_started, in_progress, completed
+  progress: integer("progress").notNull().default(0), // percentage 0-100
+  score: integer("score"), // for quizzes
+  completedAt: timestamp("completed_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertStudentProgressSchema = createInsertSchema(studentProgress)
+  .omit({ id: true, createdAt: true, updatedAt: true, completedAt: true });
+
+export type StudentProgress = typeof studentProgress.$inferSelect;
+export type InsertStudentProgress = z.infer<typeof insertStudentProgressSchema>;
+
+// Relaciones entre las tablas E-Learning
+// Nota: Las relaciones están temporalmente comentadas porque el módulo 'relations' no está disponible
+// Cuando se requiera la configuración completa de relaciones, necesitaremos importar correctamente
+// el módulo 'relations' de drizzle-orm
+/*
+export const courseRelations = relations(courses, ({ many, one }) => ({
+  lessons: many(lessons),
+  quizzes: many(quizzes),
+  progress: many(studentProgress),
+  author: one(users, {
+    fields: [courses.createdBy],
+    references: [users.id],
+  }),
+  company: one(users, {
+    fields: [courses.companyId],
+    references: [users.id],
+  }),
+}));
+
+export const lessonRelations = relations(lessons, ({ one, many }) => ({
+  course: one(courses, {
+    fields: [lessons.courseId],
+    references: [courses.id],
+  }),
+  progress: many(studentProgress),
+  author: one(users, {
+    fields: [lessons.createdBy],
+    references: [users.id],
+  }),
+}));
+
+export const quizRelations = relations(quizzes, ({ one, many }) => ({
+  course: one(courses, {
+    fields: [quizzes.courseId],
+    references: [courses.id],
+  }),
+  questions: many(quizQuestions),
+  progress: many(studentProgress),
+  author: one(users, {
+    fields: [quizzes.createdBy],
+    references: [users.id],
+  }),
+}));
+
+export const quizQuestionRelations = relations(quizQuestions, ({ one }) => ({
+  quiz: one(quizzes, {
+    fields: [quizQuestions.quizId],
+    references: [quizzes.id],
+  }),
+}));
+
+export const studentProgressRelations = relations(studentProgress, ({ one }) => ({
+  user: one(users, {
+    fields: [studentProgress.userId],
+    references: [users.id],
+  }),
+  course: one(courses, {
+    fields: [studentProgress.courseId],
+    references: [courses.id],
+  }),
+  lesson: one(lessons, {
+    fields: [studentProgress.lessonId],
+    references: [lessons.id],
+  }),
+  quiz: one(quizzes, {
+    fields: [studentProgress.quizId],
+    references: [quizzes.id],
+  }),
+}));
+*/
