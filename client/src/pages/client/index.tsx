@@ -14,7 +14,7 @@ import {
   X 
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useAuth } from "@/hooks/use-auth";
+import { useAuth } from "@/shared/hooks/use-auth";
 import ClientDashboard from "./dashboard";
 
 // NavItem componente simplificado para la barra lateral del cliente
