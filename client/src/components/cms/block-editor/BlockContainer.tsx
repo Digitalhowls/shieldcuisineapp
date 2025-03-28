@@ -15,6 +15,10 @@ import {
 import BlockSettingsPanel from "./block-settings-panel";
 import { Block, BlockType, BlockContent } from "./types";
 
+// Tipo constante para el tipo de arrastre
+const DRAG_TYPE = "BLOCK" as const;
+
+// Interfaz para las propiedades del componente
 interface BlockContainerProps {
   id: string;
   type: BlockType;
@@ -31,10 +35,17 @@ interface BlockContainerProps {
   readOnly?: boolean;
 }
 
+// Interfaz para el item de arrastre
 interface DragItem {
   index: number;
   id: string;
-  type: string;
+  type: typeof DRAG_TYPE;
+}
+
+// Interfaz para el resultado de drop
+interface DropResult {
+  handlerId: string | symbol | null;
+  isOver: boolean;
 }
 
 const BlockContainer: React.FC<BlockContainerProps> = ({
@@ -55,31 +66,25 @@ const BlockContainer: React.FC<BlockContainerProps> = ({
   const ref = useRef<HTMLDivElement>(null);
   const [isSettingsPanelOpen, setIsSettingsPanelOpen] = useState(false);
   
-  // Configuración de Drag and Drop
-  const [{ isDragging }, drag, preview] = useDrag({
-    type: "BLOCK",
-    item: { type, id, index },
+  // Configuración de Drag and Drop con tipado mejorado
+  const [{ isDragging }, drag, preview] = useDrag<DragItem, unknown, { isDragging: boolean }>({
+    type: DRAG_TYPE,
+    item: { type: DRAG_TYPE, id, index },
     collect: (monitor) => ({
       isDragging: monitor.isDragging(),
     }),
     canDrag: !readOnly,
   });
 
-  interface DropResult {
-    handlerId: any;
-    isOver: boolean;
-  }
-
-  const [dropState, drop] = useDrop<DragItem, any, DropResult>({
-    accept: "BLOCK",
+  const [dropState, drop] = useDrop<DragItem, unknown, DropResult>({
+    accept: DRAG_TYPE,
     collect(monitor) {
       return {
         handlerId: monitor.getHandlerId(),
         isOver: monitor.isOver(),
       };
     },
-    hover(item: any, monitor) {
-      const dragItem = item as DragItem;
+    hover(item: DragItem, monitor: DropTargetMonitor) {
       if (!ref.current) {
         return;
       }
@@ -93,7 +98,7 @@ const BlockContainer: React.FC<BlockContainerProps> = ({
       }
       
       // Determinar el rectángulo en la pantalla
-      const hoverBoundingRect = ref.current?.getBoundingClientRect();
+      const hoverBoundingRect = ref.current.getBoundingClientRect();
       
       // Obtener el punto medio vertical
       const hoverMiddleY =
@@ -102,8 +107,13 @@ const BlockContainer: React.FC<BlockContainerProps> = ({
       // Determinar la posición del mouse
       const clientOffset = monitor.getClientOffset();
       
+      // Si no hay offset del cliente, salir
+      if (!clientOffset) {
+        return;
+      }
+      
       // Obtener píxeles hasta la parte superior
-      const hoverClientY = clientOffset!.y - hoverBoundingRect.top;
+      const hoverClientY = clientOffset.y - hoverBoundingRect.top;
       
       // Solo realizar el movimiento cuando el mouse cruza la mitad del elemento
       // Cuando se arrastra hacia abajo, solo mover cuando el cursor esté por debajo del 50%
@@ -164,8 +174,8 @@ const BlockContainer: React.FC<BlockContainerProps> = ({
     };
   }, [isActive, onDeactivate]);
   
-  // Extraer las propiedades del estado del drop
-  const { handlerId, isOver } = dropState as { handlerId: any, isOver: boolean };
+  // Extraer las propiedades del estado del drop con tipado seguro
+  const { handlerId, isOver } = dropState;
 
   return (
     <motion.div
@@ -299,7 +309,7 @@ const BlockContainer: React.FC<BlockContainerProps> = ({
       {/* Panel de configuración lateral */}
       {!readOnly && block && updateBlock && (
         <BlockSettingsPanel
-          blockType={type as BlockType}
+          blockType={type}
           blockData={block.content}
           onChange={(newContent) => {
             if (updateBlock) {

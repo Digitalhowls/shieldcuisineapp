@@ -84,144 +84,289 @@ const BlockEditor: React.FC<BlockEditorProps> = ({
     }
   }, [initialContent]);
 
-  // Manipulación de bloques
+  // Manipulación de bloques con tipado seguro
+  /**
+   * Añade un nuevo bloque al editor
+   * 
+   * @param type - Tipo de bloque a crear
+   * @param index - Posición opcional donde insertar el bloque (al final por defecto)
+   */
   const addBlock = useCallback((type: BlockType, index?: number) => {
-    let newBlock: Block = {
-      id: uuidv4(),
-      type,
-      content: {}
-    };
-
-    // Contenido predeterminado según el tipo
-    switch (type) {
-      case 'heading':
-        newBlock.content = { text: 'Título nuevo', level: 'h2' };
-        break;
-      case 'paragraph':
-        newBlock.content = { text: 'Escribe aquí el contenido...' };
-        break;
-      case 'image':
-        newBlock.content = { src: '', alt: '', caption: '' };
-        break;
-      case 'gallery':
-        newBlock.content = { images: [] };
-        break;
-      case 'button':
-        newBlock.content = { text: 'Botón', url: '#', variant: 'default' };
-        break;
-      case 'video':
-        newBlock.content = { src: '', type: 'youtube' };
-        break;
-      case 'divider':
-        newBlock.content = { style: 'solid' };
-        break;
-      case 'quote':
-        newBlock.content = { text: 'Cita', author: '' };
-        break;
-      case 'list':
-        newBlock.content = { 
-          items: [{ text: 'Elemento 1', level: 0 }], 
-          type: 'unordered' 
-        };
-        break;
-      case 'html':
-        newBlock.content = { code: '<!-- Inserta tu código HTML aquí -->' };
-        break;
-      case 'contact-form':
-        // Casting explícito a ContactFormContent y luego se asigna a BlockContent
-        const contactForm: ContactFormContent = { 
-          title: 'Formulario de contacto',
-          fields: [
-            { name: 'name', label: 'Nombre', type: 'text', required: true },
-            { name: 'email', label: 'Email', type: 'email', required: true },
-            { name: 'message', label: 'Mensaje', type: 'textarea', required: true }
-          ],
-          successMessage: 'Gracias por contactarnos',
-          errorMessage: 'Hubo un error al enviar el formulario'
-        };
-        newBlock.content = contactForm as BlockContent;
-        break;
-      case 'table':
-        newBlock.content = {
-          rows: [
-            [{ content: 'Encabezado 1', header: true }, { content: 'Encabezado 2', header: true }],
-            [{ content: 'Celda 1' }, { content: 'Celda 2' }]
-          ],
-          withHeader: true,
-          withBorder: true,
-          striped: false,
-          caption: 'Tabla de datos'
-        };
-        break;
-    }
-
-    // Insertar el bloque en la posición indicada o al final
-    const insertIndex = typeof index === 'number' ? index : content.blocks.length;
-    const newBlocks = [
-      ...content.blocks.slice(0, insertIndex),
-      newBlock,
-      ...content.blocks.slice(insertIndex)
-    ];
-
-    const newContent = { ...content, blocks: newBlocks };
-    setContent(newContent);
-    
-    if (onChange) {
-      onChange(newContent);
-    }
-  }, [content, onChange]);
-
-  type BlockUpdateProperties = Partial<Omit<Block, 'id' | 'type' | 'content'>>;
-
-  const updateBlock = useCallback((id: string, updatedContent: BlockContent, updatedProperties?: BlockUpdateProperties) => {
-    const newBlocks = content.blocks.map(block => {
-      if (block.id === id) {
-        // Si hay propiedades adicionales para actualizar (como animation), las incluimos
-        if (updatedProperties) {
-          return { 
-            ...block, 
-            content: updatedContent, 
-            ...updatedProperties 
+    setContent(prevContent => {
+      // Crear un bloque con contenido tipado específicamente para cada tipo
+      let newBlock: Block;
+      
+      // Contenido predeterminado según el tipo con el tipado correcto
+      switch (type) {
+        case 'heading': {
+          const headingContent: HeadingContent = { text: 'Título nuevo', level: 'h2' };
+          newBlock = {
+            id: uuidv4(),
+            type,
+            content: headingContent
+          };
+          break;
+        }
+        case 'paragraph': {
+          const paragraphContent: ParagraphContent = { text: 'Escribe aquí el contenido...' };
+          newBlock = {
+            id: uuidv4(),
+            type,
+            content: paragraphContent
+          };
+          break;
+        }
+        case 'image': {
+          const imageContent: ImageContent = { src: '', alt: '', caption: '' };
+          newBlock = {
+            id: uuidv4(),
+            type,
+            content: imageContent
+          };
+          break;
+        }
+        case 'gallery': {
+          const galleryContent: GalleryContent = { images: [] };
+          newBlock = {
+            id: uuidv4(),
+            type,
+            content: galleryContent
+          };
+          break;
+        }
+        case 'button': {
+          const buttonContent: ButtonContent = { text: 'Botón', url: '#', variant: 'default' };
+          newBlock = {
+            id: uuidv4(),
+            type,
+            content: buttonContent
+          };
+          break;
+        }
+        case 'video': {
+          const videoContent: VideoContent = { src: '', type: 'youtube' };
+          newBlock = {
+            id: uuidv4(),
+            type,
+            content: videoContent
+          };
+          break;
+        }
+        case 'divider': {
+          const dividerContent: DividerContent = { style: 'solid' };
+          newBlock = {
+            id: uuidv4(),
+            type,
+            content: dividerContent
+          };
+          break;
+        }
+        case 'quote': {
+          const quoteContent: QuoteContent = { text: 'Cita', author: '' };
+          newBlock = {
+            id: uuidv4(),
+            type,
+            content: quoteContent
+          };
+          break;
+        }
+        case 'list': {
+          const listContent: ListContent = { 
+            items: [{ text: 'Elemento 1', level: 0 }], 
+            type: 'unordered' 
+          };
+          newBlock = {
+            id: uuidv4(),
+            type,
+            content: listContent
+          };
+          break;
+        }
+        case 'html': {
+          const htmlContent: HtmlContent = { code: '<!-- Inserta tu código HTML aquí -->' };
+          newBlock = {
+            id: uuidv4(),
+            type,
+            content: htmlContent
+          };
+          break;
+        }
+        case 'contact-form': {
+          const contactFormContent: ContactFormContent = { 
+            title: 'Formulario de contacto',
+            fields: [
+              { name: 'name', label: 'Nombre', type: 'text', required: true },
+              { name: 'email', label: 'Email', type: 'email', required: true },
+              { name: 'message', label: 'Mensaje', type: 'textarea', required: true }
+            ],
+            successMessage: 'Gracias por contactarnos',
+            errorMessage: 'Hubo un error al enviar el formulario'
+          };
+          newBlock = {
+            id: uuidv4(),
+            type,
+            content: contactFormContent
+          };
+          break;
+        }
+        case 'table': {
+          const tableContent: TableContent = {
+            rows: [
+              [{ content: 'Encabezado 1', header: true }, { content: 'Encabezado 2', header: true }],
+              [{ content: 'Celda 1' }, { content: 'Celda 2' }]
+            ],
+            withHeader: true,
+            withBorder: true,
+            striped: false,
+            caption: 'Tabla de datos'
+          };
+          newBlock = {
+            id: uuidv4(),
+            type,
+            content: tableContent
+          };
+          break;
+        }
+        case 'ai': {
+          // Contenido para bloque AI
+          const aiContent = {
+            prompt: '',
+            content: '',
+            format: 'text' as const
+          };
+          newBlock = {
+            id: uuidv4(),
+            type,
+            content: aiContent
+          };
+          break;
+        }
+        case 'form': {
+          // Contenido predeterminado para bloque de formulario
+          const formContent: FormContent = {
+            fields: [],
+            submitButtonText: 'Enviar'
+          };
+          newBlock = {
+            id: uuidv4(),
+            type,
+            content: formContent
+          };
+          break;
+        }
+        default: {
+          // Caso predeterminado con un contenido vacío
+          newBlock = {
+            id: uuidv4(),
+            type,
+            content: {}
           };
         }
-        // Si solo hay contenido para actualizar
-        return { ...block, content: updatedContent };
       }
-      return block;
+  
+      // Insertar el bloque en la posición indicada o al final
+      const insertIndex = typeof index === 'number' ? index : prevContent.blocks.length;
+      const newBlocks = [
+        ...prevContent.blocks.slice(0, insertIndex),
+        newBlock,
+        ...prevContent.blocks.slice(insertIndex)
+      ];
+  
+      // Creamos el nuevo estado con type assertion
+      const newState = { 
+        ...prevContent, 
+        blocks: newBlocks 
+      } as PageContent;
+      
+      // Notificamos cambios si hay un callback
+      if (onChange) {
+        onChange(newState);
+      }
+      
+      return newState;
     });
-    
-    const newContent = { ...content, blocks: newBlocks };
-    setContent(newContent);
-    
-    if (onChange) {
-      onChange(newContent);
-    }
-  }, [content, onChange]);
+  }, [onChange]);
 
+  /**
+   * Actualiza el contenido de un bloque específico
+   * 
+   * @param id - Identificador único del bloque
+   * @param updatedContent - Nuevo contenido parcial para el bloque
+   */
+  const updateBlock = useCallback((id: string, updatedContent: Partial<BlockContent>) => {
+    setContent(prevContent => {
+      // Creamos nuevos bloques actualizando el bloque específico
+      const newBlocks = prevContent.blocks.map(block => {
+        if (block.id === id) {
+          // Usamos type assertion para evitar errores de tipos
+          return {
+            ...block,
+            content: {
+              ...block.content,
+              ...updatedContent
+            }
+          } as Block;
+        }
+        return block;
+      });
+      
+      // Creamos el nuevo estado con type assertion
+      const newState = {
+        ...prevContent,
+        blocks: newBlocks
+      } as PageContent;
+      
+      // Notificamos cambios si hay un callback
+      if (onChange) {
+        onChange(newState);
+      }
+      
+      return newState;
+    });
+  }, [onChange]);
+
+  /**
+   * Elimina un bloque según su ID
+   */
   const removeBlock = useCallback((id: string) => {
-    const newBlocks = content.blocks.filter(block => block.id !== id);
-    
-    const newContent = { ...content, blocks: newBlocks };
-    setContent(newContent);
-    
-    if (onChange) {
-      onChange(newContent);
-    }
-  }, [content, onChange]);
+    setContent(prevContent => {
+      const newBlocks = prevContent.blocks.filter(block => block.id !== id);
+      
+      const newState = {
+        ...prevContent,
+        blocks: newBlocks
+      } as PageContent;
+      
+      if (onChange) {
+        onChange(newState);
+      }
+      
+      return newState;
+    });
+  }, [onChange]);
 
+  /**
+   * Mueve un bloque de una posición a otra
+   */
   const moveBlock = useCallback((dragIndex: number, hoverIndex: number) => {
-    const dragBlock = content.blocks[dragIndex];
-    const newBlocks = [...content.blocks];
-    newBlocks.splice(dragIndex, 1);
-    newBlocks.splice(hoverIndex, 0, dragBlock);
-    
-    const newContent = { ...content, blocks: newBlocks };
-    setContent(newContent);
-    
-    if (onChange) {
-      onChange(newContent);
-    }
-  }, [content, onChange]);
+    setContent(prevContent => {
+      const dragBlock = prevContent.blocks[dragIndex];
+      const newBlocks = [...prevContent.blocks];
+      newBlocks.splice(dragIndex, 1);
+      newBlocks.splice(hoverIndex, 0, dragBlock);
+      
+      const newState = {
+        ...prevContent,
+        blocks: newBlocks
+      } as PageContent;
+      
+      if (onChange) {
+        onChange(newState);
+      }
+      
+      return newState;
+    });
+  }, [onChange]);
 
   interface PageSettings {
     layout?: 'full' | 'boxed';
@@ -230,14 +375,23 @@ const BlockEditor: React.FC<BlockEditorProps> = ({
     [key: string]: any; // Para permitir configuraciones adicionales
   }
 
+  /**
+   * Actualiza la configuración de la página
+   */
   const updateSettings = useCallback((settings: Partial<PageSettings>) => {
-    const newContent = { ...content, settings: { ...content.settings, ...settings } };
-    setContent(newContent);
-    
-    if (onChange) {
-      onChange(newContent);
-    }
-  }, [content, onChange]);
+    setContent(prevContent => {
+      const newState = { 
+        ...prevContent, 
+        settings: { ...prevContent.settings, ...settings } 
+      } as PageContent;
+      
+      if (onChange) {
+        onChange(newState);
+      }
+      
+      return newState;
+    });
+  }, [onChange]);
 
   const handleSave = () => {
     if (onSave) {
@@ -302,22 +456,30 @@ const BlockEditor: React.FC<BlockEditorProps> = ({
                     onMove={moveBlock}
                     onDelete={() => removeBlock(block.id)}
                     onDuplicate={() => {
-                      // Crear una copia del bloque
-                      const newBlock = {
-                        ...block,
-                        id: uuidv4()
-                      };
-                      
-                      // Insertar después del bloque actual
-                      const newBlocks = [...content.blocks];
-                      newBlocks.splice(index + 1, 0, newBlock);
-                      
-                      const newContent = { ...content, blocks: newBlocks };
-                      setContent(newContent);
-                      
-                      if (onChange) {
-                        onChange(newContent);
-                      }
+                      setContent(prevContent => {
+                        // Crear una copia del bloque con nuevo ID
+                        const newBlock = {
+                          ...block,
+                          id: uuidv4()
+                        };
+                        
+                        // Insertar después del bloque actual
+                        const newBlocks = [...prevContent.blocks];
+                        newBlocks.splice(index + 1, 0, newBlock);
+                        
+                        // Creamos el nuevo estado con type assertion
+                        const newState = {
+                          ...prevContent,
+                          blocks: newBlocks
+                        } as PageContent;
+                        
+                        // Notificamos cambios si hay un callback
+                        if (onChange) {
+                          onChange(newState);
+                        }
+                        
+                        return newState;
+                      });
                     }}
                     updateBlock={updateBlock}
                     readOnly={readOnly}

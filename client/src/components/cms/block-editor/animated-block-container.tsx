@@ -1,21 +1,53 @@
 import React from 'react';
 import Animation from '../animations/animation';
 import { Block, AnimationOptions } from './types';
-import { AnimationLibrary, AnimationConfig } from '../animations/animation-config';
+import { 
+  AnimationLibrary, 
+  AnimationConfig,
+  AnimationEffect,
+  AnimationDuration,
+  AnimationDelay,
+  AnimationDirection,
+  AnimationEasing,
+  defaultAnimationConfig
+} from '../animations/animation-config';
 
-// Extender el tipo Block para incluir animación
+/**
+ * Estructura de datos para la animación en los bloques
+ * Esto extiende AnimationOptions para usar tipos más específicos
+ */
 export interface AnimationData {
   config: AnimationConfig;
   library: AnimationLibrary;
 }
 
-export interface AnimatedBlock extends Block {
-  animation?: AnimationData;
+/**
+ * Convertir de AnimationOptions (tipo general usado en Block)
+ * a AnimationData (tipo específico con tipos estrictos)
+ */
+function convertAnimationOptions(options?: AnimationOptions): AnimationData | undefined {
+  if (!options) return undefined;
+  
+  return {
+    library: (options.library as AnimationLibrary) || defaultAnimationConfig.library,
+    config: {
+      effect: (options.effect as AnimationEffect) || defaultAnimationConfig.effect,
+      duration: (options.duration as AnimationDuration) || defaultAnimationConfig.duration,
+      delay: (options.delay as AnimationDelay) || defaultAnimationConfig.delay,
+      repeat: options.repeat ?? defaultAnimationConfig.repeat,
+      threshold: options.threshold ?? defaultAnimationConfig.threshold,
+      intensity: options.intensity ?? defaultAnimationConfig.intensity,
+      direction: (options.direction as AnimationDirection) || defaultAnimationConfig.direction,
+      easing: (options.easing as AnimationEasing) || defaultAnimationConfig.easing,
+      scrollTrigger: options.scrollTrigger ?? defaultAnimationConfig.scrollTrigger,
+      library: (options.library as AnimationLibrary) || defaultAnimationConfig.library
+    }
+  };
 }
 
 interface AnimatedBlockContainerProps {
   children: React.ReactNode;
-  block: AnimatedBlock;
+  block: Block;  // Ahora usamos el tipo Block original
   className?: string;
   isEditing?: boolean;
 }
@@ -32,28 +64,31 @@ export const AnimatedBlockContainer: React.FC<AnimatedBlockContainerProps> = ({
   className = '',
   isEditing = false
 }) => {
+  // Convertir las opciones de animación al formato con tipado estricto
+  const animationData = convertAnimationOptions(block.animation);
+  
   // Determinar si hay animación configurada
   const hasAnimation = 
-    block.animation && 
-    block.animation.config && 
-    block.animation.config.effect && 
-    block.animation.library !== 'none';
+    animationData && 
+    animationData.config && 
+    animationData.config.effect !== 'none' && 
+    animationData.library !== 'none';
   
   // Si hay animación y no estamos en modo edición, aplicar animación
-  if (hasAnimation && !isEditing && block.animation) {
+  if (hasAnimation && !isEditing && animationData) {
     return (
       <Animation 
         className={className}
-        library={block.animation.library}
-        effect={block.animation.config.effect}
-        duration={block.animation.config.duration}
-        delay={block.animation.config.delay}
-        repeat={block.animation.config.repeat}
-        threshold={block.animation.config.threshold}
-        intensity={block.animation.config.intensity}
-        direction={block.animation.config.direction}
-        easing={block.animation.config.easing}
-        scrollTrigger={block.animation.config.scrollTrigger}
+        library={animationData.library}
+        effect={animationData.config.effect}
+        duration={animationData.config.duration}
+        delay={animationData.config.delay}
+        repeat={animationData.config.repeat}
+        threshold={animationData.config.threshold}
+        intensity={animationData.config.intensity}
+        direction={animationData.config.direction}
+        easing={animationData.config.easing}
+        scrollTrigger={animationData.config.scrollTrigger}
       >
         {children}
       </Animation>
