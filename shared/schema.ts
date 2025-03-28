@@ -1,4 +1,4 @@
-import { pgTable, serial, text, boolean, timestamp, integer, varchar, foreignKey, json } from "drizzle-orm/pg-core";
+import { pgTable, serial, text, boolean, timestamp, integer, varchar, foreignKey, json, uuid } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -158,16 +158,20 @@ export const cmsPages = pgTable("cms_pages", {
   title: text("title").notNull(),
   slug: text("slug").notNull(),
   content: text("content").notNull(), // JSON string with the page content/blocks
-  status: text("status").notNull().default("draft"), // draft, published
+  status: text("status").notNull().default("draft"), // draft, published, scheduled, archived
   publishedAt: timestamp("published_at"),
+  scheduledAt: timestamp("scheduled_at"),
   seoTitle: text("seo_title"),
   seoDescription: text("seo_description"),
   featured: boolean("featured").default(false),
   thumbnail: text("thumbnail"),
   pageType: text("page_type").notNull().default("page"), // page, blog, product, etc.
+  visibility: text("visibility").default("public"), // public, private, internal
   companyId: integer("company_id"),
   createdBy: integer("created_by").notNull(),
   lastUpdatedBy: integer("last_updated_by"),
+  recurrencePattern: text("recurrence_pattern").default("none"), // none, daily, weekly, monthly
+  recurrenceEndDate: timestamp("recurrence_end_date"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -377,6 +381,38 @@ export const insertNotificationPreferencesSchema = createInsertSchema(notificati
 
 export type NotificationPreferences = typeof notificationPreferences.$inferSelect;
 export type InsertNotificationPreferences = z.infer<typeof insertNotificationPreferencesSchema>;
+
+// CMS Page Versions
+export const cmsPageVersions = pgTable("cms_page_versions", {
+  id: serial("id").primaryKey(),
+  pageId: integer("page_id").notNull(),
+  versionNumber: integer("version_number").notNull(),
+  content: text("content").notNull(), // JSON string con el contenido
+  title: text("title").notNull(),
+  description: text("description"),
+  author: text("author"),
+  changeDescription: text("change_description"),
+  isSnapshot: boolean("is_snapshot").default(false).notNull(),
+  status: text("status").notNull().default("draft"), // draft, published, scheduled, archived
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertCmsPageVersionSchema = createInsertSchema(cmsPageVersions, {
+  content: z.string().refine(
+    (val) => {
+      try {
+        JSON.parse(val);
+        return true;
+      } catch (e) {
+        return false;
+      }
+    },
+    { message: "Content must be a valid JSON string" }
+  ),
+}).omit({ id: true, createdAt: true });
+
+export type CmsPageVersion = typeof cmsPageVersions.$inferSelect;
+export type InsertCmsPageVersion = z.infer<typeof insertCmsPageVersionSchema>;
 
 // Relaciones entre las tablas E-Learning
 // Nota: Las relaciones están temporalmente comentadas porque el módulo 'relations' no está disponible

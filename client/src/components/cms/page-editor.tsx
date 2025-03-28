@@ -48,6 +48,7 @@ import {
   Split,
   Smartphone,
   GitBranch,
+  History,
 } from "lucide-react";
 
 // Importar componentes
@@ -55,6 +56,7 @@ import { AIAssistantPanel } from "./ai-assistant";
 import PreviewPanel from "./page-editor/PreviewPanel";
 import PrePublicationCheck from "./page-editor/pre-publication-check";
 import DraftComparisonDialog from "./page-editor/draft-comparison-dialog";
+import VersionHistoryDialog from "./page-editor/version-history-dialog";
 import PagePreview from "./page-preview";
 
 // Componentes del editor
@@ -100,6 +102,7 @@ const PageEditor: React.FC<PageEditorProps> = ({ isNew = false, pageId }) => {
   const [showPrePublicationCheck, setShowPrePublicationCheck] = useState(false);
   const [showDraftComparison, setShowDraftComparison] = useState(false);
   const [showDevicePreview, setShowDevicePreview] = useState(false);
+  const [showVersionHistory, setShowVersionHistory] = useState(false);
   const [pageData, setPageData] = useState<PageData>({
     title: "",
     slug: "",
@@ -454,6 +457,18 @@ const PageEditor: React.FC<PageEditorProps> = ({ isNew = false, pageId }) => {
             <Smartphone className="h-4 w-4" />
             <span className="hidden sm:inline">Ver en Dispositivos</span>
           </Button>
+          
+          {/* Botón historial de versiones, solo mostrar si la página ya existe */}
+          {!isNew && pageData.id && (
+            <Button 
+              variant="outline"
+              onClick={() => setShowVersionHistory(true)}
+              className="gap-2"
+            >
+              <History className="h-4 w-4" />
+              <span className="hidden sm:inline">Historial de Versiones</span>
+            </Button>
+          )}
           
           {!isNew && pageData.id && pageData.status === "published" && (
             <Button 
@@ -1168,6 +1183,45 @@ const PageEditor: React.FC<PageEditorProps> = ({ isNew = false, pageId }) => {
         pageTitle={pageData.title}
         pageDescription={pageData.description}
       />
+      
+      {/* Diálogo de historial de versiones */}
+      {!isNew && pageData.id && (
+        <VersionHistoryDialog
+          isOpen={showVersionHistory}
+          onClose={() => setShowVersionHistory(false)}
+          pageId={pageData.id}
+          currentContent={JSON.stringify(blocks)}
+          currentTitle={pageData.title}
+          currentStatus={pageData.status}
+          onVersionRestore={(version) => {
+            try {
+              // Intentar parsear el contenido de la versión
+              const restoredBlocks = JSON.parse(version.content);
+              setBlocks(restoredBlocks);
+              
+              // Actualizar los datos de la página
+              setPageData(prev => ({
+                ...prev,
+                title: version.title,
+                status: version.status,
+              }));
+              
+              setHasChanges(true);
+              
+              toast({
+                title: "Versión restaurada",
+                description: `Se ha restaurado la versión ${version.versionNumber}`,
+              });
+            } catch (error) {
+              toast({
+                title: "Error al restaurar versión",
+                description: "No se pudo procesar el contenido de la versión",
+                variant: "destructive",
+              });
+            }
+          }}
+        />
+      )}
     </div>
   );
 };

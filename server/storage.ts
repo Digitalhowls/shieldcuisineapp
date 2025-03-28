@@ -7,6 +7,7 @@ import {
   warehouses,
   products,
   suppliers,
+  cmsPageVersions,
   inventory,
   inventoryTransactions,
   controlTemplates,
@@ -95,7 +96,9 @@ import {
   type CmsMenuItem,
   type InsertCmsMenuItem,
   type CmsFormSubmission,
-  type InsertCmsFormSubmission
+  type InsertCmsFormSubmission,
+  type CmsPageVersion,
+  type InsertCmsPageVersion
 } from "@shared/schema";
 import session from "express-session";
 import createMemoryStore from "memorystore";
@@ -256,6 +259,12 @@ export interface IStorage {
   getCmsFormSubmission(id: number): Promise<CmsFormSubmission | undefined>;
   createCmsFormSubmission(submission: InsertCmsFormSubmission): Promise<CmsFormSubmission>;
   deleteCmsFormSubmission(id: number): Promise<void>;
+  
+  // CMS Page Versions
+  getCmsPageVersions(pageId: number): Promise<CmsPageVersion[]>;
+  getCmsPageVersion(id: number): Promise<CmsPageVersion | undefined>;
+  createCmsPageVersion(version: InsertCmsPageVersion): Promise<CmsPageVersion>;
+  deleteCmsPageVersion(id: number): Promise<void>;
   
   // Purchasing Module
   getPurchaseOrders(companyId: number): Promise<any[]>;
@@ -959,6 +968,26 @@ export class DatabaseStorage implements IStorage {
   
   async deleteCmsFormSubmission(id: number): Promise<void> {
     await db.delete(cmsFormSubmissions).where(eq(cmsFormSubmissions.id, id));
+  }
+  
+  // CMS Page Versions
+  async getCmsPageVersions(pageId: number): Promise<CmsPageVersion[]> {
+    return await db.select().from(cmsPageVersions).where(eq(cmsPageVersions.pageId, pageId))
+      .orderBy(cmsPageVersions.versionNumber);
+  }
+  
+  async getCmsPageVersion(id: number): Promise<CmsPageVersion | undefined> {
+    const [version] = await db.select().from(cmsPageVersions).where(eq(cmsPageVersions.id, id));
+    return version;
+  }
+  
+  async createCmsPageVersion(version: InsertCmsPageVersion): Promise<CmsPageVersion> {
+    const [newVersion] = await db.insert(cmsPageVersions).values(version).returning();
+    return newVersion;
+  }
+  
+  async deleteCmsPageVersion(id: number): Promise<void> {
+    await db.delete(cmsPageVersions).where(eq(cmsPageVersions.id, id));
   }
   
   // Purchasing Module

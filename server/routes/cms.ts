@@ -13,7 +13,8 @@ import {
   insertCmsMenuItemSchema,
   insertCmsFormSubmissionSchema,
   insertCmsPageCategorySchema,
-  insertCmsPageTagSchema
+  insertCmsPageTagSchema,
+  insertCmsPageVersionSchema
 } from "@shared/schema";
 
 /**
@@ -972,6 +973,240 @@ export function registerCmsRoutes(app: Express) {
     } catch (error) {
       console.error("Error al eliminar envío de formulario:", error);
       res.status(500).json({ error: "Error al eliminar envío de formulario" });
+    }
+  });
+
+  /**
+   * Rutas para historial de versiones de páginas
+   */
+  
+  // Obtener todas las versiones de una página
+  app.get("/api/cms/pages/:pageId/versions", verifyAuth, async (req: Request, res: Response) => {
+    try {
+      const pageId = parseInt(req.params.pageId);
+      const page = await storage.getCmsPage(pageId);
+      
+      if (!page) {
+        return res.status(404).json({ error: "Página no encontrada" });
+      }
+      
+      // Verificar que el usuario pertenece a la compañía propietaria de la página
+      if (page.companyId !== req.user?.companyId && req.user?.role !== 'admin') {
+        return res.status(403).json({ error: "No tienes permiso para ver el historial de esta página" });
+      }
+      
+      const versions = await storage.getCmsPageVersions(pageId);
+      res.json(versions);
+    } catch (error) {
+      console.error("Error al obtener historial de versiones:", error);
+      res.status(500).json({ error: "Error al obtener historial de versiones" });
+    }
+  });
+  
+  // Obtener una versión específica
+  app.get("/api/cms/pages/:pageId/versions/:versionId", verifyAuth, async (req: Request, res: Response) => {
+    try {
+      const pageId = parseInt(req.params.pageId);
+      const versionId = req.params.versionId;
+      
+      const page = await storage.getCmsPage(pageId);
+      
+      if (!page) {
+        return res.status(404).json({ error: "Página no encontrada" });
+      }
+      
+      // Verificar que el usuario pertenece a la compañía propietaria de la página
+      if (page.companyId !== req.user?.companyId && req.user?.role !== 'admin') {
+        return res.status(403).json({ error: "No tienes permiso para ver esta versión" });
+      }
+      
+      const version = await storage.getCmsPageVersion(versionId);
+      
+      if (!version || version.pageId !== pageId) {
+        return res.status(404).json({ error: "Versión no encontrada" });
+      }
+      
+      res.json(version);
+    } catch (error) {
+      console.error("Error al obtener versión:", error);
+      res.status(500).json({ error: "Error al obtener versión" });
+    }
+  });
+  
+  // Crear una nueva versión
+  app.post("/api/cms/pages/:pageId/versions", verifyAuth, async (req: Request, res: Response) => {
+    try {
+      const pageId = parseInt(req.params.pageId);
+      const page = await storage.getCmsPage(pageId);
+      
+      if (!page) {
+        return res.status(404).json({ error: "Página no encontrada" });
+      }
+      
+      // Verificar que el usuario pertenece a la compañía propietaria de la página
+      if (page.companyId !== req.user?.companyId && req.user?.role !== 'admin') {
+        return res.status(403).json({ error: "No tienes permiso para crear versiones de esta página" });
+      }
+      
+      // Obtener número de la última versión
+      const versions = await storage.getCmsPageVersions(pageId);
+      const lastVersion = versions.length > 0 ? versions[0] : null;
+      const nextVersionNumber = lastVersion ? lastVersion.versionNumber + 1 : 1;
+      
+      const versionData = insertCmsPageVersionSchema.parse({
+        ...req.body,
+        pageId,
+        versionNumber: nextVersionNumber,
+        author: req.user?.fullName || req.user?.username || "Unknown",
+      });
+      
+      const newVersion = await storage.createCmsPageVersion(versionData);
+      res.status(201).json(newVersion);
+    } catch (error) {
+      console.error("Error al crear versión:", error);
+      res.status(500).json({ error: "Error al crear versión" });
+    }
+  });
+  
+  // Restaurar una versión
+  app.post("/api/cms/pages/:pageId/versions/:versionId/restore", verifyAuth, async (req: Request, res: Response) => {
+    try {
+      const pageId = parseInt(req.params.pageId);
+      const versionId = req.params.versionId;
+      
+      const page = await storage.getCmsPage(pageId);
+      
+      if (!page) {
+        return res.status(404).json({ error: "Página no encontrada" });
+      }
+      
+      // Verificar que el usuario pertenece a la compañía propietaria de la página
+      if (page.companyId !== req.user?.companyId && req.user?.role !== 'admin') {
+        return res.status(403).json({ error: "No tienes permiso para restaurar versiones de esta página" });
+      }
+      
+      const version = await storage.getCmsPageVersion(versionId);
+      
+      if (!version || version.pageId !== pageId) {
+        return res.status(404).json({ error: "Versión no encontrada" });
+      }
+      
+      // Guardar el estado actual como una nueva versión para poder deshacer la restauración
+      const versions = await storage.getCmsPageVersions(pageId);
+      const nextVersionNumber = versions.length > 0 ? versions[0].versionNumber + 1 : 1;
+      
+      await storage.createCmsPageVersion({
+        pageId,
+        versionNumber: nextVersionNumber,
+        content: page.content,
+        title: page.title,
+        description: page.description || undefined,
+        author: req.user?.fullName || req.user?.username || "Unknown",
+        changeDescription: "Estado antes de restaurar versión " + version.versionNumber,
+        isSnapshot: true,
+        status: page.status,
+      });
+      
+      // Actualizar la página con el contenido de la versión
+      await storage.updateCmsPage(pageId, {
+        content: version.content,
+        title: version.title,
+        status: version.status,
+      });
+      
+      res.status(200).json({ message: "Versión restaurada correctamente" });
+    } catch (error) {
+      console.error("Error al restaurar versión:", error);
+      res.status(500).json({ error: "Error al restaurar versión" });
+    }
+  });
+  
+  // Comparar dos versiones
+  app.get("/api/cms/pages/:pageId/versions/compare", verifyAuth, async (req: Request, res: Response) => {
+    try {
+      const pageId = parseInt(req.params.pageId);
+      const versionId1 = req.query.v1 as string;
+      const versionId2 = req.query.v2 as string;
+      
+      if (!versionId1 || !versionId2) {
+        return res.status(400).json({ error: "Se requieren dos IDs de versión para comparar" });
+      }
+      
+      const page = await storage.getCmsPage(pageId);
+      
+      if (!page) {
+        return res.status(404).json({ error: "Página no encontrada" });
+      }
+      
+      // Verificar que el usuario pertenece a la compañía propietaria de la página
+      if (page.companyId !== req.user?.companyId && req.user?.role !== 'admin') {
+        return res.status(403).json({ error: "No tienes permiso para comparar versiones de esta página" });
+      }
+      
+      const versionA = await storage.getCmsPageVersion(versionId1);
+      const versionB = await storage.getCmsPageVersion(versionId2);
+      
+      if (!versionA || versionA.pageId !== pageId || !versionB || versionB.pageId !== pageId) {
+        return res.status(404).json({ error: "Una o ambas versiones no fueron encontradas" });
+      }
+      
+      // Obtener diferencias entre las versiones
+      // En un caso real, aquí se usaría una biblioteca para detectar diferencias en JSON
+      // Para esta implementación, devolvemos un ejemplo simple
+      
+      // Convertir contenido de JSON string a objetos para comparación
+      let contentA, contentB;
+      try {
+        contentA = JSON.parse(versionA.content);
+        contentB = JSON.parse(versionB.content);
+      } catch (e) {
+        // Si hay error en el parsing, usar el contenido raw
+        contentA = versionA.content;
+        contentB = versionB.content;
+      }
+      
+      // Generar HTML para visualización
+      // En un caso real, habría una función que convierte bloques en HTML
+      const contentHtmlA = typeof contentA === 'string' ? contentA : JSON.stringify(contentA, null, 2);
+      const contentHtmlB = typeof contentB === 'string' ? contentB : JSON.stringify(contentB, null, 2);
+      
+      // Ejemplo de diferencias (en un sistema real se calcularían automáticamente)
+      const differences = [
+        {
+          type: 'modified',
+          description: 'Se modificó el título',
+        }
+      ];
+      
+      if (versionA.title !== versionB.title) {
+        differences.push({
+          type: 'modified',
+          description: `Título cambiado de "${versionA.title}" a "${versionB.title}"`,
+        });
+      }
+      
+      // Comparación muy básica de contenido (en una implementación real sería más sofisticada)
+      if (versionA.content !== versionB.content) {
+        differences.push({
+          type: 'modified',
+          description: 'Contenido modificado',
+        });
+      }
+      
+      res.json({
+        versionA: {
+          ...versionA,
+          contentHtml: contentHtmlA,
+        },
+        versionB: {
+          ...versionB,
+          contentHtml: contentHtmlB,
+        },
+        differences,
+      });
+    } catch (error) {
+      console.error("Error al comparar versiones:", error);
+      res.status(500).json({ error: "Error al comparar versiones" });
     }
   });
 }
