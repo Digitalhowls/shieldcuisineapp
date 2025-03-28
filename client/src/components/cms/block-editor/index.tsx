@@ -34,7 +34,8 @@ import {
   FormContent,
   TableContent,
   DividerContent,
-  ContactFormContent
+  ContactFormContent,
+  AiContent
 } from './types';
 
 /**
@@ -185,7 +186,11 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
     // Contenido predeterminado según el tipo con el tipado correcto
     switch (type) {
       case 'heading': {
-        const headingContent: HeadingContent = { text: 'Título nuevo', level: 'h2' };
+        const headingContent: HeadingContent = { 
+          text: 'Título nuevo', 
+          level: 'h2',
+          type: 'heading'
+        };
         newBlock = {
           id: uuidv4(),
           type,
@@ -194,7 +199,10 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
         break;
       }
       case 'paragraph': {
-        const paragraphContent: ParagraphContent = { text: 'Escribe aquí el contenido...' };
+        const paragraphContent: ParagraphContent = { 
+          text: 'Escribe aquí el contenido...',
+          type: 'paragraph'
+        };
         newBlock = {
           id: uuidv4(),
           type,
@@ -203,7 +211,12 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
         break;
       }
       case 'image': {
-        const imageContent: ImageContent = { src: '', alt: '', caption: '' };
+        const imageContent: ImageContent = { 
+          src: '', 
+          alt: '', 
+          caption: '',
+          type: 'image'
+        };
         newBlock = {
           id: uuidv4(),
           type,
@@ -212,7 +225,10 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
         break;
       }
       case 'gallery': {
-        const galleryContent: GalleryContent = { images: [] };
+        const galleryContent: GalleryContent = { 
+          images: [],
+          type: 'gallery'
+        };
         newBlock = {
           id: uuidv4(),
           type,
@@ -221,7 +237,12 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
         break;
       }
       case 'button': {
-        const buttonContent: ButtonContent = { text: 'Botón', url: '#', variant: 'default' };
+        const buttonContent: ButtonContent = { 
+          text: 'Botón', 
+          url: '#', 
+          variant: 'default',
+          type: 'button'
+        };
         newBlock = {
           id: uuidv4(),
           type,
@@ -243,7 +264,10 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
         break;
       }
       case 'divider': {
-        const dividerContent: DividerContent = { style: 'solid' };
+        const dividerContent: DividerContent = { 
+          style: 'solid',
+          type: 'divider'
+        };
         newBlock = {
           id: uuidv4(),
           type,
@@ -252,7 +276,11 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
         break;
       }
       case 'quote': {
-        const quoteContent: QuoteContent = { text: 'Cita', author: '' };
+        const quoteContent: QuoteContent = { 
+          text: 'Cita', 
+          author: '', 
+          type: 'quote' 
+        };
         newBlock = {
           id: uuidv4(),
           type,
@@ -263,7 +291,8 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
       case 'list': {
         const listContent: ListContent = { 
           items: [{ text: 'Elemento 1', level: 0 }], 
-          type: 'unordered' 
+          listType: 'unordered',
+          type: 'list'
         };
         newBlock = {
           id: uuidv4(),
@@ -273,7 +302,10 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
         break;
       }
       case 'html': {
-        const htmlContent: HtmlContent = { code: '<!-- Inserta tu código HTML aquí -->' };
+        const htmlContent: HtmlContent = { 
+          code: '<!-- Inserta tu código HTML aquí -->', 
+          type: 'html' 
+        };
         newBlock = {
           id: uuidv4(),
           type,
@@ -290,7 +322,8 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
             { name: 'message', label: 'Mensaje', type: 'textarea', required: true }
           ],
           successMessage: 'Gracias por contactarnos',
-          errorMessage: 'Hubo un error al enviar el formulario'
+          errorMessage: 'Hubo un error al enviar el formulario',
+          type: 'contact-form'
         };
         newBlock = {
           id: uuidv4(),
@@ -308,7 +341,8 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
           withHeader: true,
           withBorder: true,
           striped: false,
-          caption: 'Tabla de datos'
+          caption: 'Tabla de datos',
+          type: 'table'
         };
         newBlock = {
           id: uuidv4(),
@@ -319,10 +353,11 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
       }
       case 'ai': {
         // Contenido para bloque AI
-        const aiContent = {
+        const aiContent: AiContent = {
           prompt: '',
           content: '',
-          format: 'text' as const
+          format: 'text' as const,
+          type: 'ai'
         };
         newBlock = {
           id: uuidv4(),
@@ -335,7 +370,8 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
         // Contenido predeterminado para bloque de formulario
         const formContent: FormContent = {
           fields: [],
-          submitButtonText: 'Enviar'
+          submitButtonText: 'Enviar',
+          type: 'form'
         };
         newBlock = {
           id: uuidv4(),
@@ -398,8 +434,56 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
       // Añadimos el tipo discriminante basado en el tipo del bloque
       // Esto ayuda a TypeScript a realizar verificaciones de tipo correctamente
       if (!('type' in updatedContent)) {
-        // En este punto, el block.type y el tipo del discriminante deberían coincidir
-        typeSpecificContent = { ...updatedContent, type: block.type };
+        // El tipo discriminante debe ser específico según cada tipo de bloque
+        switch (block.type) {
+          case 'heading':
+            typeSpecificContent = { ...updatedContent, type: 'heading' as const };
+            break;
+          case 'paragraph':
+            typeSpecificContent = { ...updatedContent, type: 'paragraph' as const };
+            break;
+          case 'rich-text':
+            typeSpecificContent = { ...updatedContent, type: 'rich-text' as const };
+            break;
+          case 'image':
+            typeSpecificContent = { ...updatedContent, type: 'image' as const };
+            break;
+          case 'gallery':
+            typeSpecificContent = { ...updatedContent, type: 'gallery' as const };
+            break;
+          case 'button':
+            typeSpecificContent = { ...updatedContent, type: 'button' as const };
+            break;
+          case 'quote':
+            typeSpecificContent = { ...updatedContent, type: 'quote' as const };
+            break;
+          case 'table':
+            typeSpecificContent = { ...updatedContent, type: 'table' as const };
+            break;
+          case 'video':
+            typeSpecificContent = { ...updatedContent, type: 'video' as const };
+            break;
+          case 'divider':
+            typeSpecificContent = { ...updatedContent, type: 'divider' as const };
+            break;
+          case 'list':
+            typeSpecificContent = { ...updatedContent, type: 'list' as const };
+            break;
+          case 'html':
+            typeSpecificContent = { ...updatedContent, type: 'html' as const };
+            break;
+          case 'form':
+            typeSpecificContent = { ...updatedContent, type: 'form' as const };
+            break;
+          case 'contact-form':
+            typeSpecificContent = { ...updatedContent, type: 'contact-form' as const };
+            break;
+          case 'ai':
+            typeSpecificContent = { ...updatedContent, type: 'ai' as const };
+            break;
+          default:
+            typeSpecificContent = updatedContent;
+        }
       }
       
       // Combinamos el contenido actual con las actualizaciones
