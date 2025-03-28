@@ -89,8 +89,11 @@ interface DropResult {
 /**
  * Componente contenedor para bloques en el editor CMS.
  * Proporciona funcionalidad drag & drop y controles de edición.
+ * 
+ * Componente memoizado para mejorar el rendimiento cuando hay muchos bloques
+ * en el editor, evitando renderizados innecesarios.
  */
-export const BlockContainer = ({
+const MemoizedBlockContainer = ({
   id,
   type,
   index,
@@ -365,6 +368,9 @@ export const BlockContainer = ({
     </motion.div>
   );
 };
+
+// Exportar componente memoizado
+export const BlockContainer = React.memo(MemoizedBlockContainer);
 
 // Mantiene la exportación por defecto para compatibilidad con código existente
 export default BlockContainer;

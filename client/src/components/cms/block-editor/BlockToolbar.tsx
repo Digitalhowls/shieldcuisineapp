@@ -51,7 +51,7 @@ interface BlockToolProps {
  * Renderiza un botón con un icono y un tooltip que muestra
  * una descripción al hacer hover
  */
-export const BlockTool: React.FC<BlockToolProps> = ({ icon, label, type, onClick }) => (
+const MemoizedBlockTool: React.FC<BlockToolProps> = ({ icon, label, type, onClick }) => (
   <TooltipProvider>
     <Tooltip>
       <TooltipTrigger asChild>
@@ -72,6 +72,11 @@ export const BlockTool: React.FC<BlockToolProps> = ({ icon, label, type, onClick
 );
 
 /**
+ * Versión memoizada del componente BlockTool para evitar renderizados innecesarios
+ */
+export const BlockTool = React.memo(MemoizedBlockTool);
+
+/**
  * Propiedades para el componente BlockToolbar
  */
 interface BlockToolbarProps {
@@ -80,7 +85,7 @@ interface BlockToolbarProps {
 }
 
 /**
- * Barra de herramientas para añadir bloques al editor
+ * Implementación interna de la barra de herramientas 
  * 
  * Proporciona acceso rápido a los tipos de bloques más comunes
  * y un menú desplegable para acceder a tipos adicionales.
@@ -89,15 +94,16 @@ interface BlockToolbarProps {
  * @category CMS
  * @subcategory BlockEditor
  */
-export const BlockToolbar: React.FC<BlockToolbarProps> = ({ onAddBlock }) => {
-  const commonTools = [
+const MemoizedBlockToolbar: React.FC<BlockToolbarProps> = ({ onAddBlock }) => {
+  // Definimos los arrays de herramientas como constantes para evitar recrearlos en cada renderizado
+  const commonTools = React.useMemo(() => [
     { icon: <Type size={16} />, label: 'Título', type: 'heading' as BlockType },
     { icon: <FileText size={16} />, label: 'Párrafo', type: 'paragraph' as BlockType },
     { icon: <Image size={16} />, label: 'Imagen', type: 'image' as BlockType },
     { icon: <BadgeAlert size={16} />, label: 'Botón', type: 'button' as BlockType },
-  ];
+  ], []);
 
-  const moreTools = [
+  const moreTools = React.useMemo(() => [
     { icon: <Images size={16} />, label: 'Galería', type: 'gallery' as BlockType },
     { icon: <Table size={16} />, label: 'Tabla', type: 'table' as BlockType },
     { icon: <Video size={16} />, label: 'Vídeo', type: 'video' as BlockType },
@@ -106,7 +112,7 @@ export const BlockToolbar: React.FC<BlockToolbarProps> = ({ onAddBlock }) => {
     { icon: <List size={16} />, label: 'Lista', type: 'list' as BlockType },
     { icon: <Code size={16} />, label: 'HTML', type: 'html' as BlockType },
     { icon: <MessageSquare size={16} />, label: 'Formulario de contacto', type: 'contact-form' as BlockType },
-  ];
+  ], []);
 
   return (
     <div className="flex items-center space-x-1 bg-muted/30 p-1 rounded-md">
@@ -144,6 +150,14 @@ export const BlockToolbar: React.FC<BlockToolbarProps> = ({ onAddBlock }) => {
     </div>
   );
 };
+
+/**
+ * Barra de herramientas para añadir bloques al editor - versión memoizada
+ * 
+ * Esta versión memoizada evita renderizados innecesarios para mejorar el rendimiento
+ * cuando se editan bloques en el editor. Especialmente útil cuando hay muchos bloques.
+ */
+export const BlockToolbar = React.memo(MemoizedBlockToolbar);
 
 // Mantiene la exportación por defecto para compatibilidad con código existente
 export default BlockToolbar;

@@ -21,7 +21,10 @@ interface EmptyStateProps {
  * @category CMS
  * @subcategory BlockEditor
  */
-export const EmptyState: React.FC<EmptyStateProps> = ({ onAddBlock }) => {
+/**
+ * Componente interno memoizado para mejorar el rendimiento
+ */
+const MemoizedEmptyState: React.FC<EmptyStateProps> = ({ onAddBlock }) => {
   return (
     <div className="flex flex-col items-center justify-center py-12 px-4 border-2 border-dashed rounded-md bg-muted/20">
       <LayoutTemplate className="h-12 w-12 text-muted-foreground mb-4" />
@@ -46,6 +49,12 @@ export const EmptyState: React.FC<EmptyStateProps> = ({ onAddBlock }) => {
     </div>
   );
 };
+
+/**
+ * Componente externo memoizado para mejorar el rendimiento
+ * cuando el editor está vacío, evitando renderizados innecesarios.
+ */
+export const EmptyState = React.memo(MemoizedEmptyState);
 
 // Mantiene la exportación por defecto para compatibilidad con código existente
 export default EmptyState;
