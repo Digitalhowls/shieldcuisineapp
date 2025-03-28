@@ -14,7 +14,9 @@ import {
   LogOut,
   Menu,
   X,
-  ChevronDown
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -28,19 +30,20 @@ import AdminCMS from "./cms";
 import LearningModule from "./learning";
 
 // Componente de navegación para panel de administrador
-const NavItem = ({ href, icon, label, active, onClick }: any) => {
+const NavItem = ({ href, icon, label, active, onClick, collapsed }: any) => {
   return (
     <a
       href={href}
-      className={`flex items-center space-x-3 px-3 py-2 rounded-md text-sm transition-colors ${
+      className={`flex items-center ${collapsed ? 'justify-center' : 'space-x-3'} px-3 py-2 rounded-md text-sm transition-colors ${
         active
           ? "bg-primary text-primary-foreground"
           : "hover:bg-gray-100 dark:hover:bg-gray-800"
       }`}
       onClick={onClick}
+      title={collapsed ? label : undefined}
     >
       {icon}
-      <span>{label}</span>
+      {!collapsed && <span>{label}</span>}
     </a>
   );
 };
@@ -51,9 +54,20 @@ const NavGroup = ({
   label, 
   children, 
   active, 
-  defaultOpen = false 
+  defaultOpen = false,
+  collapsed = false
 }: any) => {
   const [open, setOpen] = useState(defaultOpen || active);
+
+  if (collapsed) {
+    return (
+      <div className="w-full" title={label}>
+        <div className="flex items-center justify-center px-3 py-2 rounded-md text-sm hover:bg-gray-100 dark:hover:bg-gray-800">
+          {icon}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <Collapsible open={open} onOpenChange={setOpen} className="w-full">
@@ -76,9 +90,14 @@ export default function AdminModule() {
   const [location] = useLocation();
   const { user, logoutMutation } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   const toggleSidebar = () => {
     setSidebarOpen(!sidebarOpen);
+  };
+  
+  const toggleCollapse = () => {
+    setSidebarCollapsed(!sidebarCollapsed);
   };
 
   // Determinar si algún subitem dentro de un grupo está activo
@@ -169,15 +188,30 @@ export default function AdminModule() {
 
       {/* Sidebar (barra lateral) */}
       <div
-        className={`w-64 bg-card border-r shadow-sm transition-all duration-300 ${
+        className={`${sidebarCollapsed ? 'w-16' : 'w-64'} bg-card border-r shadow-sm transition-all duration-300 ${
           sidebarOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
         } fixed inset-y-0 left-0 z-20 md:relative md:translate-x-0`}
       >
         <div className="flex flex-col h-full">
           {/* Encabezado del sidebar */}
-          <div className="p-4 border-b">
-            <h2 className="text-xl font-bold">ShieldCuisine</h2>
-            <p className="text-sm text-muted-foreground mt-1">Panel de Administración</p>
+          <div className="p-4 border-b flex justify-between items-center">
+            <div className={`${sidebarCollapsed ? 'hidden' : 'block'}`}>
+              <h2 className="text-xl font-bold">ShieldCuisine</h2>
+              <p className="text-sm text-muted-foreground mt-1">Panel de Administración</p>
+            </div>
+            {sidebarCollapsed && (
+              <div className="mx-auto">
+                <h2 className="text-xl font-bold">SC</h2>
+              </div>
+            )}
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              onClick={toggleCollapse} 
+              className="hidden md:flex"
+            >
+              {sidebarCollapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
+            </Button>
           </div>
 
           {/* Navegación principal */}
@@ -190,6 +224,7 @@ export default function AdminModule() {
                 label={item.name}
                 active={item.active}
                 onClick={() => setSidebarOpen(false)}
+                collapsed={sidebarCollapsed}
               />
             ))}
 
@@ -199,14 +234,16 @@ export default function AdminModule() {
               label="CMS"
               active={isCmsActive}
               defaultOpen={isCmsActive}
+              collapsed={sidebarCollapsed}
             >
-              {cmsNavItems.map((item) => (
+              {!sidebarCollapsed && cmsNavItems.map((item) => (
                 <NavItem
                   key={item.name}
                   href={item.href}
                   label={item.name}
                   active={item.active}
                   onClick={() => setSidebarOpen(false)}
+                  collapsed={sidebarCollapsed}
                 />
               ))}
             </NavGroup>
@@ -216,25 +253,33 @@ export default function AdminModule() {
               icon={<BookOpen className="h-5 w-5" />} 
               label="E-Learning"
               active={location.startsWith("/admin/learning")}
+              collapsed={sidebarCollapsed}
             >
-              <NavItem
-                href="/admin/learning/courses"
-                label="Cursos"
-                active={location === "/admin/learning/courses"}
-                onClick={() => setSidebarOpen(false)}
-              />
-              <NavItem
-                href="/admin/learning/lessons"
-                label="Lecciones"
-                active={location === "/admin/learning/lessons"}
-                onClick={() => setSidebarOpen(false)}
-              />
-              <NavItem
-                href="/admin/learning/quizzes"
-                label="Cuestionarios"
-                active={location === "/admin/learning/quizzes"}
-                onClick={() => setSidebarOpen(false)}
-              />
+              {!sidebarCollapsed && (
+                <>
+                  <NavItem
+                    href="/admin/learning/courses"
+                    label="Cursos"
+                    active={location === "/admin/learning/courses"}
+                    onClick={() => setSidebarOpen(false)}
+                    collapsed={sidebarCollapsed}
+                  />
+                  <NavItem
+                    href="/admin/learning/lessons"
+                    label="Lecciones"
+                    active={location === "/admin/learning/lessons"}
+                    onClick={() => setSidebarOpen(false)}
+                    collapsed={sidebarCollapsed}
+                  />
+                  <NavItem
+                    href="/admin/learning/quizzes"
+                    label="Cuestionarios"
+                    active={location === "/admin/learning/quizzes"}
+                    onClick={() => setSidebarOpen(false)}
+                    collapsed={sidebarCollapsed}
+                  />
+                </>
+              )}
             </NavGroup>
 
             {/* Navegación de configuración */}
@@ -247,6 +292,7 @@ export default function AdminModule() {
                   label={item.name}
                   active={item.active}
                   onClick={() => setSidebarOpen(false)}
+                  collapsed={sidebarCollapsed}
                 />
               ))}
             </div>
@@ -254,25 +300,43 @@ export default function AdminModule() {
 
           {/* Usuario y logout */}
           <div className="p-4 border-t">
-            <div className="flex items-center space-x-3 mb-4">
-              <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
-                <User className="h-5 w-5 text-primary" />
-              </div>
-              <div>
-                <div className="font-medium">{user?.name || "Administrador"}</div>
-                <div className="text-xs text-muted-foreground">
-                  Administrador del Sistema
+            {sidebarCollapsed ? (
+              <div className="flex flex-col items-center space-y-3">
+                <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+                  <User className="h-5 w-5 text-primary" />
                 </div>
+                <Button
+                  variant="outline"
+                  className="w-full justify-center p-2"
+                  onClick={() => logoutMutation.mutate()}
+                  title="Cerrar Sesión"
+                >
+                  <LogOut className="h-4 w-4" />
+                </Button>
               </div>
-            </div>
-            <Button
-              variant="outline"
-              className="w-full justify-start"
-              onClick={() => logoutMutation.mutate()}
-            >
-              <LogOut className="h-4 w-4 mr-2" />
-              Cerrar Sesión
-            </Button>
+            ) : (
+              <>
+                <div className="flex items-center space-x-3 mb-4">
+                  <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+                    <User className="h-5 w-5 text-primary" />
+                  </div>
+                  <div>
+                    <div className="font-medium">{user?.name || "Administrador"}</div>
+                    <div className="text-xs text-muted-foreground">
+                      Administrador del Sistema
+                    </div>
+                  </div>
+                </div>
+                <Button
+                  variant="outline"
+                  className="w-full justify-start"
+                  onClick={() => logoutMutation.mutate()}
+                >
+                  <LogOut className="h-4 w-4 mr-2" />
+                  Cerrar Sesión
+                </Button>
+              </>
+            )}
           </div>
         </div>
       </div>

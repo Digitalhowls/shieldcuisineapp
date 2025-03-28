@@ -57,6 +57,10 @@ import {
   AnimationOptions
 } from "./types";
 
+/**
+ * Interfaz para las propiedades del panel de configuración de bloques
+ * Permite configurar diferentes tipos de bloques con tipado seguro
+ */
 interface BlockSettingsPanelProps {
   blockType: BlockType;
   blockData: BlockContent;
@@ -65,6 +69,10 @@ interface BlockSettingsPanelProps {
   onClose: () => void;
 }
 
+/**
+ * Panel de configuración para bloques del editor
+ * Proporciona controles específicos según el tipo de bloque
+ */
 const BlockSettingsPanel: React.FC<BlockSettingsPanelProps> = ({
   blockType,
   blockData,
@@ -74,12 +82,19 @@ const BlockSettingsPanel: React.FC<BlockSettingsPanelProps> = ({
 }) => {
   const [activeTab, setActiveTab] = useState<string>("general");
   
-  // Manejar cambios en cualquier campo
-  const handleChange = (field: string, value: any) => {
+  /**
+   * Maneja cambios en cualquier campo del bloque
+   * @param field Nombre del campo
+   * @param value Valor del campo
+   */
+  const handleChange = <T extends keyof BlockContent>(field: string, value: any) => {
     onChange({ ...blockData, [field]: value });
   };
   
-  // Renderizar contenido según el tipo de bloque
+  /**
+   * Renderiza el contenido del panel según el tipo de bloque
+   * Usa tipo condicional para asegurar que renderiza las opciones correctas
+   */
   const renderContent = () => {
     switch (blockType) {
       case "heading":
@@ -114,9 +129,12 @@ const BlockSettingsPanel: React.FC<BlockSettingsPanelProps> = ({
     }
   };
   
-  // Configuraciones para encabezado
+  /**
+   * Configuraciones específicas para bloques de encabezado
+   * Utiliza una conversión de tipo segura para manejar los datos
+   */
   const renderHeadingSettings = () => {
-    // Cast blockData to HeadingContent type
+    // Conversión de tipo explícita para asegurar que tenemos un HeadingContent
     const headingData = blockData as HeadingContent;
     
     return (

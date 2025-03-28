@@ -9,18 +9,19 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
-import { HeadingContent } from '../types';
+import { HeadingContent, Block } from '../types';
 
+/**
+ * Interfaz para las propiedades del componente HeadingBlock
+ * Utiliza la interfaz HeadingContent de types.ts para tener consistencia
+ */
 interface HeadingBlockProps {
   data: {
     id: string;
     type: 'heading';
-    text: string;
-    level: 'h1' | 'h2' | 'h3' | 'h4' | 'h5' | 'h6';
-    alignment?: "left" | "center" | "right";
-  };
+  } & HeadingContent;
   isActive: boolean;
-  onUpdate: (data: Partial<HeadingContent & { alignment?: "left" | "center" | "right" }>) => void;
+  onUpdate: (data: Partial<HeadingContent>) => void;
   readOnly?: boolean;
 }
 

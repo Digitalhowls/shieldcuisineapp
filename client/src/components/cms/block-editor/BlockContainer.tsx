@@ -15,6 +15,12 @@ import {
 import BlockSettingsPanel from "./block-settings-panel";
 import { Block, BlockType, BlockContent } from "./types";
 
+/**
+ * Este archivo gestiona el contenedor de bloques en el editor.
+ * Proporciona la funcionalidad de arrastrar y soltar, activación/desactivación, 
+ * y controles para cada bloque.
+ */
+
 // Tipo constante para el tipo de arrastre
 const DRAG_TYPE = "BLOCK" as const;
 

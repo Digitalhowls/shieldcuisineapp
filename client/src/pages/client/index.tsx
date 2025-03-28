@@ -11,26 +11,29 @@ import {
   User, 
   LogOut, 
   Menu, 
-  X 
+  X,
+  ChevronLeft,
+  ChevronRight
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/shared/hooks/use-auth";
 import ClientDashboard from "./dashboard";
 
 // NavItem componente simplificado para la barra lateral del cliente
-const NavItem = ({ href, icon, label, active, onClick }: any) => {
+const NavItem = ({ href, icon, label, active, onClick, collapsed }: any) => {
   return (
     <a
       href={href}
-      className={`flex items-center space-x-3 px-3 py-2 rounded-md text-sm transition-colors ${
+      className={`flex items-center ${collapsed ? 'justify-center' : 'space-x-3'} px-3 py-2 rounded-md text-sm transition-colors ${
         active
           ? "bg-primary text-primary-foreground"
           : "hover:bg-gray-100 dark:hover:bg-gray-800"
       }`}
       onClick={onClick}
+      title={collapsed ? label : undefined}
     >
       {icon}
-      <span>{label}</span>
+      {!collapsed && <span>{label}</span>}
     </a>
   );
 };
@@ -40,9 +43,14 @@ export default function ClientModule() {
   const [location] = useLocation();
   const { user, logoutMutation } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   const toggleSidebar = () => {
     setSidebarOpen(!sidebarOpen);
+  };
+  
+  const toggleCollapse = () => {
+    setSidebarCollapsed(!sidebarCollapsed);
   };
 
   // Navegación específica para clientes
@@ -97,15 +105,30 @@ export default function ClientModule() {
 
       {/* Sidebar (barra lateral) */}
       <div
-        className={`w-64 bg-card border-r shadow-sm transition-all duration-300 ${
+        className={`${sidebarCollapsed ? 'w-16' : 'w-64'} bg-card border-r shadow-sm transition-all duration-300 ${
           sidebarOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
         } fixed inset-y-0 left-0 z-20 md:relative md:translate-x-0`}
       >
         <div className="flex flex-col h-full">
           {/* Encabezado del sidebar */}
-          <div className="p-4 border-b">
-            <h2 className="text-xl font-bold">ShieldCuisine</h2>
-            <p className="text-sm text-muted-foreground mt-1">Portal de Cliente</p>
+          <div className="p-4 border-b flex justify-between items-center">
+            <div className={`${sidebarCollapsed ? 'hidden' : 'block'}`}>
+              <h2 className="text-xl font-bold">ShieldCuisine</h2>
+              <p className="text-sm text-muted-foreground mt-1">Portal de Cliente</p>
+            </div>
+            {sidebarCollapsed && (
+              <div className="mx-auto">
+                <h2 className="text-xl font-bold">SC</h2>
+              </div>
+            )}
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              onClick={toggleCollapse} 
+              className="hidden md:flex"
+            >
+              {sidebarCollapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
+            </Button>
           </div>
 
           {/* Navegación */}
@@ -118,35 +141,54 @@ export default function ClientModule() {
                 label={item.name}
                 active={item.active}
                 onClick={() => setSidebarOpen(false)}
+                collapsed={sidebarCollapsed}
               />
             ))}
           </div>
 
           {/* Usuario y logout */}
           <div className="p-4 border-t">
-            <div className="flex items-center space-x-3 mb-4">
-              <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
-                <User className="h-5 w-5 text-primary" />
-              </div>
-              <div>
-                <div className="font-medium">{user?.name}</div>
-                <div className="text-xs text-muted-foreground">
-                  {user?.role === "admin" 
-                    ? "Administrador del Sistema" 
-                    : user?.role === "company_admin" 
-                      ? "Administrador" 
-                      : "Usuario"}
+            {sidebarCollapsed ? (
+              <div className="flex flex-col items-center space-y-3">
+                <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+                  <User className="h-5 w-5 text-primary" />
                 </div>
+                <Button
+                  variant="outline"
+                  className="w-full justify-center p-2"
+                  onClick={() => logoutMutation.mutate()}
+                  title="Cerrar Sesión"
+                >
+                  <LogOut className="h-4 w-4" />
+                </Button>
               </div>
-            </div>
-            <Button
-              variant="outline"
-              className="w-full justify-start"
-              onClick={() => logoutMutation.mutate()}
-            >
-              <LogOut className="h-4 w-4 mr-2" />
-              Cerrar Sesión
-            </Button>
+            ) : (
+              <>
+                <div className="flex items-center space-x-3 mb-4">
+                  <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+                    <User className="h-5 w-5 text-primary" />
+                  </div>
+                  <div>
+                    <div className="font-medium">{user?.name}</div>
+                    <div className="text-xs text-muted-foreground">
+                      {user?.role === "admin" 
+                        ? "Administrador del Sistema" 
+                        : user?.role === "company_admin" 
+                          ? "Administrador" 
+                          : "Usuario"}
+                    </div>
+                  </div>
+                </div>
+                <Button
+                  variant="outline"
+                  className="w-full justify-start"
+                  onClick={() => logoutMutation.mutate()}
+                >
+                  <LogOut className="h-4 w-4 mr-2" />
+                  Cerrar Sesión
+                </Button>
+              </>
+            )}
           </div>
         </div>
       </div>
