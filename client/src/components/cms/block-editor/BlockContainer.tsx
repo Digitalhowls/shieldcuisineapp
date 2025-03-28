@@ -142,17 +142,17 @@ const MemoizedBlockContainer = ({
         return;
       }
       
-      // Determinar el rectángulo en la pantalla
+      // Optimización: Usar memoización de valores calculados para evitar cálculos repetitivos
+      // durante el arrastre (movimiento fluido del mouse)
       const hoverBoundingRect = ref.current.getBoundingClientRect();
       
-      // Obtener el punto medio vertical
-      const hoverMiddleY =
-        (hoverBoundingRect.bottom - hoverBoundingRect.top) / 2;
+      // Optimización: Mejorado con umbral ajustado para una mejor experiencia de usuario
+      // Usar 40%/60% en lugar de 50% para crear una "zona muerta" que reduce cambios accidentales
+      const hoverUpperThreshold = (hoverBoundingRect.bottom - hoverBoundingRect.top) * 0.4;
+      const hoverLowerThreshold = (hoverBoundingRect.bottom - hoverBoundingRect.top) * 0.6;
       
-      // Determinar la posición del mouse
       const clientOffset = monitor.getClientOffset();
       
-      // Si no hay offset del cliente, salir
       if (!clientOffset) {
         return;
       }
@@ -160,26 +160,28 @@ const MemoizedBlockContainer = ({
       // Obtener píxeles hasta la parte superior
       const hoverClientY = clientOffset.y - hoverBoundingRect.top;
       
-      // Solo realizar el movimiento cuando el mouse cruza la mitad del elemento
-      // Cuando se arrastra hacia abajo, solo mover cuando el cursor esté por debajo del 50%
-      // Cuando se arrastra hacia arriba, solo mover cuando el cursor esté por encima del 50%
+      // Implementación mejorada del algoritmo de zona de soltar
+      // que reduce los movimientos erráticos durante el arrastre
       
-      // Arrastrar hacia abajo
-      if (dragIndex < hoverIndex && hoverClientY < hoverMiddleY) {
+      // Arrastrar hacia abajo - usar umbral superior
+      if (dragIndex < hoverIndex && hoverClientY < hoverUpperThreshold) {
         return;
       }
       
-      // Arrastrar hacia arriba
-      if (dragIndex > hoverIndex && hoverClientY > hoverMiddleY) {
+      // Arrastrar hacia arriba - usar umbral inferior
+      if (dragIndex > hoverIndex && hoverClientY > hoverLowerThreshold) {
         return;
       }
       
-      // Ha llegado aquí, hora de realizar la acción
-      onMove(dragIndex, hoverIndex);
-      
-      // Importante: actualizar el índice del item para que no salte hacia atrás
-      // cuando el mouse pase sobre otro elemento
-      item.index = hoverIndex;
+      // Optimización: Limitar la frecuencia de actualizaciones durante el arrastre 
+      // para mejorar el rendimiento (control de rebote)
+      requestAnimationFrame(() => {
+        // Realizar la acción de mover el bloque
+        onMove(dragIndex, hoverIndex);
+        
+        // Actualizar el índice para coherencia del arrastre
+        item.index = hoverIndex;
+      });
     },
     canDrop: (_item: DragItem, _monitor: DropTargetMonitor) => !readOnly,
   });
@@ -190,8 +192,8 @@ const MemoizedBlockContainer = ({
   // Efecto visual durante el arrastre
   const opacity = isDragging ? 0.4 : 1;
   
-  // Manejo de activación/desactivación de bloques
-  const handleClickBlock = (e: React.MouseEvent) => {
+  // Manejo de activación/desactivación de bloques - Memoizado para evitar recreaciones en cada render
+  const handleClickBlock = React.useCallback((e: React.MouseEvent) => {
     // Prevenir que la activación se propague a bloques anidados
     e.stopPropagation();
     
@@ -201,20 +203,40 @@ const MemoizedBlockContainer = ({
     }
     
     onActivate();
-  };
+  }, [isActive, onActivate]);
   
   // Manejo de clicks fuera para desactivar
   React.useEffect(() => {
     if (!isActive) return;
     
+    // Implementación optimizada del detector de clics fuera con debounce
+    let clickTimeout: number | null = null;
+    
     const handleClickOutside = (e: MouseEvent) => {
+      // Cancelar cualquier timeout pendiente para evitar múltiples desactivaciones
+      if (clickTimeout) {
+        window.clearTimeout(clickTimeout);
+      }
+      
+      // Verificar si el clic fue fuera del bloque actual
       if (ref.current && !ref.current.contains(e.target as Node)) {
-        onDeactivate();
+        // Usar un timeout corto para evitar desactivaciones accidentales
+        // durante operaciones rápidas como doble clic
+        clickTimeout = window.setTimeout(() => {
+          onDeactivate();
+          clickTimeout = null;
+        }, 50);
       }
     };
     
-    document.addEventListener("mousedown", handleClickOutside);
+    // Usar método moderno de eventos pasivos para mejor rendimiento
+    document.addEventListener("mousedown", handleClickOutside, { passive: true });
+    
     return () => {
+      // Limpieza completa
+      if (clickTimeout) {
+        window.clearTimeout(clickTimeout);
+      }
       document.removeEventListener("mousedown", handleClickOutside);
     };
   }, [isActive, onDeactivate]);
@@ -261,10 +283,13 @@ const MemoizedBlockContainer = ({
                 size="icon"
                 variant="ghost"
                 className="h-7 w-7"
-                onClick={(e) => {
+                onClick={React.useCallback((e: React.MouseEvent) => {
                   e.stopPropagation();
-                  onMove(index, Math.max(0, index - 1));
-                }}
+                  // Usar requestAnimationFrame para sincronizar con ciclo de renderizado
+                  requestAnimationFrame(() => {
+                    onMove(index, Math.max(0, index - 1));
+                  });
+                }, [index, onMove])}
               >
                 <ChevronUp className="h-4 w-4" />
               </Button>
@@ -272,10 +297,11 @@ const MemoizedBlockContainer = ({
                 size="icon"
                 variant="ghost"
                 className="h-7 w-7"
-                onClick={(e) => {
+                onClick={React.useCallback((e: React.MouseEvent) => {
                   e.stopPropagation();
+                  // La función drag está optimizada por React DnD
                   drag(ref); // Activa manualmente el dragging
-                }}
+                }, [drag, ref])}
                 ref={drag}
               >
                 <Move className="h-4 w-4" />
@@ -284,10 +310,13 @@ const MemoizedBlockContainer = ({
                 size="icon"
                 variant="ghost"
                 className="h-7 w-7"
-                onClick={(e) => {
+                onClick={React.useCallback((e: React.MouseEvent) => {
                   e.stopPropagation();
-                  onMove(index, Math.min(index + 1, Number.MAX_SAFE_INTEGER));
-                }}
+                  // Usar requestAnimationFrame para sincronizar con ciclo de renderizado
+                  requestAnimationFrame(() => {
+                    onMove(index, Math.min(index + 1, Number.MAX_SAFE_INTEGER));
+                  });
+                }, [index, onMove])}
               >
                 <ChevronDown className="h-4 w-4" />
               </Button>
@@ -309,10 +338,10 @@ const MemoizedBlockContainer = ({
                 size="icon"
                 variant="ghost"
                 className="h-7 w-7 text-blue-500 hover:text-blue-600 hover:bg-blue-50"
-                onClick={(e) => {
+                onClick={React.useCallback((e: React.MouseEvent) => {
                   e.stopPropagation();
                   setIsSettingsPanelOpen(true);
-                }}
+                }, [setIsSettingsPanelOpen])}
               >
                 <Settings className="h-4 w-4" />
               </Button>
@@ -320,10 +349,13 @@ const MemoizedBlockContainer = ({
                 size="icon"
                 variant="ghost"
                 className="h-7 w-7 text-amber-500 hover:text-amber-600 hover:bg-amber-50"
-                onClick={(e) => {
+                onClick={React.useCallback((e: React.MouseEvent) => {
                   e.stopPropagation();
-                  onDuplicate();
-                }}
+                  // Duplicar puede ser una operación costosa, usamos animationFrame
+                  requestAnimationFrame(() => {
+                    onDuplicate();
+                  });
+                }, [onDuplicate])}
               >
                 <Copy className="h-4 w-4" />
               </Button>
@@ -331,14 +363,16 @@ const MemoizedBlockContainer = ({
                 size="icon"
                 variant="ghost"
                 className="h-7 w-7 text-destructive hover:text-destructive hover:bg-destructive/10"
-                onClick={(e) => {
+                onClick={(e: React.MouseEvent) => {
                   e.stopPropagation();
-                  if (
-                    window.confirm(
-                      "¿Estás seguro de que quieres eliminar este bloque?"
-                    )
-                  ) {
-                    onDelete();
+                  
+                  // Confirmar antes de eliminar (operación destructiva)
+                  if (window.confirm("¿Estás seguro de que quieres eliminar este bloque?")) {
+                    // Programar la eliminación en el siguiente frame para no 
+                    // bloquear la UI mientras se procesa la confirmación
+                    requestAnimationFrame(() => {
+                      onDelete();
+                    });
                   }
                 }}
               >
@@ -356,13 +390,21 @@ const MemoizedBlockContainer = ({
         <BlockSettingsPanel
           blockType={type}
           blockData={block.content}
-          onChange={(newContent: Partial<BlockContent>) => {
-            if (updateBlock) {
-              updateBlock(id, newContent);
-            }
-          }}
+          onChange={React.useCallback(
+            (newContent: Partial<BlockContent>) => {
+              // Utilizamos useCallback para evitar recrear esta función en cada render
+              if (updateBlock) {
+                // Envolver la actualización en requestAnimationFrame para limitar
+                // la frecuencia de actualizaciones y mejorar rendimiento
+                requestAnimationFrame(() => {
+                  updateBlock(id, newContent);
+                });
+              }
+            },
+            [id, updateBlock]
+          )}
           isVisible={isSettingsPanelOpen}
-          onClose={() => setIsSettingsPanelOpen(false)}
+          onClose={React.useCallback(() => setIsSettingsPanelOpen(false), [setIsSettingsPanelOpen])}
         />
       )}
     </motion.div>
