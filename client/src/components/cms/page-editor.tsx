@@ -45,14 +45,20 @@ import {
   FileImage,
   Sparkles,
   Split,
+  Smartphone,
+  GitBranch,
 } from "lucide-react";
 
 // Importar componentes
 import { AIAssistantPanel } from "./ai-assistant";
 import PreviewPanel from "./page-editor/PreviewPanel";
+import PrePublicationCheck from "./page-editor/pre-publication-check";
+import DraftComparisonDialog from "./page-editor/draft-comparison-dialog";
+import PagePreview from "./page-preview";
 
 // Componentes del editor
 import BlockEditor from "./block-editor"; // Importar del archivo index.tsx estandarizado
+import { PageContent } from "./block-editor";
 
 interface PageEditorProps {
   isNew?: boolean;
@@ -87,6 +93,9 @@ const PageEditor: React.FC<PageEditorProps> = ({ isNew = false, pageId }) => {
   const [activeTab, setActiveTab] = useState("content");
   const [previewMode, setPreviewMode] = useState(false);
   const [previewLayout, setPreviewLayout] = useState<'split' | 'full'>('split');
+  const [showPrePublicationCheck, setShowPrePublicationCheck] = useState(false);
+  const [showDraftComparison, setShowDraftComparison] = useState(false);
+  const [showDevicePreview, setShowDevicePreview] = useState(false);
   const [pageData, setPageData] = useState<PageData>({
     title: "",
     slug: "",
@@ -239,9 +248,9 @@ const PageEditor: React.FC<PageEditorProps> = ({ isNew = false, pageId }) => {
     saveMutation.mutate(pageData);
   };
   
-  // Publicar la página
-  const handlePublish = () => {
-    // Verificar que todos los campos obligatorios estén completos
+  // Solicitar publicación y mostrar verificación pre-publicación
+  const requestPublish = () => {
+    // Verificar que los campos obligatorios estén completos
     if (!pageData.title || !pageData.slug) {
       toast({
         title: "Error",
@@ -251,6 +260,12 @@ const PageEditor: React.FC<PageEditorProps> = ({ isNew = false, pageId }) => {
       return;
     }
     
+    // Mostrar el diálogo de verificación pre-publicación
+    setShowPrePublicationCheck(true);
+  };
+  
+  // Realizar la publicación después de la verificación
+  const handlePublish = () => {
     // Actualizar estado y guardar
     const updatedData = {
       ...pageData,
@@ -260,6 +275,14 @@ const PageEditor: React.FC<PageEditorProps> = ({ isNew = false, pageId }) => {
     
     setPageData(updatedData);
     saveMutation.mutate(updatedData);
+    
+    // Cerrar el diálogo de verificación
+    setShowPrePublicationCheck(false);
+    
+    toast({
+      title: "Página publicada",
+      description: "La página ha sido publicada y ya está disponible para los usuarios",
+    });
   };
   
   // Despublicar la página
@@ -380,6 +403,26 @@ const PageEditor: React.FC<PageEditorProps> = ({ isNew = false, pageId }) => {
             )}
           </Button>
           
+          <Button 
+            variant="outline"
+            onClick={() => setShowDevicePreview(true)}
+            className="gap-2"
+          >
+            <Smartphone className="h-4 w-4" />
+            <span className="hidden sm:inline">Ver en Dispositivos</span>
+          </Button>
+          
+          {!isNew && pageData.id && pageData.status === "published" && (
+            <Button 
+              variant="outline"
+              onClick={() => setShowDraftComparison(true)}
+              className="gap-2"
+            >
+              <GitBranch className="h-4 w-4" />
+              <span className="hidden sm:inline">Comparar Cambios</span>
+            </Button>
+          )}
+          
           {pageData.id && pageData.status === "published" && (
             <Button 
               variant="outline" 
@@ -403,7 +446,7 @@ const PageEditor: React.FC<PageEditorProps> = ({ isNew = false, pageId }) => {
           
           {pageData.status !== "published" ? (
             <Button 
-              onClick={handlePublish} 
+              onClick={requestPublish} 
               disabled={saveMutation.isPending}
               className="gap-2"
             >
@@ -909,6 +952,62 @@ const PageEditor: React.FC<PageEditorProps> = ({ isNew = false, pageId }) => {
           </Button>
         </div>
       )}
+      
+      {/* Diálogo de verificación pre-publicación */}
+      <PrePublicationCheck
+        isOpen={showPrePublicationCheck}
+        onClose={() => setShowPrePublicationCheck(false)}
+        onPublish={handlePublish}
+        pageTitle={pageData.title}
+        pageSlug={pageData.slug}
+        pageDescription={pageData.description}
+        metaTitle={pageData.metaTitle}
+        metaDescription={pageData.metaDescription}
+        pageContent={{
+          blocks: blocks,
+          settings: {
+            layout: 'boxed',
+            spacing: 'normal'
+          }
+        }}
+      />
+      
+      {/* Diálogo de comparación de borradores */}
+      <DraftComparisonDialog
+        isOpen={showDraftComparison}
+        onClose={() => setShowDraftComparison(false)}
+        onPublish={handlePublish}
+        publishedData={
+          existingPage && existingPage.status === 'published'
+            ? {
+                title: existingPage.title,
+                content: existingPage.content,
+                updatedAt: existingPage.updatedAt || new Date().toISOString(),
+                publishedAt: existingPage.publishedAt
+              }
+            : undefined
+        }
+        draftData={{
+          title: pageData.title,
+          content: blocks,
+          updatedAt: new Date().toISOString()
+        }}
+      />
+      
+      {/* Diálogo de vista previa en diferentes dispositivos */}
+      <PagePreview
+        isOpen={showDevicePreview}
+        onClose={() => setShowDevicePreview(false)}
+        pageContent={{
+          blocks: blocks,
+          settings: {
+            layout: 'boxed',
+            spacing: 'normal'
+          }
+        }}
+        pageTitle={pageData.title}
+        pageDescription={pageData.description}
+      />
     </div>
   );
 };
