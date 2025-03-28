@@ -32,8 +32,7 @@ import HeadingBlock from "./blocks/HeadingBlock";
 import ImageBlock from "./blocks/ImageBlock";
 import HtmlBlock from "./blocks/HtmlBlock";
 import { AiBlock } from "./blocks/AiBlock";
-
-import { Block as BlockType } from './types';
+import { BlockContent } from "./types";
 
 // Editor-specific Block interface
 export interface Block {
@@ -235,7 +234,7 @@ const BlockEditor: React.FC<BlockEditorProps> = ({
     
     // Renderiza el componente según el tipo de bloque
     return (
-      <BlockContainer {...blockProps} type={block.type}>
+      <BlockContainer {...blockProps} type={block.type as any}>
         {block.type === "heading" && <HeadingBlock {...blockProps} data={block as any} />}
         {block.type === "text" && <TextBlock {...blockProps} data={block as any} />}
         {block.type === "image" && <ImageBlock {...blockProps} data={block as any} />}

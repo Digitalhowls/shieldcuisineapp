@@ -1,43 +1,71 @@
-import { useState, useEffect } from "react";
-import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Separator } from "@/components/ui/separator";
-import { Switch } from "@/components/ui/switch";
+import React, { useState } from "react";
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@/components/ui/tabs";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
-import { 
-  Settings2, 
-  AlignLeft, 
-  AlignCenter, 
-  AlignRight, 
-  AlignJustify,
-  MoveHorizontal,
-  MoveVertical,
+import { Switch } from "@/components/ui/switch";
+import { Input } from "@/components/ui/input";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Wand2,
+  Settings,
   Palette,
   Type,
-  Link,
-  ExternalLink,
-  PlayCircle,
+  AlignLeft,
+  AlignCenter,
+  AlignRight,
+  AlignJustify,
+  LayoutGrid,
   PanelLeft,
   Sparkles
 } from "lucide-react";
 
-import { BlockType } from "./types";
+import { 
+  BlockType, 
+  BlockContent, 
+  HeadingContent, 
+  ParagraphContent, 
+  ImageContent, 
+  GalleryContent,
+  ButtonContent,
+  VideoContent,
+  QuoteContent,
+  DividerContent,
+  ListContent,
+  HtmlContent,
+  FormContent,
+  ContactFormContent,
+  AnimationOptions
+} from "./types";
 
 interface BlockSettingsPanelProps {
   blockType: BlockType;
-  blockData: any;
-  onChange: (data: any) => void;
+  blockData: BlockContent;
+  onChange: (data: Partial<BlockContent>) => void;
   isVisible: boolean;
   onClose: () => void;
 }
 
-export const BlockSettingsPanel: React.FC<BlockSettingsPanelProps> = ({
+const BlockSettingsPanel: React.FC<BlockSettingsPanelProps> = ({
   blockType,
   blockData,
   onChange,
@@ -75,6 +103,7 @@ export const BlockSettingsPanel: React.FC<BlockSettingsPanelProps> = ({
       case "html":
         return renderHtmlSettings();
       case "form":
+      case "contact-form":
         return renderFormSettings();
       default:
         return (
@@ -87,13 +116,16 @@ export const BlockSettingsPanel: React.FC<BlockSettingsPanelProps> = ({
   
   // Configuraciones para encabezado
   const renderHeadingSettings = () => {
+    // Cast blockData to HeadingContent type
+    const headingData = blockData as HeadingContent;
+    
     return (
       <div className="space-y-4">
         <div className="space-y-2">
           <Label htmlFor="heading-level">Nivel</Label>
           <Select
-            value={blockData.level || "h2"}
-            onValueChange={(value) => handleChange("level", value)}
+            value={headingData.level}
+            onValueChange={(value: 'h1' | 'h2' | 'h3' | 'h4' | 'h5' | 'h6') => handleChange("level", value)}
           >
             <SelectTrigger id="heading-level">
               <SelectValue placeholder="Seleccionar nivel" />
@@ -114,7 +146,7 @@ export const BlockSettingsPanel: React.FC<BlockSettingsPanelProps> = ({
           <div className="flex space-x-2">
             <Button
               type="button"
-              variant={blockData.alignment === "left" ? "default" : "outline"}
+              variant={headingData.alignment === "left" ? "default" : "outline"}
               size="icon"
               onClick={() => handleChange("alignment", "left")}
             >
@@ -122,7 +154,7 @@ export const BlockSettingsPanel: React.FC<BlockSettingsPanelProps> = ({
             </Button>
             <Button
               type="button"
-              variant={blockData.alignment === "center" ? "default" : "outline"}
+              variant={headingData.alignment === "center" ? "default" : "outline"}
               size="icon"
               onClick={() => handleChange("alignment", "center")}
             >
@@ -130,56 +162,13 @@ export const BlockSettingsPanel: React.FC<BlockSettingsPanelProps> = ({
             </Button>
             <Button
               type="button"
-              variant={blockData.alignment === "right" ? "default" : "outline"}
+              variant={headingData.alignment === "right" ? "default" : "outline"}
               size="icon"
               onClick={() => handleChange("alignment", "right")}
             >
               <AlignRight className="h-4 w-4" />
             </Button>
           </div>
-        </div>
-        
-        <div className="space-y-2">
-          <Label htmlFor="heading-color">Color</Label>
-          <div className="flex space-x-2">
-            <Input
-              id="heading-color"
-              type="color"
-              value={blockData.color || "#000000"}
-              onChange={(e) => handleChange("color", e.target.value)}
-              className="w-12 h-10 p-1"
-            />
-            <Input
-              type="text"
-              value={blockData.color || "#000000"}
-              onChange={(e) => handleChange("color", e.target.value)}
-              className="flex-1"
-              placeholder="#000000"
-            />
-          </div>
-        </div>
-        
-        <div className="space-y-2">
-          <div className="flex items-center justify-between">
-            <Label htmlFor="heading-id">ID para navegación</Label>
-            <Switch
-              id="heading-enable-id"
-              checked={!!blockData.enableId}
-              onCheckedChange={(checked) => handleChange("enableId", checked)}
-            />
-          </div>
-          
-          {blockData.enableId && (
-            <Input
-              id="heading-id"
-              value={blockData.id || ""}
-              onChange={(e) => handleChange("id", e.target.value)}
-              placeholder="mi-seccion"
-            />
-          )}
-          <p className="text-xs text-muted-foreground">
-            El ID permite enlazar directamente a esta sección
-          </p>
         </div>
       </div>
     );
@@ -187,6 +176,13 @@ export const BlockSettingsPanel: React.FC<BlockSettingsPanelProps> = ({
   
   // Configuraciones para párrafo
   const renderParagraphSettings = () => {
+    const paragraphData = blockData as ParagraphContent & {
+      alignment?: "left" | "center" | "right" | "justify";
+      size?: string;
+      color?: string;
+      dropcap?: boolean;
+    };
+    
     return (
       <div className="space-y-4">
         <div className="space-y-2">
@@ -194,7 +190,7 @@ export const BlockSettingsPanel: React.FC<BlockSettingsPanelProps> = ({
           <div className="flex space-x-2">
             <Button
               type="button"
-              variant={blockData.alignment === "left" ? "default" : "outline"}
+              variant={paragraphData.alignment === "left" ? "default" : "outline"}
               size="icon"
               onClick={() => handleChange("alignment", "left")}
             >
@@ -202,7 +198,7 @@ export const BlockSettingsPanel: React.FC<BlockSettingsPanelProps> = ({
             </Button>
             <Button
               type="button"
-              variant={blockData.alignment === "center" ? "default" : "outline"}
+              variant={paragraphData.alignment === "center" ? "default" : "outline"}
               size="icon"
               onClick={() => handleChange("alignment", "center")}
             >
@@ -210,7 +206,7 @@ export const BlockSettingsPanel: React.FC<BlockSettingsPanelProps> = ({
             </Button>
             <Button
               type="button"
-              variant={blockData.alignment === "right" ? "default" : "outline"}
+              variant={paragraphData.alignment === "right" ? "default" : "outline"}
               size="icon"
               onClick={() => handleChange("alignment", "right")}
             >
@@ -218,7 +214,7 @@ export const BlockSettingsPanel: React.FC<BlockSettingsPanelProps> = ({
             </Button>
             <Button
               type="button"
-              variant={blockData.alignment === "justify" ? "default" : "outline"}
+              variant={paragraphData.alignment === "justify" ? "default" : "outline"}
               size="icon"
               onClick={() => handleChange("alignment", "justify")}
             >
@@ -230,7 +226,7 @@ export const BlockSettingsPanel: React.FC<BlockSettingsPanelProps> = ({
         <div className="space-y-2">
           <Label htmlFor="paragraph-size">Tamaño de texto</Label>
           <Select
-            value={blockData.size || "normal"}
+            value={paragraphData.size || "normal"}
             onValueChange={(value) => handleChange("size", value)}
           >
             <SelectTrigger id="paragraph-size">
@@ -251,13 +247,13 @@ export const BlockSettingsPanel: React.FC<BlockSettingsPanelProps> = ({
             <Input
               id="paragraph-color"
               type="color"
-              value={blockData.color || "#000000"}
+              value={paragraphData.color || "#000000"}
               onChange={(e) => handleChange("color", e.target.value)}
               className="w-12 h-10 p-1"
             />
             <Input
               type="text"
-              value={blockData.color || "#000000"}
+              value={paragraphData.color || "#000000"}
               onChange={(e) => handleChange("color", e.target.value)}
               className="flex-1"
               placeholder="#000000"
@@ -270,7 +266,7 @@ export const BlockSettingsPanel: React.FC<BlockSettingsPanelProps> = ({
             <Label htmlFor="paragraph-dropcap">Letra capital</Label>
             <Switch
               id="paragraph-dropcap"
-              checked={!!blockData.dropcap}
+              checked={!!paragraphData.dropcap}
               onCheckedChange={(checked) => handleChange("dropcap", checked)}
             />
           </div>
@@ -284,13 +280,21 @@ export const BlockSettingsPanel: React.FC<BlockSettingsPanelProps> = ({
   
   // Configuraciones para imagen
   const renderImageSettings = () => {
+    const imageData = blockData as ImageContent & {
+      alignment?: "left" | "center" | "right";
+      size?: string;
+      lightbox?: boolean;
+      link?: string;
+      linkNewTab?: boolean;
+    };
+    
     return (
       <div className="space-y-4">
         <div className="space-y-2">
           <Label htmlFor="image-alt">Texto alternativo</Label>
           <Input
             id="image-alt"
-            value={blockData.alt || ""}
+            value={imageData.alt || ""}
             onChange={(e) => handleChange("alt", e.target.value)}
             placeholder="Descripción de la imagen para accesibilidad"
           />
@@ -303,7 +307,7 @@ export const BlockSettingsPanel: React.FC<BlockSettingsPanelProps> = ({
           <Label htmlFor="image-caption">Pie de foto</Label>
           <Input
             id="image-caption"
-            value={blockData.caption || ""}
+            value={imageData.caption || ""}
             onChange={(e) => handleChange("caption", e.target.value)}
             placeholder="Descripción o créditos de la imagen"
           />
@@ -314,7 +318,7 @@ export const BlockSettingsPanel: React.FC<BlockSettingsPanelProps> = ({
           <div className="flex space-x-2">
             <Button
               type="button"
-              variant={blockData.alignment === "left" ? "default" : "outline"}
+              variant={imageData.alignment === "left" ? "default" : "outline"}
               size="icon"
               onClick={() => handleChange("alignment", "left")}
             >
@@ -322,7 +326,7 @@ export const BlockSettingsPanel: React.FC<BlockSettingsPanelProps> = ({
             </Button>
             <Button
               type="button"
-              variant={blockData.alignment === "center" ? "default" : "outline"}
+              variant={imageData.alignment === "center" ? "default" : "outline"}
               size="icon"
               onClick={() => handleChange("alignment", "center")}
             >
@@ -330,7 +334,7 @@ export const BlockSettingsPanel: React.FC<BlockSettingsPanelProps> = ({
             </Button>
             <Button
               type="button"
-              variant={blockData.alignment === "right" ? "default" : "outline"}
+              variant={imageData.alignment === "right" ? "default" : "outline"}
               size="icon"
               onClick={() => handleChange("alignment", "right")}
             >
@@ -342,7 +346,7 @@ export const BlockSettingsPanel: React.FC<BlockSettingsPanelProps> = ({
         <div className="space-y-2">
           <Label htmlFor="image-size">Tamaño</Label>
           <Select
-            value={blockData.size || "medium"}
+            value={imageData.size || "medium"}
             onValueChange={(value) => handleChange("size", value)}
           >
             <SelectTrigger id="image-size">
@@ -362,7 +366,7 @@ export const BlockSettingsPanel: React.FC<BlockSettingsPanelProps> = ({
             <Label htmlFor="image-lightbox">Activar lightbox</Label>
             <Switch
               id="image-lightbox"
-              checked={!!blockData.lightbox}
+              checked={!!imageData.lightbox}
               onCheckedChange={(checked) => handleChange("lightbox", checked)}
             />
           </div>
@@ -375,16 +379,16 @@ export const BlockSettingsPanel: React.FC<BlockSettingsPanelProps> = ({
           <Label htmlFor="image-link">Enlace (opcional)</Label>
           <Input
             id="image-link"
-            value={blockData.link || ""}
+            value={imageData.link || ""}
             onChange={(e) => handleChange("link", e.target.value)}
             placeholder="https://..."
           />
           
-          {blockData.link && (
+          {imageData.link && (
             <div className="flex items-center space-x-2 mt-2">
               <Switch
                 id="image-link-newtab"
-                checked={!!blockData.linkNewTab}
+                checked={!!imageData.linkNewTab}
                 onCheckedChange={(checked) => handleChange("linkNewTab", checked)}
               />
               <Label htmlFor="image-link-newtab">Abrir en nueva pestaña</Label>
@@ -397,12 +401,19 @@ export const BlockSettingsPanel: React.FC<BlockSettingsPanelProps> = ({
   
   // Configuraciones para galería
   const renderGallerySettings = () => {
+    const galleryData = blockData as GalleryContent & {
+      columns?: number;
+      gap?: number;
+      lightbox?: boolean;
+      showCaptions?: boolean;
+    };
+    
     return (
       <div className="space-y-4">
         <div className="space-y-2">
           <Label htmlFor="gallery-layout">Diseño</Label>
           <Select
-            value={blockData.layout || "grid"}
+            value={galleryData.layout || "grid"}
             onValueChange={(value) => handleChange("layout", value)}
           >
             <SelectTrigger id="gallery-layout">
@@ -419,7 +430,7 @@ export const BlockSettingsPanel: React.FC<BlockSettingsPanelProps> = ({
         <div className="space-y-2">
           <Label htmlFor="gallery-columns">Columnas</Label>
           <Select
-            value={String(blockData.columns || "3")}
+            value={String(galleryData.columns || "3")}
             onValueChange={(value) => handleChange("columns", parseInt(value))}
           >
             <SelectTrigger id="gallery-columns">
@@ -438,7 +449,7 @@ export const BlockSettingsPanel: React.FC<BlockSettingsPanelProps> = ({
           <Label htmlFor="gallery-gap">Espacio entre imágenes</Label>
           <Slider
             id="gallery-gap"
-            value={[blockData.gap || 8]}
+            value={[galleryData.gap || 8]}
             min={0}
             max={24}
             step={2}
@@ -455,7 +466,7 @@ export const BlockSettingsPanel: React.FC<BlockSettingsPanelProps> = ({
             <Label htmlFor="gallery-lightbox">Activar lightbox</Label>
             <Switch
               id="gallery-lightbox"
-              checked={blockData.lightbox !== false}
+              checked={galleryData.lightbox !== false}
               onCheckedChange={(checked) => handleChange("lightbox", checked)}
             />
           </div>
@@ -469,7 +480,7 @@ export const BlockSettingsPanel: React.FC<BlockSettingsPanelProps> = ({
             <Label htmlFor="gallery-captions">Mostrar pies de foto</Label>
             <Switch
               id="gallery-captions"
-              checked={!!blockData.showCaptions}
+              checked={!!galleryData.showCaptions}
               onCheckedChange={(checked) => handleChange("showCaptions", checked)}
             />
           </div>
@@ -480,13 +491,15 @@ export const BlockSettingsPanel: React.FC<BlockSettingsPanelProps> = ({
   
   // Configuraciones para botón
   const renderButtonSettings = () => {
+    const buttonData = blockData as ButtonContent;
+    
     return (
       <div className="space-y-4">
         <div className="space-y-2">
           <Label htmlFor="button-url">URL</Label>
           <Input
             id="button-url"
-            value={blockData.url || ""}
+            value={buttonData.url || ""}
             onChange={(e) => handleChange("url", e.target.value)}
             placeholder="https://..."
           />
@@ -496,7 +509,7 @@ export const BlockSettingsPanel: React.FC<BlockSettingsPanelProps> = ({
           <div className="flex items-center space-x-2">
             <Switch
               id="button-newtab"
-              checked={!!blockData.newTab}
+              checked={!!buttonData.newTab}
               onCheckedChange={(checked) => handleChange("newTab", checked)}
             />
             <Label htmlFor="button-newtab">Abrir en nueva pestaña</Label>
@@ -506,7 +519,7 @@ export const BlockSettingsPanel: React.FC<BlockSettingsPanelProps> = ({
         <div className="space-y-2">
           <Label htmlFor="button-variant">Estilo</Label>
           <Select
-            value={blockData.variant || "default"}
+            value={buttonData.variant || "default"}
             onValueChange={(value) => handleChange("variant", value)}
           >
             <SelectTrigger id="button-variant">
@@ -526,14 +539,14 @@ export const BlockSettingsPanel: React.FC<BlockSettingsPanelProps> = ({
         <div className="space-y-2">
           <Label htmlFor="button-size">Tamaño</Label>
           <Select
-            value={blockData.size || "default"}
+            value={buttonData.size || "default"}
             onValueChange={(value) => handleChange("size", value)}
           >
             <SelectTrigger id="button-size">
               <SelectValue placeholder="Tamaño del botón" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="default">Normal</SelectItem>
+              <SelectItem value="default">Predeterminado</SelectItem>
               <SelectItem value="sm">Pequeño</SelectItem>
               <SelectItem value="lg">Grande</SelectItem>
             </SelectContent>
@@ -545,7 +558,7 @@ export const BlockSettingsPanel: React.FC<BlockSettingsPanelProps> = ({
           <div className="flex space-x-2">
             <Button
               type="button"
-              variant={blockData.align === "left" ? "default" : "outline"}
+              variant={buttonData.align === "left" ? "default" : "outline"}
               size="icon"
               onClick={() => handleChange("align", "left")}
             >
@@ -553,7 +566,7 @@ export const BlockSettingsPanel: React.FC<BlockSettingsPanelProps> = ({
             </Button>
             <Button
               type="button"
-              variant={blockData.align === "center" ? "default" : "outline"}
+              variant={buttonData.align === "center" ? "default" : "outline"}
               size="icon"
               onClick={() => handleChange("align", "center")}
             >
@@ -561,7 +574,7 @@ export const BlockSettingsPanel: React.FC<BlockSettingsPanelProps> = ({
             </Button>
             <Button
               type="button"
-              variant={blockData.align === "right" ? "default" : "outline"}
+              variant={buttonData.align === "right" ? "default" : "outline"}
               size="icon"
               onClick={() => handleChange("align", "right")}
             >
@@ -575,21 +588,23 @@ export const BlockSettingsPanel: React.FC<BlockSettingsPanelProps> = ({
   
   // Configuraciones para video
   const renderVideoSettings = () => {
+    const videoData = blockData as VideoContent;
+    
     return (
       <div className="space-y-4">
         <div className="space-y-2">
           <Label htmlFor="video-type">Tipo de video</Label>
           <Select
-            value={blockData.type || "youtube"}
+            value={videoData.type}
             onValueChange={(value) => handleChange("type", value)}
           >
             <SelectTrigger id="video-type">
-              <SelectValue placeholder="Tipo de video" />
+              <SelectValue placeholder="Seleccionar tipo" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="youtube">YouTube</SelectItem>
               <SelectItem value="vimeo">Vimeo</SelectItem>
-              <SelectItem value="file">Archivo de vídeo</SelectItem>
+              <SelectItem value="file">Archivo</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -598,24 +613,24 @@ export const BlockSettingsPanel: React.FC<BlockSettingsPanelProps> = ({
           <Label htmlFor="video-title">Título</Label>
           <Input
             id="video-title"
-            value={blockData.title || ""}
+            value={videoData.title || ""}
             onChange={(e) => handleChange("title", e.target.value)}
-            placeholder="Título del vídeo (para accesibilidad)"
+            placeholder="Título del video"
           />
         </div>
         
         <div className="space-y-2">
-          <Label htmlFor="video-aspect-ratio">Relación de aspecto</Label>
+          <Label htmlFor="video-aspect">Relación de aspecto</Label>
           <Select
-            value={blockData.aspectRatio || "16:9"}
+            value={videoData.aspectRatio || "16:9"}
             onValueChange={(value) => handleChange("aspectRatio", value)}
           >
-            <SelectTrigger id="video-aspect-ratio">
+            <SelectTrigger id="video-aspect">
               <SelectValue placeholder="Relación de aspecto" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="16:9">16:9 (Panorámico)</SelectItem>
-              <SelectItem value="4:3">4:3 (Clásico)</SelectItem>
+              <SelectItem value="4:3">4:3 (Estándar)</SelectItem>
               <SelectItem value="1:1">1:1 (Cuadrado)</SelectItem>
               <SelectItem value="9:16">9:16 (Vertical)</SelectItem>
             </SelectContent>
@@ -623,46 +638,49 @@ export const BlockSettingsPanel: React.FC<BlockSettingsPanelProps> = ({
         </div>
         
         <div className="space-y-2">
-          <div className="flex items-center justify-between">
-            <Label htmlFor="video-autoplay">Reproducción automática</Label>
+          <div className="flex items-center space-x-2">
             <Switch
               id="video-autoplay"
-              checked={!!blockData.autoplay}
+              checked={!!videoData.autoplay}
               onCheckedChange={(checked) => handleChange("autoplay", checked)}
             />
+            <Label htmlFor="video-autoplay">Reproducción automática</Label>
           </div>
+          <p className="text-xs text-muted-foreground">
+            Los navegadores pueden bloquear la reproducción automática sin silenciar
+          </p>
         </div>
         
         <div className="space-y-2">
-          <div className="flex items-center justify-between">
-            <Label htmlFor="video-loop">Reproducir en bucle</Label>
+          <div className="flex items-center space-x-2">
             <Switch
               id="video-loop"
-              checked={!!blockData.loop}
+              checked={!!videoData.loop}
               onCheckedChange={(checked) => handleChange("loop", checked)}
             />
+            <Label htmlFor="video-loop">Reproducir en bucle</Label>
           </div>
         </div>
         
         <div className="space-y-2">
-          <div className="flex items-center justify-between">
-            <Label htmlFor="video-muted">Silenciado</Label>
+          <div className="flex items-center space-x-2">
             <Switch
               id="video-muted"
-              checked={!!blockData.muted}
+              checked={!!videoData.muted}
               onCheckedChange={(checked) => handleChange("muted", checked)}
             />
+            <Label htmlFor="video-muted">Silenciar</Label>
           </div>
         </div>
         
-        {blockData.type === "file" && (
+        {videoData.type === "file" && (
           <div className="space-y-2">
-            <Label htmlFor="video-poster">URL de la imagen de poster</Label>
+            <Label htmlFor="video-poster">Imagen de portada (URL)</Label>
             <Input
               id="video-poster"
-              value={blockData.poster || ""}
+              value={videoData.poster || ""}
               onChange={(e) => handleChange("poster", e.target.value)}
-              placeholder="URL de la imagen que se muestra antes de reproducir"
+              placeholder="https://ejemplo.com/imagen.jpg"
             />
           </div>
         )}
@@ -672,13 +690,15 @@ export const BlockSettingsPanel: React.FC<BlockSettingsPanelProps> = ({
   
   // Configuraciones para cita
   const renderQuoteSettings = () => {
+    const quoteData = blockData as QuoteContent;
+    
     return (
       <div className="space-y-4">
         <div className="space-y-2">
           <Label htmlFor="quote-author">Autor</Label>
           <Input
             id="quote-author"
-            value={blockData.author || ""}
+            value={quoteData.author || ""}
             onChange={(e) => handleChange("author", e.target.value)}
             placeholder="Nombre del autor"
           />
@@ -688,16 +708,16 @@ export const BlockSettingsPanel: React.FC<BlockSettingsPanelProps> = ({
           <Label htmlFor="quote-source">Fuente</Label>
           <Input
             id="quote-source"
-            value={blockData.source || ""}
+            value={quoteData.source || ""}
             onChange={(e) => handleChange("source", e.target.value)}
-            placeholder="Libro, entrevista, etc."
+            placeholder="Libro, discurso, etc."
           />
         </div>
         
         <div className="space-y-2">
           <Label htmlFor="quote-style">Estilo</Label>
           <Select
-            value={blockData.style || "default"}
+            value={quoteData.style || "default"}
             onValueChange={(value) => handleChange("style", value)}
           >
             <SelectTrigger id="quote-style">
@@ -716,7 +736,7 @@ export const BlockSettingsPanel: React.FC<BlockSettingsPanelProps> = ({
           <div className="flex space-x-2">
             <Button
               type="button"
-              variant={blockData.align === "left" ? "default" : "outline"}
+              variant={quoteData.align === "left" ? "default" : "outline"}
               size="icon"
               onClick={() => handleChange("align", "left")}
             >
@@ -724,7 +744,7 @@ export const BlockSettingsPanel: React.FC<BlockSettingsPanelProps> = ({
             </Button>
             <Button
               type="button"
-              variant={blockData.align === "center" ? "default" : "outline"}
+              variant={quoteData.align === "center" ? "default" : "outline"}
               size="icon"
               onClick={() => handleChange("align", "center")}
             >
@@ -732,7 +752,7 @@ export const BlockSettingsPanel: React.FC<BlockSettingsPanelProps> = ({
             </Button>
             <Button
               type="button"
-              variant={blockData.align === "right" ? "default" : "outline"}
+              variant={quoteData.align === "right" ? "default" : "outline"}
               size="icon"
               onClick={() => handleChange("align", "right")}
             >
@@ -746,12 +766,14 @@ export const BlockSettingsPanel: React.FC<BlockSettingsPanelProps> = ({
   
   // Configuraciones para divisor
   const renderDividerSettings = () => {
+    const dividerData = blockData as DividerContent;
+    
     return (
       <div className="space-y-4">
         <div className="space-y-2">
           <Label htmlFor="divider-style">Estilo</Label>
           <Select
-            value={blockData.style || "solid"}
+            value={dividerData.style || "solid"}
             onValueChange={(value) => handleChange("style", value)}
           >
             <SelectTrigger id="divider-style">
@@ -759,8 +781,8 @@ export const BlockSettingsPanel: React.FC<BlockSettingsPanelProps> = ({
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="solid">Sólida</SelectItem>
-              <SelectItem value="dashed">Guiones</SelectItem>
-              <SelectItem value="dotted">Puntos</SelectItem>
+              <SelectItem value="dashed">Discontinua</SelectItem>
+              <SelectItem value="dotted">Punteada</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -768,7 +790,7 @@ export const BlockSettingsPanel: React.FC<BlockSettingsPanelProps> = ({
         <div className="space-y-2">
           <Label htmlFor="divider-width">Ancho</Label>
           <Select
-            value={blockData.width || "full"}
+            value={dividerData.width || "full"}
             onValueChange={(value) => handleChange("width", value)}
           >
             <SelectTrigger id="divider-width">
@@ -784,11 +806,11 @@ export const BlockSettingsPanel: React.FC<BlockSettingsPanelProps> = ({
         <div className="space-y-2">
           <Label htmlFor="divider-thickness">Grosor</Label>
           <Select
-            value={blockData.thickness || "normal"}
+            value={dividerData.thickness || "normal"}
             onValueChange={(value) => handleChange("thickness", value)}
           >
             <SelectTrigger id="divider-thickness">
-              <SelectValue placeholder="Grosor del divisor" />
+              <SelectValue placeholder="Grosor de línea" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="thin">Fino</SelectItem>
@@ -803,12 +825,14 @@ export const BlockSettingsPanel: React.FC<BlockSettingsPanelProps> = ({
   
   // Configuraciones para lista
   const renderListSettings = () => {
+    const listData = blockData as ListContent;
+    
     return (
       <div className="space-y-4">
         <div className="space-y-2">
           <Label htmlFor="list-type">Tipo de lista</Label>
           <Select
-            value={blockData.type || "unordered"}
+            value={listData.type}
             onValueChange={(value) => handleChange("type", value)}
           >
             <SelectTrigger id="list-type">
@@ -828,9 +852,8 @@ export const BlockSettingsPanel: React.FC<BlockSettingsPanelProps> = ({
   const renderHtmlSettings = () => {
     return (
       <div className="space-y-4">
-        <div className="p-4 border rounded-md bg-yellow-50 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400 text-sm">
-          <p>Edita el código HTML directamente en el editor de bloques.</p>
-          <p className="mt-2">Recuerda que el código HTML personalizado puede afectar al diseño y funcionamiento de la página.</p>
+        <div className="p-4 text-center text-muted-foreground">
+          Edita el código HTML directamente en el bloque.
         </div>
       </div>
     );
@@ -838,227 +861,243 @@ export const BlockSettingsPanel: React.FC<BlockSettingsPanelProps> = ({
   
   // Configuraciones para formulario
   const renderFormSettings = () => {
-    return (
-      <div className="space-y-4">
-        <div className="space-y-2">
-          <Label htmlFor="form-submit-text">Texto del botón de envío</Label>
-          <Input
-            id="form-submit-text"
-            value={blockData.submitButtonText || "Enviar"}
-            onChange={(e) => handleChange("submitButtonText", e.target.value)}
-            placeholder="Enviar formulario"
-          />
-        </div>
-        
-        <div className="space-y-2">
-          <Label htmlFor="form-success-message">Mensaje de éxito</Label>
-          <Textarea
-            id="form-success-message"
-            value={blockData.successMessage || ""}
-            onChange={(e) => handleChange("successMessage", e.target.value)}
-            placeholder="¡Gracias! Tu mensaje ha sido enviado correctamente."
-            className="resize-y"
-          />
-        </div>
-        
-        <div className="space-y-2">
-          <Label htmlFor="form-redirect-url">URL de redirección (opcional)</Label>
-          <Input
-            id="form-redirect-url"
-            value={blockData.redirectUrl || ""}
-            onChange={(e) => handleChange("redirectUrl", e.target.value)}
-            placeholder="https://... (dejar en blanco para no redirigir)"
-          />
-        </div>
-        
-        <div className="space-y-2">
-          <div className="flex items-center justify-between">
-            <Label htmlFor="form-email-notification">Notificación por email</Label>
-            <Switch
-              id="form-email-notification"
-              checked={!!blockData.emailNotification}
-              onCheckedChange={(checked) => handleChange("emailNotification", checked)}
+    if (blockType === "form") {
+      const formData = blockData as FormContent;
+      
+      return (
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="form-submit-text">Texto del botón</Label>
+            <Input
+              id="form-submit-text"
+              value={formData.submitButtonText || "Enviar"}
+              onChange={(e) => handleChange("submitButtonText", e.target.value)}
+              placeholder="Enviar formulario"
             />
           </div>
-          <p className="text-xs text-muted-foreground">
-            Recibe un email cuando alguien complete el formulario
-          </p>
+          
+          <div className="space-y-2">
+            <Label htmlFor="form-success">Mensaje de éxito</Label>
+            <Textarea
+              id="form-success"
+              value={formData.successMessage || ""}
+              onChange={(e) => handleChange("successMessage", e.target.value)}
+              placeholder="¡Gracias por enviar el formulario!"
+            />
+          </div>
+          
+          <div className="space-y-2">
+            <Label htmlFor="form-redirect">URL de redirección (opcional)</Label>
+            <Input
+              id="form-redirect"
+              value={formData.redirectUrl || ""}
+              onChange={(e) => handleChange("redirectUrl", e.target.value)}
+              placeholder="https://..."
+            />
+            <p className="text-xs text-muted-foreground">
+              Deja en blanco para mostrar el mensaje de éxito en lugar de redirigir
+            </p>
+          </div>
+          
+          <div className="space-y-2">
+            <div className="flex items-center space-x-2">
+              <Switch
+                id="form-notification"
+                checked={!!formData.emailNotification}
+                onCheckedChange={(checked) => handleChange("emailNotification", checked)}
+              />
+              <Label htmlFor="form-notification">Recibir notificaciones por email</Label>
+            </div>
+          </div>
         </div>
-      </div>
-    );
+      );
+    } else {
+      // contact-form
+      const contactFormData = blockData as ContactFormContent;
+      
+      return (
+        <div className="space-y-4">
+          <div className="p-4 border border-border rounded-md bg-muted/50">
+            <p className="text-sm text-center text-muted-foreground">
+              Configura los campos del formulario de contacto en el panel del editor.
+            </p>
+          </div>
+        </div>
+      );
+    }
   };
   
-  // Pestaña de animación común para todos los bloques
-  const renderAnimationTab = () => {
+  // Configuración de animaciones (común para todos los bloques)
+  const renderAnimationSettings = () => {
+    // Obtenemos las propiedades de animación del bloque
+    const animation = (blockData as any).animation || {};
+    
     return (
       <div className="space-y-4">
         <div className="space-y-2">
-          <Label htmlFor="animation-library">Biblioteca</Label>
+          <Label htmlFor="animation-effect">Efecto</Label>
           <Select
-            value={blockData.animation?.library || "none"}
-            onValueChange={(value) => 
-              handleChange("animation", {
-                ...(blockData.animation || {}),
-                library: value,
-                effect: blockData.animation?.effect || "fade-in"
-              })
-            }
+            value={animation.effect || "none"}
+            onValueChange={(value) => handleChange("animation", { ...animation, effect: value })}
           >
-            <SelectTrigger id="animation-library">
-              <SelectValue placeholder="Biblioteca de animación" />
+            <SelectTrigger id="animation-effect">
+              <SelectValue placeholder="Seleccionar efecto" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="none">Sin animación</SelectItem>
-              <SelectItem value="aos">AOS (Animate On Scroll)</SelectItem>
-              <SelectItem value="spring">React Spring</SelectItem>
-              <SelectItem value="framer">Framer Motion</SelectItem>
+              <SelectItem value="none">Ninguno</SelectItem>
+              <SelectItem value="fade">Desvanecer</SelectItem>
+              <SelectItem value="slide-up">Deslizar hacia arriba</SelectItem>
+              <SelectItem value="slide-down">Deslizar hacia abajo</SelectItem>
+              <SelectItem value="slide-left">Deslizar desde la izquierda</SelectItem>
+              <SelectItem value="slide-right">Deslizar desde la derecha</SelectItem>
+              <SelectItem value="zoom-in">Zoom de entrada</SelectItem>
+              <SelectItem value="zoom-out">Zoom de salida</SelectItem>
+              <SelectItem value="flip">Voltear</SelectItem>
+              <SelectItem value="bounce">Rebotar</SelectItem>
+              <SelectItem value="spin">Girar</SelectItem>
+              <SelectItem value="pulse">Pulsar</SelectItem>
             </SelectContent>
           </Select>
         </div>
         
-        {blockData.animation?.library && blockData.animation.library !== "none" && (
+        {animation.effect && animation.effect !== "none" && (
           <>
             <div className="space-y-2">
-              <Label htmlFor="animation-effect">Efecto</Label>
-              <Select
-                value={blockData.animation?.effect || "fade"}
-                onValueChange={(value) => 
-                  handleChange("animation", {
-                    ...(blockData.animation || {}),
-                    effect: value
-                  })
-                }
-              >
-                <SelectTrigger id="animation-effect">
-                  <SelectValue placeholder="Selecciona un efecto" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="fade-in">Desvanecer</SelectItem>
-                  <SelectItem value="slide-up">Deslizar hacia arriba</SelectItem>
-                  <SelectItem value="slide-down">Deslizar hacia abajo</SelectItem>
-                  <SelectItem value="slide-left">Deslizar desde la izquierda</SelectItem>
-                  <SelectItem value="slide-right">Deslizar desde la derecha</SelectItem>
-                  <SelectItem value="zoom-in">Zoom de entrada</SelectItem>
-                  <SelectItem value="zoom-out">Zoom de salida</SelectItem>
-                  <SelectItem value="flip">Voltear</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="animation-duration">Duración (ms)</Label>
-              <Input
+              <Label htmlFor="animation-duration">Duración (segundos)</Label>
+              <Slider
                 id="animation-duration"
-                type="number"
-                min="0"
-                step="50"
-                value={blockData.animation?.duration || 500}
-                onChange={(e) => 
-                  handleChange("animation", {
-                    ...(blockData.animation || {}),
-                    duration: parseInt(e.target.value) || 500
-                  })
-                }
+                value={[parseFloat(animation.duration) || 0.5]}
+                min={0.1}
+                max={3}
+                step={0.1}
+                onValueChange={(value) => handleChange("animation", { ...animation, duration: value[0] })}
               />
+              <div className="flex justify-between text-xs text-muted-foreground">
+                <span>0.1s</span>
+                <span>{(parseFloat(animation.duration) || 0.5)}s</span>
+                <span>3s</span>
+              </div>
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="animation-delay">Retraso (ms)</Label>
-              <Input
+              <Label htmlFor="animation-delay">Retraso (segundos)</Label>
+              <Slider
                 id="animation-delay"
-                type="number"
-                min="0"
-                step="50"
-                value={blockData.animation?.delay || 0}
-                onChange={(e) => 
-                  handleChange("animation", {
-                    ...(blockData.animation || {}),
-                    delay: parseInt(e.target.value) || 0
-                  })
-                }
+                value={[parseFloat(animation.delay) || 0]}
+                min={0}
+                max={2}
+                step={0.1}
+                onValueChange={(value) => handleChange("animation", { ...animation, delay: value[0] })}
               />
+              <div className="flex justify-between text-xs text-muted-foreground">
+                <span>0s</span>
+                <span>{(parseFloat(animation.delay) || 0)}s</span>
+                <span>2s</span>
+              </div>
             </div>
             
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <Label htmlFor="animation-scroll-trigger">Activar al hacer scroll</Label>
-                <Switch
-                  id="animation-scroll-trigger"
-                  checked={!!blockData.animation?.scrollTrigger}
-                  onCheckedChange={(checked) => 
-                    handleChange("animation", {
-                      ...(blockData.animation || {}),
-                      scrollTrigger: checked
-                    })
-                  }
+                <Label htmlFor="animation-repeat">Repetir (número de veces)</Label>
+                <Input
+                  id="animation-repeat"
+                  type="number"
+                  min="0"
+                  max="10"
+                  className="w-16"
+                  value={animation.repeat || "1"}
+                  onChange={(e) => handleChange("animation", { ...animation, repeat: parseInt(e.target.value) || 1 })}
                 />
               </div>
-              
-              {blockData.animation?.scrollTrigger && (
-                <div className="mt-2">
-                  <Label htmlFor="animation-threshold">Umbral de visibilidad</Label>
-                  <Slider
-                    id="animation-threshold"
-                    value={[blockData.animation?.threshold || 0.2]}
-                    min={0}
-                    max={1}
-                    step={0.1}
-                    onValueChange={(value) => 
-                      handleChange("animation", {
-                        ...(blockData.animation || {}),
-                        threshold: value[0]
-                      })
-                    }
-                  />
-                  <div className="flex justify-between text-xs text-muted-foreground mt-1">
-                    <span>Superior de pantalla</span>
-                    <span>Centro de pantalla</span>
-                    <span>Inferior de pantalla</span>
-                  </div>
-                </div>
-              )}
+              <p className="text-xs text-muted-foreground">
+                Usa 0 para infinito
+              </p>
             </div>
+            
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="animation-intensity">Intensidad</Label>
+                <Slider
+                  id="animation-intensity"
+                  className="w-1/2"
+                  value={[parseFloat(animation.intensity) || 1]}
+                  min={0.5}
+                  max={2}
+                  step={0.1}
+                  onValueChange={(value) => handleChange("animation", { ...animation, intensity: value[0] })}
+                />
+              </div>
+            </div>
+            
+            <div className="space-y-2">
+              <div className="flex items-center space-x-2">
+                <Switch
+                  id="animation-scroll"
+                  checked={!!animation.scrollTrigger}
+                  onCheckedChange={(checked) => handleChange("animation", { ...animation, scrollTrigger: checked })}
+                />
+                <Label htmlFor="animation-scroll">Activar al hacer scroll</Label>
+              </div>
+            </div>
+            
+            {animation.scrollTrigger && (
+              <div className="space-y-2">
+                <Label htmlFor="animation-threshold">Umbral de visibilidad</Label>
+                <Slider
+                  id="animation-threshold"
+                  value={[parseFloat(animation.threshold) || 0.2]}
+                  min={0}
+                  max={1}
+                  step={0.1}
+                  onValueChange={(value) => handleChange("animation", { ...animation, threshold: value[0] })}
+                />
+                <div className="flex justify-between text-xs text-muted-foreground">
+                  <span>0 (inicio)</span>
+                  <span>1 (completo)</span>
+                </div>
+              </div>
+            )}
           </>
         )}
       </div>
     );
   };
   
-  // Renderizar el panel completo
   return (
-    <div 
-      className={cn(
-        "fixed top-0 bottom-0 right-0 w-80 bg-card border-l shadow-lg z-30 transition-transform duration-300 transform",
-        isVisible ? "translate-x-0" : "translate-x-full"
-      )}
-    >
-      <div className="p-4 border-b flex justify-between items-center">
-        <h3 className="text-lg font-medium flex items-center">
-          <Settings2 className="h-4 w-4 mr-2" />
-          Configuración
-        </h3>
-        <Button variant="ghost" size="icon" onClick={onClose}>
-          <PanelLeft className="h-5 w-5" />
-        </Button>
-      </div>
-      
-      <div className="p-4 h-[calc(100vh-60px)] overflow-y-auto">
-        <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid grid-cols-2 mb-4">
-            <TabsTrigger value="general">General</TabsTrigger>
-            <TabsTrigger value="animation">Animación</TabsTrigger>
+    <Sheet open={isVisible} onOpenChange={onClose}>
+      <SheetContent className="w-[350px] sm:w-[450px] overflow-y-auto">
+        <SheetHeader>
+          <SheetTitle className="flex items-center">
+            <Settings className="mr-2 h-5 w-5" />
+            Configuración del bloque
+          </SheetTitle>
+          <SheetDescription>
+            Personaliza las propiedades de este bloque
+          </SheetDescription>
+        </SheetHeader>
+        
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="mt-4">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="general" className="flex items-center">
+              <Settings className="mr-2 h-4 w-4" />
+              <span>General</span>
+            </TabsTrigger>
+            <TabsTrigger value="animation" className="flex items-center">
+              <Sparkles className="mr-2 h-4 w-4" />
+              <span>Animación</span>
+            </TabsTrigger>
           </TabsList>
           
-          <TabsContent value="general" className="space-y-4">
+          <TabsContent value="general" className="mt-4">
             {renderContent()}
           </TabsContent>
           
-          <TabsContent value="animation" className="space-y-4">
-            {renderAnimationTab()}
+          <TabsContent value="animation" className="mt-4">
+            {renderAnimationSettings()}
           </TabsContent>
         </Tabs>
-      </div>
-    </div>
+      </SheetContent>
+    </Sheet>
   );
 };
 

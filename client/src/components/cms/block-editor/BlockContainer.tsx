@@ -1,5 +1,5 @@
 import React, { useRef, useState } from "react";
-import { useDrag, useDrop } from "react-dnd";
+import { useDrag, useDrop, DropTargetMonitor } from "react-dnd";
 import { Trash2, Copy, Move, Settings, ChevronUp, ChevronDown } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -13,21 +13,21 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 import BlockSettingsPanel from "./block-settings-panel";
-import { BlockType } from "./types";
+import { Block, BlockType, BlockContent } from "./types";
 
 interface BlockContainerProps {
   id: string;
-  type: string;
+  type: BlockType;
   index: number;
   isActive: boolean;
   children: React.ReactNode;
-  block?: any; // Datos del bloque
+  block?: Block; // Datos del bloque
   onActivate: () => void;
   onDeactivate: () => void;
   onMove: (dragIndex: number, hoverIndex: number) => void;
   onDelete: () => void;
   onDuplicate: () => void;
-  updateBlock?: (id: string, content: any) => void; // Función para actualizar el contenido del bloque
+  updateBlock?: (id: string, content: Partial<BlockContent>) => void; // Función para actualizar el contenido del bloque
   readOnly?: boolean;
 }
 
@@ -65,7 +65,12 @@ const BlockContainer: React.FC<BlockContainerProps> = ({
     canDrag: !readOnly,
   });
 
-  const [{ handlerId, isOver }, drop] = useDrop({
+  interface DropResult {
+    handlerId: any;
+    isOver: boolean;
+  }
+
+  const [dropState, drop] = useDrop<DragItem, any, DropResult>({
     accept: "BLOCK",
     collect(monitor) {
       return {
@@ -73,7 +78,8 @@ const BlockContainer: React.FC<BlockContainerProps> = ({
         isOver: monitor.isOver(),
       };
     },
-    hover(item: DragItem, monitor) {
+    hover(item: any, monitor) {
+      const dragItem = item as DragItem;
       if (!ref.current) {
         return;
       }
@@ -120,7 +126,7 @@ const BlockContainer: React.FC<BlockContainerProps> = ({
       // cuando el mouse pase sobre otro elemento
       item.index = hoverIndex;
     },
-    canDrop: !readOnly,
+    canDrop: (_item: DragItem, _monitor: DropTargetMonitor) => !readOnly,
   });
   
   // Inicializar los refs para DnD
@@ -158,6 +164,9 @@ const BlockContainer: React.FC<BlockContainerProps> = ({
     };
   }, [isActive, onDeactivate]);
   
+  // Extraer las propiedades del estado del drop
+  const { handlerId, isOver } = dropState as { handlerId: any, isOver: boolean };
+
   return (
     <motion.div
       ref={ref}

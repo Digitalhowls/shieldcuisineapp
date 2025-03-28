@@ -9,16 +9,18 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
+import { HeadingContent } from '../types';
+
 interface HeadingBlockProps {
   data: {
     id: string;
-    type: string;
+    type: 'heading';
     text: string;
-    level: string;
+    level: 'h1' | 'h2' | 'h3' | 'h4' | 'h5' | 'h6';
     alignment?: "left" | "center" | "right";
   };
   isActive: boolean;
-  onUpdate: (data: any) => void;
+  onUpdate: (data: Partial<HeadingContent & { alignment?: "left" | "center" | "right" }>) => void;
   readOnly?: boolean;
 }
 
@@ -32,7 +34,7 @@ const HeadingBlock: React.FC<HeadingBlockProps> = ({
     onUpdate({ text });
   };
   
-  const handleLevelChange = (level: string) => {
+  const handleLevelChange = (level: 'h1' | 'h2' | 'h3' | 'h4' | 'h5' | 'h6') => {
     onUpdate({ level });
   };
   
@@ -86,7 +88,7 @@ const HeadingBlock: React.FC<HeadingBlockProps> = ({
           <Label htmlFor={`heading-level-${data.id}`}>Nivel</Label>
           <Select
             value={data.level}
-            onValueChange={handleLevelChange}
+            onValueChange={(value) => handleLevelChange(value as 'h1' | 'h2' | 'h3' | 'h4' | 'h5' | 'h6')}
           >
             <SelectTrigger id={`heading-level-${data.id}`}>
               <SelectValue placeholder="Nivel" />
