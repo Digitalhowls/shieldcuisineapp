@@ -57,6 +57,7 @@ import PreviewPanel from "./page-editor/PreviewPanel";
 import PrePublicationCheck from "./page-editor/pre-publication-check";
 import DraftComparisonDialog from "./page-editor/draft-comparison-dialog";
 import VersionHistoryDialog from "./page-editor/version-history-dialog";
+import DevicePreviewDialog from "./page-editor/device-preview-dialog";
 import PagePreview from "./page-preview";
 
 // Componentes del editor
@@ -228,8 +229,8 @@ const PageEditor: React.FC<PageEditorProps> = ({ isNew = false, pageId }) => {
   };
   
   // Manejar cambios en los bloques
-  const handleBlocksChange = (newBlocks: any[]) => {
-    setBlocks(newBlocks);
+  const handleBlocksChange = (content: PageContent) => {
+    setBlocks(content.blocks);
     setHasChanges(true);
   };
   
@@ -637,7 +638,13 @@ const PageEditor: React.FC<PageEditorProps> = ({ isNew = false, pageId }) => {
             <CardContent>
               <div className="min-h-[400px] border rounded-md">
                 <BlockEditor 
-                  blocks={blocks} 
+                  initialContent={{
+                    blocks: blocks,
+                    settings: {
+                      layout: 'boxed',
+                      spacing: 'normal'
+                    }
+                  }}
                   onChange={handleBlocksChange} 
                 />
               </div>
@@ -1038,7 +1045,13 @@ const PageEditor: React.FC<PageEditorProps> = ({ isNew = false, pageId }) => {
                   {/* Contenido del tab */}
                   <div className="min-h-[400px] border rounded-md p-4">
                     <BlockEditor 
-                      blocks={blocks} 
+                      initialContent={{
+                        blocks: blocks,
+                        settings: {
+                          layout: 'boxed',
+                          spacing: 'normal'
+                        }
+                      }}
                       onChange={handleBlocksChange} 
                     />
                   </div>
@@ -1170,7 +1183,7 @@ const PageEditor: React.FC<PageEditorProps> = ({ isNew = false, pageId }) => {
       />
       
       {/* Diálogo de vista previa en diferentes dispositivos */}
-      <PagePreview
+      <DevicePreviewDialog
         isOpen={showDevicePreview}
         onClose={() => setShowDevicePreview(false)}
         pageContent={{
@@ -1181,6 +1194,7 @@ const PageEditor: React.FC<PageEditorProps> = ({ isNew = false, pageId }) => {
           }
         }}
         pageTitle={pageData.title}
+        pageSlug={pageData.slug}
         pageDescription={pageData.description}
       />
       

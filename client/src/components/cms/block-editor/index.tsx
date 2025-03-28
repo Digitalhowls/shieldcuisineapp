@@ -163,8 +163,12 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
   // Construir el objeto de contenido a partir del estado del historial
   const content: PageContent = useMemo(() => {
     const pageBlocks = blockIds.map(id => blocks[id]);
-    return { blocks: pageBlocks };
-  }, [blocks, blockIds]);
+    // Preservar la configuración del initialContent si existe
+    const settings = initialContent && typeof initialContent !== 'string' && initialContent.settings 
+      ? initialContent.settings 
+      : { layout: 'boxed' as const, spacing: 'normal' as const };
+    return { blocks: pageBlocks, settings };
+  }, [blocks, blockIds, initialContent]);
 
   // Manipulación de bloques con tipado seguro
   /**
@@ -363,7 +367,10 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
     if (onChange) {
       // Construir el nuevo objeto de contenido para pasarlo al callback
       const pageBlocks = [...blockIds, newBlock.id].map(id => blocks[id] || newBlock);
-      const newPageContent: PageContent = { blocks: pageBlocks };
+      const newPageContent: PageContent = { 
+        blocks: pageBlocks,
+        settings: content.settings 
+      };
       onChange(newPageContent);
     }
   }, [blockIds, blocks, onChange, recordAddBlock]);
