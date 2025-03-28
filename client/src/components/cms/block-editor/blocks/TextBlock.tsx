@@ -1,15 +1,16 @@
 import React, { useState } from "react";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { ParagraphContent } from "../types";
 
 interface TextBlockProps {
   data: {
     id: string;
-    type: string;
+    type: 'paragraph';
     text: string;
   };
   isActive: boolean;
-  onUpdate: (data: any) => void;
+  onUpdate: (data: Partial<ParagraphContent>) => void;
   readOnly?: boolean;
 }
 

@@ -86,7 +86,7 @@ const DEFAULT_BLOCKS: {[key: string]: any} = {
     aspectRatio: "16:9",
   },
   html: {
-    content: "<div>Ingresa tu código HTML personalizado aquí</div>",
+    code: "<div>Ingresa tu código HTML personalizado aquí</div>",
   },
   card: {
     title: "Título de tarjeta",

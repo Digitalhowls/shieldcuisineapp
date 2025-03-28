@@ -409,13 +409,13 @@ const BlockRenderer: React.FC<BlockRendererProps> = ({ blocks }) => {
   };
 
   const renderHtml = (block: Block) => {
-    const { html = "" } = block.content;
+    const { code = "" } = block.content;
     
     return (
       <div 
         key={block.id} 
         className="mb-6 custom-html-content"
-        dangerouslySetInnerHTML={{ __html: html }}
+        dangerouslySetInnerHTML={{ __html: code }}
       />
     );
   };

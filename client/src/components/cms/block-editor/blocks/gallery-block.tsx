@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { GalleryContent, Block } from '../types';
+import { GalleryContent, Block, GalleryImage } from '../types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -18,8 +18,8 @@ import { Gallery } from '../../gallery';
 import { X } from 'lucide-react';
 
 interface GalleryBlockProps {
-  block: Block;
-  onChange: (block: Block) => void;
+  block: Block & { content: GalleryContent };
+  onChange: (block: Block & { content: GalleryContent }) => void;
   editable: boolean;
 }
 

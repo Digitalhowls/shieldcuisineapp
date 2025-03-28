@@ -5,15 +5,16 @@ import {
   Card, 
   CardContent 
 } from "@/components/ui/card";
+import { HtmlContent } from "../types";
 
 interface HtmlBlockProps {
   data: {
     id: string;
-    type: string;
-    content: string;
+    type: 'html';
+    code: string;
   };
   isActive: boolean;
-  onUpdate: (data: any) => void;
+  onUpdate: (data: Partial<HtmlContent>) => void;
   readOnly?: boolean;
 }
 
@@ -24,7 +25,7 @@ const HtmlBlock: React.FC<HtmlBlockProps> = ({
   readOnly = false,
 }) => {
   const handleContentChange = (content: string) => {
-    onUpdate({ content });
+    onUpdate({ code: content });
   };
   
   // Si es solo lectura o no está activo, renderizar el HTML directamente
@@ -32,7 +33,7 @@ const HtmlBlock: React.FC<HtmlBlockProps> = ({
     return (
       <div
         className="html-block"
-        dangerouslySetInnerHTML={{ __html: data.content }}
+        dangerouslySetInnerHTML={{ __html: data.code }}
       />
     );
   }
@@ -44,7 +45,7 @@ const HtmlBlock: React.FC<HtmlBlockProps> = ({
         <Label htmlFor={`html-content-${data.id}`}>Código HTML</Label>
         <Textarea
           id={`html-content-${data.id}`}
-          value={data.content}
+          value={data.code}
           onChange={(e) => handleContentChange(e.target.value)}
           className="min-h-[150px] font-mono text-sm"
           placeholder="<div>Tu código HTML aquí</div>"
@@ -57,7 +58,7 @@ const HtmlBlock: React.FC<HtmlBlockProps> = ({
           <Label className="mb-2 inline-block">Vista previa:</Label>
           <div
             className="p-4 border rounded-md bg-slate-50"
-            dangerouslySetInnerHTML={{ __html: data.content }}
+            dangerouslySetInnerHTML={{ __html: data.code }}
           />
         </CardContent>
       </Card>

@@ -10,18 +10,19 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { FileImage } from "lucide-react";
+import { ImageContent } from "../types";
 
 interface ImageBlockProps {
   data: {
     id: string;
-    type: string;
+    type: 'image';
     src: string;
     alt: string;
     caption?: string;
     alignment?: "left" | "center" | "right";
   };
   isActive: boolean;
-  onUpdate: (data: any) => void;
+  onUpdate: (data: Partial<ImageContent & { alignment?: "left" | "center" | "right" }>) => void;
   readOnly?: boolean;
 }
 
