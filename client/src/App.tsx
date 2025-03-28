@@ -32,6 +32,7 @@ import SettingsPanelDemo from "./pages/settings-panel-demo";
 // Nuevos módulos de interfaz dual
 import AdminModule from "./pages/admin"; // Panel de administración
 import ClientModule from "./pages/client"; // Panel de cliente
+import MediaPage from "./pages/admin/cms/media"; // Gestor de medios
 
 // Páginas públicas
 import PublicIndex from "./pages/public/index";
@@ -87,7 +88,7 @@ function AppRouter() {
       <ProtectedRoute path="/admin/cms" component={() => <CMSRedirect source="/admin/cms" destination="/cms" />} />
       <ProtectedRoute path="/admin/cms/pages" component={() => <CMSRedirect source="/admin/cms/pages" destination="/cms/paginas" />} />
       <ProtectedRoute path="/admin/cms/categories" component={() => <CMSRedirect source="/admin/cms/categories" destination="/cms/categorias" />} />
-      <ProtectedRoute path="/admin/cms/media" component={() => <CMSRedirect source="/admin/cms/media" destination="/cms/media" />} />
+      <ProtectedRoute path="/admin/cms/media" component={MediaPage} allowedRoles={['admin']} />
       <ProtectedRoute path="/admin/cms/branding" component={() => <CMSRedirect source="/admin/cms/branding" destination="/cms/configuracion" />} />
       <ProtectedRoute path="/admin/cms/:rest*" component={() => <CMSRedirect source={window.location.pathname} destination="/cms" />} />
       

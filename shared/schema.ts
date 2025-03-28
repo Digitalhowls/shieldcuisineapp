@@ -109,29 +109,41 @@ export const insertControlRecordSchema = createInsertSchema(controlRecords, {
 export type ControlRecord = typeof controlRecords.$inferSelect;
 export type InsertControlRecord = z.infer<typeof insertControlRecordSchema>;
 
+// Definimos el enum para los tipos de archivos multimedia
+export const mediaFileTypeEnum = z.enum([
+  'image', 
+  'document', 
+  'video', 
+  'audio', 
+  'other'
+]);
+
 // CMS Media Categories
-export const mediaCategories = pgTable("media_categories", {
+export const cmsMediaCategories = pgTable("cms_media_categories", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
   slug: text("slug").notNull(),
   description: text("description"),
-  companyId: integer("company_id"),
+  parentId: integer("parent_id"), // Para estructura jerárquica de carpetas
+  companyId: integer("company_id").notNull(),
   createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
 });
 
-export const insertMediaCategorySchema = createInsertSchema(mediaCategories)
-  .omit({ id: true, createdAt: true });
+export const insertCmsMediaCategorySchema = createInsertSchema(cmsMediaCategories)
+  .omit({ id: true, createdAt: true, updatedAt: true });
 
-export type MediaCategory = typeof mediaCategories.$inferSelect;
-export type InsertMediaCategory = z.infer<typeof insertMediaCategorySchema>;
+export type CmsMediaCategory = typeof cmsMediaCategories.$inferSelect;
+export type InsertCmsMediaCategory = z.infer<typeof insertCmsMediaCategorySchema>;
 
 // CMS Media Files
-export const mediaFiles = pgTable("media_files", {
+export const cmsMedia = pgTable("cms_media", {
   id: serial("id").primaryKey(),
   filename: text("filename").notNull(),
-  originalName: text("original_name").notNull(),
+  originalFilename: text("original_filename").notNull(),
   mimeType: text("mime_type").notNull(),
   size: integer("size").notNull(),
+  path: text("path").notNull(),
   url: text("url").notNull(),
   thumbnailUrl: text("thumbnail_url"),
   width: integer("width"),
@@ -139,18 +151,32 @@ export const mediaFiles = pgTable("media_files", {
   alt: text("alt"),
   title: text("title"),
   description: text("description"),
-  categoryId: integer("category_id"),
-  companyId: integer("company_id"),
+  folder: text("folder"),
+  tags: text("tags").array(), // Array de etiquetas
+  companyId: integer("company_id").notNull(),
   uploadedBy: integer("uploaded_by").notNull(),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
-export const insertMediaFileSchema = createInsertSchema(mediaFiles)
+export const insertCmsMediaSchema = createInsertSchema(cmsMedia)
   .omit({ id: true, createdAt: true, updatedAt: true });
 
-export type MediaFile = typeof mediaFiles.$inferSelect;
-export type InsertMediaFile = z.infer<typeof insertMediaFileSchema>;
+export type CmsMedia = typeof cmsMedia.$inferSelect;
+export type InsertCmsMedia = z.infer<typeof insertCmsMediaSchema>;
+
+// Tabla de relación muchos a muchos entre archivos y categorías
+export const cmsMediaToCategories = pgTable("cms_media_to_categories", {
+  id: serial("id").primaryKey(),
+  mediaId: integer("media_id").notNull(),
+  categoryId: integer("category_id").notNull(),
+});
+
+export const insertCmsMediaToCategorySchema = createInsertSchema(cmsMediaToCategories)
+  .omit({ id: true });
+
+export type CmsMediaToCategory = typeof cmsMediaToCategories.$inferSelect;
+export type InsertCmsMediaToCategory = z.infer<typeof insertCmsMediaToCategorySchema>;
 
 // CMS Pages
 export const cmsPages = pgTable("cms_pages", {

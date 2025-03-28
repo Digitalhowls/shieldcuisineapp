@@ -1,11 +1,50 @@
 import passport from "passport";
 import { Strategy as LocalStrategy } from "passport-local";
-import { Express } from "express";
+import { Express, Request, Response, NextFunction } from "express";
 import session from "express-session";
 import cookieParser from "cookie-parser";
 import { hash, verify } from "@node-rs/bcrypt";
 import { User as SelectUser } from "@shared/schema";
 import { simpleStorage } from "./simple-storage";
+
+// Middleware para verificar autenticación en rutas protegidas
+export const verifyAuth = async (req: Request, res: Response, next: NextFunction) => {
+  // Método principal: verificar sesión de Passport
+  if (req.isAuthenticated()) {
+    return next();
+  }
+  
+  // Método de respaldo: verificar cookie manual (solución temporal)
+  try {
+    const authCookie = req.cookies?.auth_token;
+    if (authCookie) {
+      const userData = JSON.parse(authCookie);
+      if (userData && userData.id) {
+        // Buscar el usuario por ID como respaldo
+        const user = await simpleStorage.getUser(userData.id);
+        if (user) {
+          // Regenerar sesión de manera transparente
+          req.login(user, (err) => {
+            if (err) {
+              console.error("Error al regenerar sesión:", err);
+              return res.status(401).json({ error: "No autorizado" });
+            } else {
+              // Usuario autenticado, continuar
+              return next();
+            }
+          });
+          return;
+        }
+      }
+    }
+    
+    // No hay autenticación válida
+    return res.status(401).json({ error: "No autorizado" });
+  } catch (error) {
+    console.error("Error en verificación de autenticación:", error);
+    return res.status(401).json({ error: "No autorizado" });
+  }
+};
 
 declare global {
   namespace Express {

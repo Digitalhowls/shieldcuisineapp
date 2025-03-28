@@ -1,553 +1,1249 @@
-import React, { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Badge } from "@/components/ui/badge";
-import {
-  Eye,
-  FileEdit,
-  MoreVertical,
-  Plus,
-  Trash2,
-  Image,
-  Upload,
-  Search,
-  Grid,
-  List,
-  Download,
-  Copy,
-  Link as LinkIcon,
-  FolderPlus,
-  X,
-  FileVideo,
-  FileAudio,
-  File,
-  FileText
-} from "lucide-react";
-import { useAuth } from "@/hooks/use-auth";
-import { useToast } from "@/hooks/use-toast";
-import { apiRequest, queryClient } from "@/lib/queryClient";
-import { Input } from "@/components/ui/input";
-import { format } from "date-fns";
-import { es } from "date-fns/locale";
+import React, { useState, useEffect } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { 
+  Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter 
+} from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { 
+  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, 
+  DialogTitle, DialogTrigger, DialogClose 
+} from '@/components/ui/dialog';
+import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Textarea } from '@/components/ui/textarea';
+import { Badge } from '@/components/ui/badge';
+import { Separator } from '@/components/ui/separator';
+import { 
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, 
+  AlertDialogTrigger 
+} from '@/components/ui/alert-dialog';
+import { toast } from '@/hooks/use-toast';
+import { apiRequest } from '@/lib/queryClient';
+import { 
+  Image, Upload, Trash2, Edit, FilePlus, FolderPlus, RefreshCw, Search,
+  FileText, Video, Music, Archive, Filter, MoreHorizontal, Tag, Check
+} from 'lucide-react';
 
-// Tipos de datos para los archivos multimedia
 interface MediaFile {
   id: number;
-  title: string;
   filename: string;
-  fileType: string;
+  originalFilename: string;
   mimeType: string;
-  url: string;
   size: number;
+  path: string;
+  url: string;
+  thumbnailUrl?: string;
   width?: number;
   height?: number;
+  alt?: string;
+  title?: string;
+  description?: string;
+  folder?: string;
+  tags?: string[];
+  companyId: number;
+  uploadedBy: number;
   createdAt: string;
   updatedAt: string;
-  userId: number;
+}
+
+interface MediaCategory {
+  id: number;
+  name: string;
+  slug: string;
+  description?: string;
+  parentId?: number;
   companyId: number;
 }
 
-enum ViewMode {
-  GRID = "grid",
-  LIST = "list"
-}
+// Función para formatear el tamaño del archivo
+const formatFileSize = (bytes: number): string => {
+  if (bytes === 0) return '0 Bytes';
+  const k = 1024;
+  const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+};
 
-export default function AdminCMSMediaPanel() {
-  const { toast } = useToast();
-  const { user } = useAuth();
-  const [searchQuery, setSearchQuery] = useState("");
+// Componente para el ícono de tipo de archivo
+const FileTypeIcon = ({ mimeType }: { mimeType: string }) => {
+  if (mimeType.startsWith('image/')) {
+    return <Image className="h-5 w-5 text-blue-500" />;
+  } else if (mimeType.startsWith('video/')) {
+    return <Video className="h-5 w-5 text-red-500" />;
+  } else if (mimeType.startsWith('audio/')) {
+    return <Music className="h-5 w-5 text-green-500" />;
+  } else if (
+    mimeType === 'application/pdf' ||
+    mimeType === 'application/msword' ||
+    mimeType.includes('officedocument') ||
+    mimeType === 'text/plain'
+  ) {
+    return <FileText className="h-5 w-5 text-yellow-500" />;
+  }
+  return <Archive className="h-5 w-5 text-gray-500" />;
+};
+
+const MediaPage: React.FC = () => {
+  const queryClient = useQueryClient();
+  const [activeTab, setActiveTab] = useState<string>('all');
+  const [searchQuery, setSearchQuery] = useState<string>('');
+  const [selectedCategory, setSelectedCategory] = useState<number | undefined>();
+  const [selectedFolder, setSelectedFolder] = useState<string | undefined>();
+  const [isUploadOpen, setIsUploadOpen] = useState<boolean>(false);
+  const [isNewCategoryOpen, setIsNewCategoryOpen] = useState<boolean>(false);
   const [selectedFile, setSelectedFile] = useState<MediaFile | null>(null);
-  const [isUploadDialogOpen, setIsUploadDialogOpen] = useState(false);
-  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const [viewMode, setViewMode] = useState<ViewMode>(ViewMode.GRID);
-
-  // Obtener archivos multimedia
-  const { data: mediaFiles, isLoading, error } = useQuery<MediaFile[]>({
-    queryKey: ["/api/cms/media"],
-    queryFn: async () => {
-      if (!user?.companyId) {
-        return [];
-      }
-      const response = await fetch(`/api/cms/media?companyId=${user.companyId}`);
-      if (!response.ok) {
-        throw new Error("Error al cargar los archivos multimedia");
-      }
-      return response.json();
-    },
+  const [uploadFile, setUploadFile] = useState<File | null>(null);
+  const [uploadPreview, setUploadPreview] = useState<string | null>(null);
+  const [uploadMetadata, setUploadMetadata] = useState({
+    title: '',
+    description: '',
+    alt: '',
+    folder: '',
+    tags: '',
+    categoryId: ''
+  });
+  const [newCategory, setNewCategory] = useState({
+    name: '',
+    slug: '',
+    description: '',
+    parentId: ''
   });
 
-  // Función para abrir el diálogo de detalles del archivo
-  const openFileDetails = (file: MediaFile) => {
-    setSelectedFile(file);
+  // Consulta de archivos multimedia
+  const { 
+    data: mediaFiles, 
+    isLoading: isLoadingFiles,
+    refetch: refetchFiles
+  } = useQuery({
+    queryKey: ['/api/cms/media', activeTab, searchQuery, selectedCategory, selectedFolder],
+    queryFn: async () => {
+      const params = new URLSearchParams();
+      if (activeTab !== 'all') params.append('fileType', activeTab);
+      if (searchQuery) params.append('search', searchQuery);
+      if (selectedCategory) params.append('categoryId', selectedCategory.toString());
+      if (selectedFolder) params.append('folder', selectedFolder);
+      
+      const response = await apiRequest('GET', `/api/cms/media?${params.toString()}`);
+      return await response.json() as MediaFile[];
+    }
+  });
+
+  // Consulta de categorías
+  const { 
+    data: categories,
+    isLoading: isLoadingCategories,
+    refetch: refetchCategories
+  } = useQuery({
+    queryKey: ['/api/cms/media/categories'],
+    queryFn: async () => {
+      const response = await apiRequest('GET', '/api/cms/media/categories');
+      return await response.json() as MediaCategory[];
+    }
+  });
+
+  // Mutación para subir archivos
+  const uploadMutation = useMutation({
+    mutationFn: async () => {
+      if (!uploadFile) return;
+      
+      const formData = new FormData();
+      formData.append('file', uploadFile);
+      formData.append('title', uploadMetadata.title || uploadFile.name);
+      formData.append('description', uploadMetadata.description);
+      formData.append('alt', uploadMetadata.alt || uploadFile.name);
+      formData.append('folder', uploadMetadata.folder);
+      
+      if (uploadMetadata.tags) {
+        try {
+          // Intentar analizar como JSON si comienza con [
+          const tagsValue = uploadMetadata.tags.trim().startsWith('[') 
+            ? JSON.stringify(JSON.parse(uploadMetadata.tags))
+            : JSON.stringify(uploadMetadata.tags.split(',').map(tag => tag.trim()));
+          formData.append('tags', tagsValue);
+        } catch (e) {
+          // Si falla, enviar como array de un solo elemento
+          formData.append('tags', JSON.stringify([uploadMetadata.tags]));
+        }
+      }
+      
+      if (uploadMetadata.categoryId) {
+        formData.append('categoryId', uploadMetadata.categoryId);
+      }
+      
+      const response = await fetch('/api/cms/media/upload', {
+        method: 'POST',
+        body: formData,
+        credentials: 'include'
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Error al subir archivo');
+      }
+      
+      return await response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: 'Archivo subido correctamente',
+        description: 'El archivo se ha subido y guardado correctamente',
+        variant: 'default',
+      });
+      setIsUploadOpen(false);
+      resetUploadForm();
+      queryClient.invalidateQueries({ queryKey: ['/api/cms/media'] });
+    },
+    onError: (error) => {
+      toast({
+        title: 'Error al subir archivo',
+        description: error instanceof Error ? error.message : 'Ocurrió un error al subir el archivo',
+        variant: 'destructive',
+      });
+    }
+  });
+
+  // Mutación para crear categorías
+  const createCategoryMutation = useMutation({
+    mutationFn: async () => {
+      const response = await apiRequest('POST', '/api/cms/media/categories', {
+        name: newCategory.name,
+        slug: newCategory.slug || newCategory.name.toLowerCase().replace(/\s+/g, '-'),
+        description: newCategory.description,
+        parentId: newCategory.parentId ? parseInt(newCategory.parentId) : undefined
+      });
+      
+      return await response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: 'Categoría creada',
+        description: 'La categoría se ha creado correctamente',
+        variant: 'default',
+      });
+      setIsNewCategoryOpen(false);
+      resetCategoryForm();
+      queryClient.invalidateQueries({ queryKey: ['/api/cms/media/categories'] });
+    },
+    onError: (error) => {
+      toast({
+        title: 'Error al crear categoría',
+        description: error instanceof Error ? error.message : 'Ocurrió un error al crear la categoría',
+        variant: 'destructive',
+      });
+    }
+  });
+
+  // Mutación para eliminar archivos
+  const deleteFileMutation = useMutation({
+    mutationFn: async (fileId: number) => {
+      const response = await apiRequest('DELETE', `/api/cms/media/${fileId}`);
+      return await response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: 'Archivo eliminado',
+        description: 'El archivo se ha eliminado correctamente',
+        variant: 'default',
+      });
+      setSelectedFile(null);
+      queryClient.invalidateQueries({ queryKey: ['/api/cms/media'] });
+    },
+    onError: (error) => {
+      toast({
+        title: 'Error al eliminar archivo',
+        description: error instanceof Error ? error.message : 'Ocurrió un error al eliminar el archivo',
+        variant: 'destructive',
+      });
+    }
+  });
+
+  // Mutación para actualizar archivos
+  const updateFileMutation = useMutation({
+    mutationFn: async (file: Partial<MediaFile> & { id: number }) => {
+      const { id, ...updateData } = file;
+      const response = await apiRequest('PUT', `/api/cms/media/${id}`, updateData);
+      return await response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: 'Archivo actualizado',
+        description: 'La información del archivo se ha actualizado correctamente',
+        variant: 'default',
+      });
+      queryClient.invalidateQueries({ queryKey: ['/api/cms/media'] });
+    },
+    onError: (error) => {
+      toast({
+        title: 'Error al actualizar archivo',
+        description: error instanceof Error ? error.message : 'Ocurrió un error al actualizar la información',
+        variant: 'destructive',
+      });
+    }
+  });
+
+  // Extraer carpetas únicas de los archivos
+  const uniqueFolders = React.useMemo(() => {
+    if (!mediaFiles) return [];
+    
+    const folders = mediaFiles
+      .map(file => file.folder)
+      .filter((folder): folder is string => 
+        typeof folder === 'string' && folder.trim() !== ''
+      );
+    
+    return Array.from(new Set(folders)).sort();
+  }, [mediaFiles]);
+
+  // Manejar cambio de archivo
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    
+    setUploadFile(file);
+    setUploadMetadata({
+      ...uploadMetadata,
+      title: file.name,
+      alt: file.name
+    });
+    
+    // Crear vista previa para imágenes
+    if (file.type.startsWith('image/')) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setUploadPreview(e.target?.result as string);
+      };
+      reader.readAsDataURL(file);
+    } else {
+      setUploadPreview(null);
+    }
   };
 
-  // Función para cerrar el diálogo de detalles
-  const closeFileDetails = () => {
-    setSelectedFile(null);
-  };
-
-  // Función para confirmar eliminación
-  const confirmDelete = (file: MediaFile) => {
-    setSelectedFile(file);
-    setIsDeleteDialogOpen(true);
-  };
-
-  // Función para eliminar un archivo
-  const handleDeleteFile = async () => {
+  // Manejar actualización de archivo seleccionado
+  const handleUpdateSelectedFile = () => {
     if (!selectedFile) return;
     
-    try {
-      await apiRequest("DELETE", `/api/cms/media/${selectedFile.id}`);
-      queryClient.invalidateQueries({ queryKey: ["/api/cms/media"] });
-      toast({
-        title: "Archivo eliminado",
-        description: "El archivo ha sido eliminado correctamente.",
-      });
-      setIsDeleteDialogOpen(false);
-      setSelectedFile(null);
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "No se pudo eliminar el archivo. Inténtelo de nuevo.",
-        variant: "destructive",
+    const updatedData: Partial<MediaFile> & { id: number } = {
+      id: selectedFile.id,
+      title: selectedFile.title,
+      description: selectedFile.description,
+      alt: selectedFile.alt,
+      folder: selectedFile.folder,
+      tags: selectedFile.tags
+    };
+    
+    updateFileMutation.mutate(updatedData);
+  };
+
+  // Limpiar formulario de carga
+  const resetUploadForm = () => {
+    setUploadFile(null);
+    setUploadPreview(null);
+    setUploadMetadata({
+      title: '',
+      description: '',
+      alt: '',
+      folder: '',
+      tags: '',
+      categoryId: ''
+    });
+  };
+
+  // Limpiar formulario de categorías
+  const resetCategoryForm = () => {
+    setNewCategory({
+      name: '',
+      slug: '',
+      description: '',
+      parentId: ''
+    });
+  };
+
+  // Generar slug para categoría
+  const generateSlug = (name: string) => {
+    return name.toLowerCase()
+      .replace(/[^\w\s-]/g, '') // Eliminar caracteres especiales
+      .replace(/\s+/g, '-') // Reemplazar espacios con guiones
+      .replace(/-+/g, '-') // Eliminar guiones múltiples
+      .trim();
+  };
+
+  // Actualizar slug al cambiar nombre de categoría
+  useEffect(() => {
+    if (newCategory.name && !newCategory.slug) {
+      setNewCategory({
+        ...newCategory,
+        slug: generateSlug(newCategory.name)
       });
     }
-  };
-
-  // Función para formatear el tamaño del archivo
-  const formatFileSize = (bytes: number) => {
-    if (bytes === 0) return "0 Bytes";
-    const k = 1024;
-    const sizes = ["Bytes", "KB", "MB", "GB"];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
-  };
-
-  // Función para obtener el icono según el tipo de archivo
-  const getFileIcon = (mimeType: string) => {
-    if (mimeType.startsWith("image/")) {
-      return <Image className="h-8 w-8 text-primary" />;
-    } else if (mimeType.startsWith("video/")) {
-      return <FileVideo className="h-8 w-8 text-orange-500" />;
-    } else if (mimeType.startsWith("audio/")) {
-      return <FileAudio className="h-8 w-8 text-purple-500" />;
-    } else if (mimeType === "application/pdf") {
-      return <File className="h-8 w-8 text-red-500" />;
-    } else {
-      return <FileText className="h-8 w-8 text-blue-500" />;
-    }
-  };
-
-  // Función para copiar URL al portapapeles
-  const copyToClipboard = (text: string) => {
-    navigator.clipboard.writeText(text).then(
-      () => {
-        toast({
-          title: "URL copiada",
-          description: "La URL ha sido copiada al portapapeles",
-        });
-      },
-      (err) => {
-        toast({
-          title: "Error",
-          description: "No se pudo copiar al portapapeles",
-          variant: "destructive",
-        });
-      }
-    );
-  };
-
-  // Filtrar archivos por búsqueda
-  const filteredFiles = mediaFiles?.filter(file => 
-    file.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    file.filename.toLowerCase().includes(searchQuery.toLowerCase())
-  );
-
-  // Estados de carga y error
-  if (isLoading) {
-    return (
-      <div className="p-6">
-        <div className="mb-6">
-          <Skeleton className="h-12 w-1/3" />
-          <Skeleton className="h-6 w-3/4 mt-2" />
-        </div>
-        
-        <div className="flex justify-between items-center mb-6">
-          <Skeleton className="h-10 w-64" />
-          <Skeleton className="h-10 w-32" />
-        </div>
-        
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
-            <Skeleton key={i} className="h-40 rounded-md" />
-          ))}
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="p-6">
-        <Card className="border-destructive">
-          <CardHeader>
-            <CardTitle className="text-destructive">Error</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p>No se pudieron cargar los archivos multimedia. Por favor, inténtelo de nuevo.</p>
-          </CardContent>
-          <CardFooter>
-            <Button 
-              variant="outline"
-              onClick={() => queryClient.invalidateQueries({ queryKey: ["/api/cms/media"] })}
-            >
-              Reintentar
-            </Button>
-          </CardFooter>
-        </Card>
-      </div>
-    );
-  }
+  }, [newCategory.name]);
 
   return (
-    <div className="p-6">
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold tracking-tight">Biblioteca de Medios</h1>
-        <p className="text-muted-foreground mt-2">
-          Gestiona imágenes, videos y archivos para tu sitio web
-        </p>
-      </div>
-
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
-        <div className="relative w-full md:w-96">
-          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-          <Input
-            type="search"
-            placeholder="Buscar archivos..."
-            className="pl-8"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
-        </div>
-        
-        <div className="flex items-center gap-2">
-          <Button
-            variant={viewMode === ViewMode.GRID ? "default" : "outline"}
-            size="icon"
-            onClick={() => setViewMode(ViewMode.GRID)}
-            className="h-9 w-9"
-          >
-            <Grid className="h-4 w-4" />
+    <div className="container mx-auto p-4">
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-3xl font-bold">Biblioteca de Medios</h1>
+        <div className="flex gap-2">
+          <Button onClick={() => setIsUploadOpen(true)} className="flex items-center gap-2">
+            <Upload className="h-4 w-4" />
+            Subir Archivo
           </Button>
-          <Button
-            variant={viewMode === ViewMode.LIST ? "default" : "outline"}
-            size="icon"
-            onClick={() => setViewMode(ViewMode.LIST)}
-            className="h-9 w-9"
-          >
-            <List className="h-4 w-4" />
-          </Button>
-          
           <Button 
-            className="gap-2" 
-            onClick={() => window.location.href = "/cms/media"}
+            variant="outline" 
+            onClick={() => setIsNewCategoryOpen(true)}
+            className="flex items-center gap-2"
           >
-            <Upload size={16} />
-            <span>Subir Archivos</span>
+            <FolderPlus className="h-4 w-4" />
+            Nueva Categoría
+          </Button>
+          <Button 
+            variant="ghost" 
+            size="icon"
+            onClick={() => {
+              refetchFiles();
+              refetchCategories();
+            }}
+          >
+            <RefreshCw className="h-4 w-4" />
           </Button>
         </div>
       </div>
-
-      {!filteredFiles || filteredFiles.length === 0 ? (
-        <Card className="text-center py-8">
-          <CardContent>
-            <div className="flex flex-col items-center space-y-3">
-              <Image className="h-12 w-12 text-muted-foreground" />
-              <h3 className="text-lg font-semibold">No hay archivos disponibles</h3>
-              <p className="text-muted-foreground">
-                {searchQuery 
-                  ? "No se encontraron resultados para tu búsqueda." 
-                  : "Sube archivos para comenzar a construir tu biblioteca de medios."}
-              </p>
-              <Button 
-                className="mt-4" 
-                onClick={() => window.location.href = "/cms/media"}
-              >
-                <Upload className="mr-2 h-4 w-4" />
-                Subir archivos
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      ) : viewMode === ViewMode.GRID ? (
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-          {filteredFiles.map((file) => (
-            <Card 
-              key={file.id} 
-              className="overflow-hidden cursor-pointer hover:shadow-md transition-shadow"
-              onClick={() => openFileDetails(file)}
-            >
-              <div className="aspect-square bg-muted relative flex items-center justify-center">
-                {file.mimeType.startsWith("image/") ? (
-                  <img 
-                    src={file.url} 
-                    alt={file.title}
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <div className="flex flex-col items-center justify-center">
-                    {getFileIcon(file.mimeType)}
-                    <p className="text-xs text-muted-foreground mt-2">
-                      {file.fileType.toUpperCase()}
-                    </p>
-                  </div>
-                )}
-              </div>
-              <CardContent className="p-3">
-                <p className="text-sm font-medium truncate" title={file.title}>
-                  {file.title}
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  {formatFileSize(file.size)}
-                </p>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      ) : (
-        <Card>
-          <table className="w-full">
-            <thead>
-              <tr className="border-b">
-                <th className="text-left p-3 font-medium">Archivo</th>
-                <th className="text-left p-3 font-medium">Tipo</th>
-                <th className="text-left p-3 font-medium">Tamaño</th>
-                <th className="text-left p-3 font-medium">Fecha</th>
-                <th className="text-right p-3 font-medium">Acciones</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredFiles.map((file) => (
-                <tr key={file.id} className="border-b hover:bg-muted/50">
-                  <td className="p-3">
-                    <div className="flex items-center space-x-3">
-                      <div className="w-10 h-10 rounded bg-muted flex items-center justify-center overflow-hidden">
-                        {file.mimeType.startsWith("image/") ? (
-                          <img 
-                            src={file.url} 
-                            alt={file.title}
-                            className="w-full h-full object-cover"
-                          />
-                        ) : (
-                          getFileIcon(file.mimeType)
-                        )}
-                      </div>
-                      <span className="font-medium truncate max-w-[200px]" title={file.title}>
-                        {file.title}
-                      </span>
-                    </div>
-                  </td>
-                  <td className="p-3 text-sm">
-                    <Badge variant="outline">{file.fileType.toUpperCase()}</Badge>
-                  </td>
-                  <td className="p-3 text-sm">
-                    {formatFileSize(file.size)}
-                  </td>
-                  <td className="p-3 text-sm">
-                    {format(new Date(file.createdAt), "dd MMM yyyy", { locale: es })}
-                  </td>
-                  <td className="p-3 text-right">
-                    <Button 
-                      variant="ghost" 
-                      size="icon"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        openFileDetails(file);
-                      }}
-                    >
-                      <Eye className="h-4 w-4" />
-                    </Button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </Card>
-      )}
-
-      {/* Diálogo de detalles del archivo */}
-      {selectedFile && (
-        <Dialog open={!!selectedFile} onOpenChange={(open) => !open && closeFileDetails()}>
-          <DialogContent className="sm:max-w-2xl">
-            <DialogHeader>
-              <DialogTitle>{selectedFile.title}</DialogTitle>
-              <DialogDescription>
-                Detalles del archivo
-              </DialogDescription>
-            </DialogHeader>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="bg-muted rounded-md flex items-center justify-center p-4 aspect-square overflow-hidden">
-                {selectedFile.mimeType.startsWith("image/") ? (
-                  <img 
-                    src={selectedFile.url} 
-                    alt={selectedFile.title}
-                    className="max-w-full max-h-full object-contain"
-                  />
-                ) : (
-                  <div className="flex flex-col items-center justify-center">
-                    {getFileIcon(selectedFile.mimeType)}
-                    <p className="text-lg font-medium mt-2">
-                      {selectedFile.fileType.toUpperCase()}
-                    </p>
-                  </div>
-                )}
+      
+      <div className="grid grid-cols-4 gap-6">
+        {/* Panel lateral */}
+        <div className="col-span-1">
+          <Card>
+            <CardHeader>
+              <CardTitle>Filtros</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-center border rounded-md px-2 w-full">
+                <Search className="h-4 w-4 mr-2 opacity-70" />
+                <Input
+                  placeholder="Buscar archivos..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="border-0 focus-visible:ring-0 h-9"
+                />
               </div>
               
-              <div className="space-y-4">
-                <div>
-                  <h3 className="text-sm font-medium text-muted-foreground">Nombre</h3>
-                  <p className="mt-1">{selectedFile.title}</p>
-                </div>
-                
-                <div>
-                  <h3 className="text-sm font-medium text-muted-foreground">Archivo</h3>
-                  <p className="mt-1">{selectedFile.filename}</p>
-                </div>
-                
-                <div>
-                  <h3 className="text-sm font-medium text-muted-foreground">Tipo</h3>
-                  <p className="mt-1">{selectedFile.mimeType}</p>
-                </div>
-                
-                <div>
-                  <h3 className="text-sm font-medium text-muted-foreground">Tamaño</h3>
-                  <p className="mt-1">{formatFileSize(selectedFile.size)}</p>
-                </div>
-                
-                {selectedFile.width && selectedFile.height && (
-                  <div>
-                    <h3 className="text-sm font-medium text-muted-foreground">Dimensiones</h3>
-                    <p className="mt-1">{selectedFile.width} × {selectedFile.height}</p>
-                  </div>
-                )}
-                
-                <div>
-                  <h3 className="text-sm font-medium text-muted-foreground">Fecha de carga</h3>
-                  <p className="mt-1">
-                    {format(new Date(selectedFile.createdAt), "dd MMM yyyy, HH:mm", { locale: es })}
-                  </p>
-                </div>
+              {/* Tipos de archivo */}
+              <div>
+                <Label className="text-sm font-medium">Tipo de archivo</Label>
+                <Tabs
+                  value={activeTab}
+                  onValueChange={setActiveTab}
+                  className="mt-2 w-full"
+                >
+                  <TabsList className="grid grid-cols-5 w-full">
+                    <TabsTrigger value="all">Todos</TabsTrigger>
+                    <TabsTrigger value="image">Imágenes</TabsTrigger>
+                    <TabsTrigger value="document">Docs</TabsTrigger>
+                    <TabsTrigger value="video">Videos</TabsTrigger>
+                    <TabsTrigger value="audio">Audio</TabsTrigger>
+                  </TabsList>
+                </Tabs>
               </div>
-            </div>
-            
-            <div className="flex flex-wrap gap-2">
-              <Button 
-                variant="outline" 
-                className="gap-2 flex-1"
-                onClick={() => copyToClipboard(selectedFile.url)}
-              >
-                <Copy className="h-4 w-4" />
-                <span>Copiar URL</span>
-              </Button>
+              
+              {/* Categorías */}
+              <div>
+                <Label className="text-sm font-medium">Categoría</Label>
+                <Select
+                  value={selectedCategory?.toString() || ""}
+                  onValueChange={(value) => 
+                    setSelectedCategory(value ? parseInt(value) : undefined)
+                  }
+                >
+                  <SelectTrigger className="mt-1 w-full">
+                    <SelectValue placeholder="Todas las categorías" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">Todas las categorías</SelectItem>
+                    {categories?.map((category) => (
+                      <SelectItem key={category.id} value={category.id.toString()}>
+                        {category.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              {/* Carpetas */}
+              {uniqueFolders.length > 0 && (
+                <div>
+                  <Label className="text-sm font-medium">Carpeta</Label>
+                  <Select
+                    value={selectedFolder || ""}
+                    onValueChange={(value) => 
+                      setSelectedFolder(value || undefined)
+                    }
+                  >
+                    <SelectTrigger className="mt-1 w-full">
+                      <SelectValue placeholder="Todas las carpetas" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="">Todas las carpetas</SelectItem>
+                      {uniqueFolders.map((folder) => (
+                        <SelectItem key={folder} value={folder}>
+                          {folder}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
               
               <Button 
-                variant="outline" 
-                className="gap-2 flex-1"
-                onClick={() => window.open(selectedFile.url, "_blank")}
-              >
-                <LinkIcon className="h-4 w-4" />
-                <span>Abrir</span>
-              </Button>
-              
-              <Button 
-                variant="outline" 
-                className="gap-2 flex-1"
+                variant="ghost" 
+                className="w-full flex justify-center items-center gap-2 mt-2"
                 onClick={() => {
-                  const a = document.createElement('a');
-                  a.href = selectedFile.url;
-                  a.download = selectedFile.filename;
-                  document.body.appendChild(a);
-                  a.click();
-                  document.body.removeChild(a);
+                  setSearchQuery('');
+                  setSelectedCategory(undefined);
+                  setSelectedFolder(undefined);
+                  setActiveTab('all');
                 }}
               >
-                <Download className="h-4 w-4" />
-                <span>Descargar</span>
+                <RefreshCw className="h-4 w-4" />
+                Limpiar filtros
               </Button>
+            </CardContent>
+          </Card>
+        </div>
+        
+        {/* Panel principal */}
+        <div className="col-span-3">
+          <Card>
+            <CardHeader>
+              <CardTitle>
+                Archivos {mediaFiles?.length ? `(${mediaFiles.length})` : ''}
+              </CardTitle>
+              <CardDescription>
+                {activeTab !== 'all' && 
+                  <Badge variant="outline" className="mr-2">
+                    {activeTab === 'image' && 'Imágenes'}
+                    {activeTab === 'document' && 'Documentos'}
+                    {activeTab === 'video' && 'Videos'}
+                    {activeTab === 'audio' && 'Audio'}
+                  </Badge>
+                }
+                {selectedCategory && categories && (
+                  <Badge variant="outline" className="mr-2">
+                    Categoría: {categories.find(c => c.id === selectedCategory)?.name}
+                  </Badge>
+                )}
+                {selectedFolder && (
+                  <Badge variant="outline" className="mr-2">
+                    Carpeta: {selectedFolder}
+                  </Badge>
+                )}
+                {searchQuery && (
+                  <Badge variant="outline">
+                    Búsqueda: {searchQuery}
+                  </Badge>
+                )}
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {isLoadingFiles ? (
+                <div className="flex justify-center items-center py-8">
+                  <div className="flex flex-col items-center gap-2">
+                    <RefreshCw className="h-8 w-8 animate-spin text-muted-foreground" />
+                    <span className="text-muted-foreground">Cargando archivos...</span>
+                  </div>
+                </div>
+              ) : mediaFiles?.length === 0 ? (
+                <div className="text-center py-8">
+                  <div className="mx-auto w-12 h-12 rounded-full bg-muted flex items-center justify-center mb-3">
+                    <Archive className="h-6 w-6 text-muted-foreground" />
+                  </div>
+                  <h3 className="font-medium text-lg">No hay archivos disponibles</h3>
+                  <p className="text-muted-foreground mt-1">
+                    No se encontraron archivos que coincidan con los filtros.
+                  </p>
+                  <Button 
+                    variant="outline" 
+                    onClick={() => setIsUploadOpen(true)}
+                    className="mt-4"
+                  >
+                    Subir nuevo archivo
+                  </Button>
+                </div>
+              ) : (
+                <ScrollArea className="h-[calc(100vh-320px)]">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Vista previa</TableHead>
+                        <TableHead>Nombre</TableHead>
+                        <TableHead>Tipo</TableHead>
+                        <TableHead>Tamaño</TableHead>
+                        <TableHead>Fecha de carga</TableHead>
+                        <TableHead className="w-[100px]">Acciones</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {mediaFiles?.map((file) => (
+                        <TableRow key={file.id} className="cursor-pointer hover:bg-muted">
+                          <TableCell 
+                            className="w-[80px]"
+                            onClick={() => setSelectedFile(file)}
+                          >
+                            {file.mimeType.startsWith('image/') ? (
+                              <img 
+                                src={file.thumbnailUrl || file.url} 
+                                alt={file.alt || file.filename} 
+                                className="w-16 h-16 object-cover rounded"
+                              />
+                            ) : (
+                              <div className="w-16 h-16 bg-muted rounded flex items-center justify-center">
+                                <FileTypeIcon mimeType={file.mimeType} />
+                              </div>
+                            )}
+                          </TableCell>
+                          <TableCell onClick={() => setSelectedFile(file)}>
+                            <div className="font-medium truncate max-w-[200px]">{file.title || file.originalFilename}</div>
+                            {file.description && (
+                              <div className="text-sm text-muted-foreground truncate max-w-[200px]">
+                                {file.description}
+                              </div>
+                            )}
+                          </TableCell>
+                          <TableCell onClick={() => setSelectedFile(file)}>
+                            <div className="flex items-center gap-2">
+                              <FileTypeIcon mimeType={file.mimeType} />
+                              <span className="text-xs">{file.mimeType.split('/')[1].toUpperCase()}</span>
+                            </div>
+                          </TableCell>
+                          <TableCell onClick={() => setSelectedFile(file)}>
+                            {formatFileSize(file.size)}
+                          </TableCell>
+                          <TableCell onClick={() => setSelectedFile(file)}>
+                            {new Date(file.createdAt).toLocaleDateString()}
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-1">
+                              <Button 
+                                variant="ghost" 
+                                size="icon"
+                                onClick={() => setSelectedFile(file)}
+                              >
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                              <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                  <Button variant="ghost" size="icon">
+                                    <Trash2 className="h-4 w-4 text-destructive" />
+                                  </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                  <AlertDialogHeader>
+                                    <AlertDialogTitle>¿Eliminar archivo?</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                      Esta acción no se puede deshacer. El archivo se eliminará
+                                      permanentemente del servidor.
+                                    </AlertDialogDescription>
+                                  </AlertDialogHeader>
+                                  <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                    <AlertDialogAction 
+                                      onClick={() => deleteFileMutation.mutate(file.id)}
+                                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                    >
+                                      Eliminar
+                                    </AlertDialogAction>
+                                  </AlertDialogFooter>
+                                </AlertDialogContent>
+                              </AlertDialog>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </ScrollArea>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+      
+      {/* Dialog de detalles de archivo */}
+      {selectedFile && (
+        <Dialog open={!!selectedFile} onOpenChange={(open) => !open && setSelectedFile(null)}>
+          <DialogContent className="max-w-4xl">
+            <DialogHeader>
+              <DialogTitle>Detalles del archivo</DialogTitle>
+            </DialogHeader>
+            
+            <div className="grid grid-cols-2 gap-6">
+              {/* Vista previa */}
+              <div>
+                {selectedFile.mimeType.startsWith('image/') ? (
+                  <div className="border rounded-lg overflow-hidden">
+                    <img 
+                      src={selectedFile.url} 
+                      alt={selectedFile.alt || selectedFile.filename} 
+                      className="w-full h-auto max-h-[400px] object-contain"
+                    />
+                  </div>
+                ) : (
+                  <div className="border rounded-lg h-[300px] flex items-center justify-center">
+                    <div className="text-center">
+                      <div className="flex justify-center mb-2">
+                        <FileTypeIcon mimeType={selectedFile.mimeType} />
+                      </div>
+                      <p className="text-xs uppercase">{selectedFile.mimeType}</p>
+                      <p className="mt-2">{selectedFile.originalFilename}</p>
+                      <a 
+                        href={selectedFile.url} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="mt-4 inline-block text-sm text-blue-500 hover:underline"
+                      >
+                        Descargar archivo
+                      </a>
+                    </div>
+                  </div>
+                )}
+                
+                <div className="mt-4 space-y-2 text-sm">
+                  <div className="grid grid-cols-3 gap-2">
+                    <span className="text-muted-foreground">Tipo:</span>
+                    <span className="col-span-2">{selectedFile.mimeType}</span>
+                  </div>
+                  <div className="grid grid-cols-3 gap-2">
+                    <span className="text-muted-foreground">Tamaño:</span>
+                    <span className="col-span-2">{formatFileSize(selectedFile.size)}</span>
+                  </div>
+                  {selectedFile.width && selectedFile.height && (
+                    <div className="grid grid-cols-3 gap-2">
+                      <span className="text-muted-foreground">Dimensiones:</span>
+                      <span className="col-span-2">{selectedFile.width} × {selectedFile.height} px</span>
+                    </div>
+                  )}
+                  <div className="grid grid-cols-3 gap-2">
+                    <span className="text-muted-foreground">Fecha de carga:</span>
+                    <span className="col-span-2">
+                      {new Date(selectedFile.createdAt).toLocaleString()}
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-3 gap-2">
+                    <span className="text-muted-foreground">URL:</span>
+                    <div className="col-span-2 truncate">
+                      <code className="text-xs bg-muted px-1 py-0.5 rounded">
+                        {selectedFile.url}
+                      </code>
+                    </div>
+                  </div>
+                </div>
+              </div>
               
-              <Button 
-                variant="destructive"
-                className="gap-2 flex-1"
-                onClick={() => confirmDelete(selectedFile)}
-              >
-                <Trash2 className="h-4 w-4" />
-                <span>Eliminar</span>
-              </Button>
+              {/* Información */}
+              <div className="space-y-4">
+                <div>
+                  <Label htmlFor="file-title">Título</Label>
+                  <Input
+                    id="file-title"
+                    value={selectedFile.title || ''}
+                    onChange={(e) => setSelectedFile({
+                      ...selectedFile,
+                      title: e.target.value
+                    })}
+                    className="mt-1"
+                  />
+                </div>
+                
+                <div>
+                  <Label htmlFor="file-alt">Texto alternativo</Label>
+                  <Input
+                    id="file-alt"
+                    value={selectedFile.alt || ''}
+                    onChange={(e) => setSelectedFile({
+                      ...selectedFile,
+                      alt: e.target.value
+                    })}
+                    className="mt-1"
+                  />
+                  <span className="text-xs text-muted-foreground">
+                    Se utiliza para accesibilidad y SEO
+                  </span>
+                </div>
+                
+                <div>
+                  <Label htmlFor="file-description">Descripción</Label>
+                  <Textarea
+                    id="file-description"
+                    value={selectedFile.description || ''}
+                    onChange={(e) => setSelectedFile({
+                      ...selectedFile,
+                      description: e.target.value
+                    })}
+                    className="mt-1 resize-none h-20"
+                  />
+                </div>
+                
+                <div>
+                  <Label htmlFor="file-folder">Carpeta</Label>
+                  <Select
+                    value={selectedFile.folder || ''}
+                    onValueChange={(value) => setSelectedFile({
+                      ...selectedFile,
+                      folder: value
+                    })}
+                  >
+                    <SelectTrigger className="mt-1 w-full">
+                      <SelectValue placeholder="Sin carpeta" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="">Sin carpeta</SelectItem>
+                      {uniqueFolders.map((folder) => (
+                        <SelectItem key={folder} value={folder}>
+                          {folder}
+                        </SelectItem>
+                      ))}
+                      {/* Opción para nueva carpeta */}
+                      <SelectItem value="new-folder">
+                        <div className="flex items-center gap-1">
+                          <FolderPlus className="h-3 w-3" />
+                          <span>Nueva carpeta...</span>
+                        </div>
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                {selectedFile.folder === 'new-folder' && (
+                  <div>
+                    <Label htmlFor="new-folder-name">Nombre de la nueva carpeta</Label>
+                    <div className="flex mt-1 gap-2">
+                      <Input
+                        id="new-folder-name"
+                        placeholder="Nombre de carpeta"
+                        onBlur={(e) => {
+                          if (e.target.value) {
+                            setSelectedFile({
+                              ...selectedFile,
+                              folder: e.target.value.trim()
+                            });
+                          } else {
+                            setSelectedFile({
+                              ...selectedFile,
+                              folder: ''
+                            });
+                          }
+                        }}
+                      />
+                    </div>
+                  </div>
+                )}
+                
+                <div>
+                  <Label htmlFor="file-tags">Etiquetas</Label>
+                  <Input
+                    id="file-tags"
+                    value={selectedFile.tags ? 
+                      (Array.isArray(selectedFile.tags) ? 
+                        selectedFile.tags.join(', ') : 
+                        String(selectedFile.tags)
+                      ) : ''
+                    }
+                    onChange={(e) => {
+                      const tagsArray = e.target.value
+                        .split(',')
+                        .map(tag => tag.trim())
+                        .filter(tag => tag);
+                      setSelectedFile({
+                        ...selectedFile,
+                        tags: tagsArray
+                      });
+                    }}
+                    placeholder="Separadas por comas"
+                    className="mt-1"
+                  />
+                </div>
+                
+                {selectedFile.tags && selectedFile.tags.length > 0 && (
+                  <div className="flex flex-wrap gap-1 mt-2">
+                    {Array.isArray(selectedFile.tags) && selectedFile.tags.map((tag, index) => (
+                      <Badge key={index} variant="secondary" className="flex gap-1 items-center">
+                        <Tag className="h-3 w-3" />
+                        {tag}
+                      </Badge>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
+            
+            <DialogFooter>
+              <Button 
+                variant="outline" 
+                onClick={() => setSelectedFile(null)}
+              >
+                Cancelar
+              </Button>
+              <Button
+                onClick={handleUpdateSelectedFile}
+                disabled={updateFileMutation.isPending}
+              >
+                {updateFileMutation.isPending ? (
+                  <>
+                    <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                    Guardando...
+                  </>
+                ) : (
+                  <>
+                    <Check className="h-4 w-4 mr-2" />
+                    Guardar cambios
+                  </>
+                )}
+              </Button>
+            </DialogFooter>
           </DialogContent>
         </Dialog>
       )}
       
-      {/* Diálogo de confirmación de eliminación */}
-      <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+      {/* Dialog de subida de archivos */}
+      <Dialog open={isUploadOpen} onOpenChange={setIsUploadOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Eliminar archivo</DialogTitle>
+            <DialogTitle>Subir archivo</DialogTitle>
             <DialogDescription>
-              ¿Estás seguro de que deseas eliminar permanentemente este archivo?
-              Esta acción no se puede deshacer.
+              Sube un nuevo archivo a la biblioteca de medios.
             </DialogDescription>
           </DialogHeader>
           
-          {selectedFile && (
-            <div className="flex items-center space-x-3 my-4">
-              <div className="w-12 h-12 rounded bg-muted flex items-center justify-center overflow-hidden">
-                {selectedFile.mimeType.startsWith("image/") ? (
-                  <img 
-                    src={selectedFile.url} 
-                    alt={selectedFile.title}
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  getFileIcon(selectedFile.mimeType)
-                )}
+          <div className="space-y-4">
+            {!uploadFile ? (
+              <div className="border-2 border-dashed rounded-lg p-12 text-center cursor-pointer" onClick={() => document.getElementById('upload-file')?.click()}>
+                <Upload className="h-8 w-8 mx-auto text-muted-foreground mb-4" />
+                <h3 className="text-lg font-medium">Haz clic para seleccionar un archivo</h3>
+                <p className="text-sm text-muted-foreground mt-1">
+                  o arrastra y suelta aquí
+                </p>
+                <Input
+                  id="upload-file"
+                  type="file"
+                  className="hidden"
+                  onChange={handleFileChange}
+                />
+                <p className="text-xs text-muted-foreground mt-4">
+                  Formatos soportados: JPG, PNG, GIF, PDF, DOCX, XLSX, MP4, MP3, etc.
+                </p>
               </div>
-              <div>
-                <p className="font-medium">{selectedFile.title}</p>
-                <p className="text-sm text-muted-foreground">{formatFileSize(selectedFile.size)}</p>
+            ) : (
+              <div className="space-y-4">
+                <div className="flex items-center gap-4">
+                  {uploadPreview ? (
+                    <img 
+                      src={uploadPreview} 
+                      alt="Preview" 
+                      className="w-20 h-20 object-cover rounded" 
+                    />
+                  ) : (
+                    <div className="w-20 h-20 bg-muted rounded flex items-center justify-center">
+                      <FileTypeIcon mimeType={uploadFile.type} />
+                    </div>
+                  )}
+                  <div className="flex-1">
+                    <h3 className="font-medium">{uploadFile.name}</h3>
+                    <p className="text-sm text-muted-foreground">
+                      {formatFileSize(uploadFile.size)} • {uploadFile.type}
+                    </p>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={resetUploadForm}
+                  >
+                    <Trash2 className="h-4 w-4 text-destructive" />
+                  </Button>
+                </div>
+                
+                <Separator />
+                
+                <div className="space-y-4">
+                  <div>
+                    <Label htmlFor="upload-title">Título</Label>
+                    <Input
+                      id="upload-title"
+                      value={uploadMetadata.title}
+                      onChange={(e) => setUploadMetadata({
+                        ...uploadMetadata,
+                        title: e.target.value
+                      })}
+                      className="mt-1"
+                    />
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="upload-alt">Texto alternativo</Label>
+                    <Input
+                      id="upload-alt"
+                      value={uploadMetadata.alt}
+                      onChange={(e) => setUploadMetadata({
+                        ...uploadMetadata,
+                        alt: e.target.value
+                      })}
+                      className="mt-1"
+                    />
+                    <span className="text-xs text-muted-foreground">
+                      Se utiliza para accesibilidad y SEO
+                    </span>
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="upload-description">Descripción</Label>
+                    <Textarea
+                      id="upload-description"
+                      value={uploadMetadata.description}
+                      onChange={(e) => setUploadMetadata({
+                        ...uploadMetadata,
+                        description: e.target.value
+                      })}
+                      className="mt-1 resize-none h-20"
+                    />
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="upload-folder">Carpeta</Label>
+                      <Select
+                        value={uploadMetadata.folder}
+                        onValueChange={(value) => setUploadMetadata({
+                          ...uploadMetadata,
+                          folder: value
+                        })}
+                      >
+                        <SelectTrigger className="mt-1 w-full">
+                          <SelectValue placeholder="Sin carpeta" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="">Sin carpeta</SelectItem>
+                          {uniqueFolders.map((folder) => (
+                            <SelectItem key={folder} value={folder}>
+                              {folder}
+                            </SelectItem>
+                          ))}
+                          {/* Opción para nueva carpeta */}
+                          <SelectItem value="new-folder">
+                            <div className="flex items-center gap-1">
+                              <FolderPlus className="h-3 w-3" />
+                              <span>Nueva carpeta...</span>
+                            </div>
+                          </SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    
+                    <div>
+                      <Label htmlFor="upload-category">Categoría</Label>
+                      <Select
+                        value={uploadMetadata.categoryId}
+                        onValueChange={(value) => setUploadMetadata({
+                          ...uploadMetadata,
+                          categoryId: value
+                        })}
+                      >
+                        <SelectTrigger className="mt-1 w-full">
+                          <SelectValue placeholder="Sin categoría" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="">Sin categoría</SelectItem>
+                          {categories?.map((category) => (
+                            <SelectItem key={category.id} value={category.id.toString()}>
+                              {category.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                  
+                  {uploadMetadata.folder === 'new-folder' && (
+                    <div>
+                      <Label htmlFor="new-upload-folder-name">Nombre de la nueva carpeta</Label>
+                      <div className="flex mt-1 gap-2">
+                        <Input
+                          id="new-upload-folder-name"
+                          placeholder="Nombre de carpeta"
+                          onBlur={(e) => {
+                            if (e.target.value) {
+                              setUploadMetadata({
+                                ...uploadMetadata,
+                                folder: e.target.value.trim()
+                              });
+                            } else {
+                              setUploadMetadata({
+                                ...uploadMetadata,
+                                folder: ''
+                              });
+                            }
+                          }}
+                        />
+                      </div>
+                    </div>
+                  )}
+                  
+                  <div>
+                    <Label htmlFor="upload-tags">Etiquetas</Label>
+                    <Input
+                      id="upload-tags"
+                      value={uploadMetadata.tags}
+                      onChange={(e) => setUploadMetadata({
+                        ...uploadMetadata,
+                        tags: e.target.value
+                      })}
+                      placeholder="Separadas por comas"
+                      className="mt-1"
+                    />
+                  </div>
+                </div>
               </div>
-            </div>
-          )}
+            )}
+          </div>
           
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)}>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setIsUploadOpen(false);
+                resetUploadForm();
+              }}
+            >
               Cancelar
             </Button>
-            <Button variant="destructive" onClick={handleDeleteFile}>
-              Eliminar
+            <Button
+              onClick={() => uploadMutation.mutate()}
+              disabled={!uploadFile || uploadMutation.isPending}
+            >
+              {uploadMutation.isPending ? (
+                <>
+                  <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                  Subiendo...
+                </>
+              ) : (
+                <>
+                  <Upload className="h-4 w-4 mr-2" />
+                  Subir archivo
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      
+      {/* Dialog de nueva categoría */}
+      <Dialog open={isNewCategoryOpen} onOpenChange={setIsNewCategoryOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Nueva categoría</DialogTitle>
+            <DialogDescription>
+              Crea una nueva categoría para organizar tus archivos multimedia.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="category-name">Nombre</Label>
+              <Input
+                id="category-name"
+                value={newCategory.name}
+                onChange={(e) => setNewCategory({
+                  ...newCategory,
+                  name: e.target.value
+                })}
+                className="mt-1"
+              />
+            </div>
+            
+            <div>
+              <Label htmlFor="category-slug">Slug</Label>
+              <Input
+                id="category-slug"
+                value={newCategory.slug}
+                onChange={(e) => setNewCategory({
+                  ...newCategory,
+                  slug: e.target.value
+                })}
+                className="mt-1"
+              />
+              <span className="text-xs text-muted-foreground">
+                Identificador único para URLs (generado automáticamente)
+              </span>
+            </div>
+            
+            <div>
+              <Label htmlFor="category-description">Descripción</Label>
+              <Textarea
+                id="category-description"
+                value={newCategory.description}
+                onChange={(e) => setNewCategory({
+                  ...newCategory,
+                  description: e.target.value
+                })}
+                className="mt-1 resize-none h-20"
+              />
+            </div>
+            
+            <div>
+              <Label htmlFor="category-parent">Categoría padre</Label>
+              <Select
+                value={newCategory.parentId}
+                onValueChange={(value) => setNewCategory({
+                  ...newCategory,
+                  parentId: value
+                })}
+              >
+                <SelectTrigger className="mt-1 w-full">
+                  <SelectValue placeholder="Sin categoría padre" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">Sin categoría padre</SelectItem>
+                  {categories?.map((category) => (
+                    <SelectItem key={category.id} value={category.id.toString()}>
+                      {category.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setIsNewCategoryOpen(false);
+                resetCategoryForm();
+              }}
+            >
+              Cancelar
+            </Button>
+            <Button
+              onClick={() => createCategoryMutation.mutate()}
+              disabled={!newCategory.name || createCategoryMutation.isPending}
+            >
+              {createCategoryMutation.isPending ? (
+                <>
+                  <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                  Creando...
+                </>
+              ) : (
+                <>
+                  <FolderPlus className="h-4 w-4 mr-2" />
+                  Crear categoría
+                </>
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
   );
-}
+};
+
+export default MediaPage;
