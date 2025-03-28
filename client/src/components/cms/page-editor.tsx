@@ -40,6 +40,7 @@ import {
   Layers,
   CopyCheck,
   Calendar,
+  Clock,
   ExternalLink,
   BookOpen,
   FileImage,
@@ -70,7 +71,7 @@ interface PageData {
   title: string;
   slug: string;
   content: string;
-  status: "draft" | "published" | "archived";
+  status: "draft" | "published" | "archived" | "scheduled";
   visibility: "public" | "private" | "internal";
   type: "page" | "blog_post" | "course_page" | "landing_page";
   description?: string;
@@ -79,9 +80,12 @@ interface PageData {
   metaKeywords?: string;
   thumbnailUrl?: string;
   publishedAt?: string;
+  scheduledAt?: string;
   companyId: number;
   author?: string;
   featured?: boolean;
+  recurrencePattern?: "none" | "daily" | "weekly" | "monthly";
+  recurrenceEndDate?: string;
 }
 
 const PageEditor: React.FC<PageEditorProps> = ({ isNew = false, pageId }) => {
@@ -104,6 +108,7 @@ const PageEditor: React.FC<PageEditorProps> = ({ isNew = false, pageId }) => {
     visibility: "public",
     type: "page",
     companyId: user?.companyId || 0,
+    recurrencePattern: "none",
   });
   
   const [blocks, setBlocks] = useState<any[]>([]);
@@ -285,6 +290,43 @@ const PageEditor: React.FC<PageEditorProps> = ({ isNew = false, pageId }) => {
     });
   };
   
+  // Programar la publicación
+  const handleSchedulePublication = () => {
+    // Verificar que los campos obligatorios estén completos
+    if (!pageData.title || !pageData.slug) {
+      toast({
+        title: "Error",
+        description: "Completa todos los campos obligatorios antes de programar la publicación",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    // Verificar que se haya establecido una fecha de programación
+    if (!pageData.scheduledAt) {
+      toast({
+        title: "Error",
+        description: "Selecciona una fecha y hora para programar la publicación",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    // Programar la publicación
+    const updatedData = {
+      ...pageData,
+      status: "scheduled" as const,
+    };
+    
+    setPageData(updatedData);
+    saveMutation.mutate(updatedData);
+    
+    toast({
+      title: "Publicación programada",
+      description: `La página se publicará automáticamente el ${new Date(pageData.scheduledAt).toLocaleString()}`,
+    });
+  };
+  
   // Despublicar la página
   const handleUnpublish = () => {
     const updatedData = {
@@ -379,7 +421,8 @@ const PageEditor: React.FC<PageEditorProps> = ({ isNew = false, pageId }) => {
               className="h-6"
             >
               {pageData.status === "published" ? "Publicada" : 
-               pageData.status === "draft" ? "Borrador" : "Archivada"}
+               pageData.status === "draft" ? "Borrador" : 
+               pageData.status === "scheduled" ? "Programada" : "Archivada"}
             </Badge>
           )}
         </div>
@@ -444,16 +487,8 @@ const PageEditor: React.FC<PageEditorProps> = ({ isNew = false, pageId }) => {
             <span>Guardar</span>
           </Button>
           
-          {pageData.status !== "published" ? (
-            <Button 
-              onClick={requestPublish} 
-              disabled={saveMutation.isPending}
-              className="gap-2"
-            >
-              <Eye className="h-4 w-4" />
-              <span>Publicar</span>
-            </Button>
-          ) : (
+          {pageData.status === "published" ? (
+            // Si está publicada, ofrecer despublicar
             <Button 
               variant="secondary" 
               onClick={handleUnpublish} 
@@ -462,6 +497,49 @@ const PageEditor: React.FC<PageEditorProps> = ({ isNew = false, pageId }) => {
             >
               <span>Despublicar</span>
             </Button>
+          ) : pageData.status === "scheduled" ? (
+            // Si está programada para publicación
+            <div className="flex gap-2">
+              <Button 
+                variant="secondary" 
+                onClick={handleUnpublish} 
+                disabled={saveMutation.isPending}
+                className="gap-2"
+              >
+                <span>Cancelar Programación</span>
+              </Button>
+              <Button 
+                onClick={handleSchedulePublication} 
+                disabled={saveMutation.isPending || !pageData.scheduledAt}
+                className="gap-2"
+              >
+                <Clock className="h-4 w-4" />
+                <span>Actualizar Programación</span>
+              </Button>
+            </div>
+          ) : (
+            // Si está en borrador o archivada, ofrecer publicar o programar
+            <div className="flex gap-2">
+              <Button 
+                onClick={requestPublish} 
+                disabled={saveMutation.isPending}
+                className="gap-2"
+              >
+                <Eye className="h-4 w-4" />
+                <span>Publicar Ahora</span>
+              </Button>
+              {pageData.scheduledAt && (
+                <Button 
+                  variant="outline" 
+                  onClick={handleSchedulePublication} 
+                  disabled={saveMutation.isPending}
+                  className="gap-2"
+                >
+                  <Clock className="h-4 w-4" />
+                  <span>Programar</span>
+                </Button>
+              )}
+            </div>
           )}
         </div>
       </div>
@@ -575,6 +653,7 @@ const PageEditor: React.FC<PageEditorProps> = ({ isNew = false, pageId }) => {
                     <SelectContent>
                       <SelectItem value="draft">Borrador</SelectItem>
                       <SelectItem value="published">Publicada</SelectItem>
+                      <SelectItem value="scheduled">Programada</SelectItem>
                       <SelectItem value="archived">Archivada</SelectItem>
                     </SelectContent>
                   </Select>
@@ -641,10 +720,91 @@ const PageEditor: React.FC<PageEditorProps> = ({ isNew = false, pageId }) => {
                     </Button>
                   </div>
                   <p className="text-xs text-muted-foreground">
-                    Define cuándo se publicará la página, deja en blanco para publicar inmediatamente
+                    Define cuándo se publicó la página
                   </p>
                 </div>
               </div>
+              
+              {pageData.status === "scheduled" && (
+                <>
+                  <Separator />
+                  
+                  <div className="bg-muted/30 p-4 rounded-md border border-muted">
+                    <h3 className="font-medium mb-2 flex items-center gap-2">
+                      <Clock className="h-4 w-4" />
+                      Programación de Publicación
+                    </h3>
+                    
+                    <div className="space-y-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="space-y-2">
+                          <Label htmlFor="scheduledAt">Fecha Programada</Label>
+                          <div className="flex items-center gap-2">
+                            <Input
+                              id="scheduledAt"
+                              type="datetime-local"
+                              value={pageData.scheduledAt ? new Date(pageData.scheduledAt).toISOString().slice(0, 16) : ""}
+                              onChange={(e) => handleFieldChange("scheduledAt", e.target.value)}
+                            />
+                            <Button 
+                              type="button" 
+                              variant="ghost" 
+                              size="icon"
+                              onClick={() => {
+                                // Programar para publicar en 24 horas
+                                const tomorrow = new Date();
+                                tomorrow.setDate(tomorrow.getDate() + 1);
+                                handleFieldChange("scheduledAt", tomorrow.toISOString());
+                              }}
+                            >
+                              <Calendar className="h-4 w-4" />
+                            </Button>
+                          </div>
+                          <p className="text-xs text-muted-foreground">
+                            La página se publicará automáticamente en esta fecha y hora
+                          </p>
+                        </div>
+                      
+                        <div className="space-y-2">
+                          <Label htmlFor="recurrencePattern">Patrón de Repetición</Label>
+                          <Select
+                            value={pageData.recurrencePattern || "none"}
+                            onValueChange={(value) => handleFieldChange("recurrencePattern", value)}
+                          >
+                            <SelectTrigger id="recurrencePattern">
+                              <SelectValue placeholder="Selecciona un patrón" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="none">Sin repetición</SelectItem>
+                              <SelectItem value="daily">Diario</SelectItem>
+                              <SelectItem value="weekly">Semanal</SelectItem>
+                              <SelectItem value="monthly">Mensual</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <p className="text-xs text-muted-foreground">
+                            Establece si la publicación se debe repetir periódicamente
+                          </p>
+                        </div>
+                      </div>
+                      
+                      {pageData.recurrencePattern !== "none" && (
+                        <div className="space-y-2">
+                          <Label htmlFor="recurrenceEndDate">Fecha Final de Repetición</Label>
+                          <Input
+                            id="recurrenceEndDate"
+                            type="date"
+                            value={pageData.recurrenceEndDate ? new Date(pageData.recurrenceEndDate).toISOString().slice(0, 10) : ""}
+                            onChange={(e) => handleFieldChange("recurrenceEndDate", e.target.value)}
+                          />
+                          <p className="text-xs text-muted-foreground">
+                            La programación recurrente terminará en esta fecha
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </>
+              )}
               
               <Separator />
               
