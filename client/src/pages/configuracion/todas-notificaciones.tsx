@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useCallback, useRef, useState } from "react";
 import { useNotifications } from "@/hooks/use-notifications";
 import {
   Card,
@@ -35,9 +35,19 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { Badge } from "@/components/ui/badge";
+import { FixedSizeList as List } from "react-window";
+import { Notification } from "@shared/schema";
+
+// Definir tipo para la configuración de notificaciones
+type NotificationTypeConfig = {
+  [key: string]: {
+    color: string;
+    label: string;
+  }
+};
 
 // Mapeo de tipos de notificaciones a colores y etiquetas
-const notificationTypeConfig = {
+const notificationTypeConfig: NotificationTypeConfig = {
   security: { 
     color: "bg-red-100 text-red-800 hover:bg-red-200", 
     label: "Seguridad" 
@@ -71,6 +81,93 @@ const notificationTypeConfig = {
     label: "Sistema" 
   },
 };
+
+// Props para los datos de fila virtualizada
+interface NotificationRowData {
+  notifications: Notification[];
+  typeConfig: NotificationTypeConfig;
+  onDelete: (id: number) => void;
+  onClick: (notification: Notification) => void;
+  formatTime: (date: Date) => string;
+}
+
+// Componente de fila virtualizada para notificaciones
+const NotificationRow = React.memo(({ index, style, data }: { 
+  index: number; 
+  style: React.CSSProperties; 
+  data: NotificationRowData 
+}) => {
+  const notification = data.notifications[index];
+  const typeConfig = data.typeConfig;
+  
+  // Usar una fecha segura para el formateo
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const safeDate = new Date((notification as any).createdAt || Date.now());
+  
+  return (
+    <div 
+      style={{
+        ...style,
+        paddingTop: 8,
+        paddingBottom: 8
+      }}
+    >
+      <div 
+        className={`flex items-start gap-4 p-4 rounded-md ${notification.isRead ? 'bg-card' : 'bg-muted'} hover:bg-muted-foreground/5 cursor-pointer relative group`}
+        onClick={() => data.onClick(notification)}
+      >
+        <div className={`${typeConfig[notification.type]?.color || typeConfig.system.color} p-3 rounded-full`}>
+          <Bell className="h-5 w-5" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="flex justify-between items-start">
+            <h4 className={`font-medium truncate ${notification.isRead ? 'text-foreground' : 'text-foreground font-semibold'}`}>
+              {notification.title}
+            </h4>
+            <span className="text-xs text-muted-foreground whitespace-nowrap ml-2">
+              {data.formatTime(safeDate)}
+            </span>
+          </div>
+          <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
+            {notification.body}
+          </p>
+          
+          <div className="flex items-center mt-2 text-xs space-x-2">
+            <Badge variant="outline" className={typeConfig[notification.type]?.color || typeConfig.system.color}>
+              {typeConfig[notification.type]?.label || "Sistema"}
+            </Badge>
+            
+            {!notification.isRead && (
+              <Badge variant="default" className="bg-blue-500">
+                Nueva
+              </Badge>
+            )}
+          </div>
+        </div>
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="absolute right-2 top-2 opacity-0 group-hover:opacity-100 transition-opacity"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  data.onDelete(notification.id);
+                }}
+              >
+                <Trash2 className="h-4 w-4 text-muted-foreground" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Eliminar notificación</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+      </div>
+    </div>
+  );
+});
 
 export default function TodasNotificacionesPage() {
   const { 
@@ -108,7 +205,7 @@ export default function TodasNotificacionesPage() {
     return filtered;
   }, [notifications, filter, tab]);
   
-  const handleNotificationClick = (notification: any) => {
+  const handleNotificationClick = (notification: Notification) => {
     // Marcar como leída
     if (!notification.isRead) {
       markAsRead(notification.id);
@@ -260,70 +357,29 @@ export default function TodasNotificacionesPage() {
                       <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
                     </div>
                   ) : filteredNotifications.length > 0 ? (
-                    <div className="space-y-4">
-                      {filteredNotifications.map((notification) => (
-                        <div 
-                          key={notification.id} 
-                          className={`flex items-start gap-4 p-4 rounded-md ${notification.isRead ? 'bg-card' : 'bg-muted'} hover:bg-muted-foreground/5 cursor-pointer relative group`}
-                          onClick={() => handleNotificationClick(notification)}
-                        >
-                          <div className={`${notificationTypeConfig[notification.type]?.color || notificationTypeConfig.system.color} p-3 rounded-full`}>
-                            <Bell className="h-5 w-5" />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <div className="flex justify-between items-start">
-                              <h4 className={`font-medium truncate ${notification.isRead ? 'text-foreground' : 'text-foreground font-semibold'}`}>
-                                {notification.title}
-                              </h4>
-                              <span className="text-xs text-muted-foreground whitespace-nowrap ml-2">
-                                {formatDistanceToNow(new Date(notification.createdAt), { 
-                                  addSuffix: true,
-                                  locale: es
-                                })}
-                              </span>
-                            </div>
-                            <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
-                              {notification.body}
-                            </p>
-                            
-                            <div className="flex items-center mt-2 text-xs space-x-2">
-                              <Badge variant="outline" className={notificationTypeConfig[notification.type]?.color || notificationTypeConfig.system.color}>
-                                {notificationTypeConfig[notification.type]?.label || "Sistema"}
-                              </Badge>
-                              
-                              {!notification.isRead && (
-                                <Badge variant="default" className="bg-blue-500">
-                                  Nueva
-                                </Badge>
-                              )}
-                            </div>
-                          </div>
-                          <TooltipProvider>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Button 
-                                  variant="ghost" 
-                                  size="sm" 
-                                  className="absolute right-2 top-2 opacity-0 group-hover:opacity-100 transition-opacity"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    deleteNotification(notification.id);
-                                    toast({
-                                      title: "Notificación eliminada",
-                                      description: "La notificación ha sido eliminada correctamente",
-                                    });
-                                  }}
-                                >
-                                  <Trash2 className="h-4 w-4 text-muted-foreground" />
-                                </Button>
-                              </TooltipTrigger>
-                              <TooltipContent>
-                                <p>Eliminar notificación</p>
-                              </TooltipContent>
-                            </Tooltip>
-                          </TooltipProvider>
-                        </div>
-                      ))}
+                    <div className="notification-virtualized-container" style={{ height: 400 }}>
+                      <List
+                        className="notification-list"
+                        height={400}
+                        itemCount={filteredNotifications.length}
+                        itemSize={140} // Ajustar la altura según el contenido de la notificación
+                        width="100%"
+                        itemData={{
+                          notifications: filteredNotifications,
+                          typeConfig: notificationTypeConfig,
+                          onDelete: (id: number) => {
+                            deleteNotification(id);
+                            toast({
+                              title: "Notificación eliminada",
+                              description: "La notificación ha sido eliminada correctamente",
+                            });
+                          },
+                          onClick: handleNotificationClick,
+                          formatTime: (date: Date) => formatDistanceToNow(date, { addSuffix: true, locale: es })
+                        }}
+                      >
+                        {NotificationRow}
+                      </List>
                     </div>
                   ) : (
                     <div className="flex flex-col items-center justify-center h-[400px] text-muted-foreground">

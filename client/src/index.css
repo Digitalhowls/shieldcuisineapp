@@ -4,7 +4,9 @@
 
 /* Estilos para la virtualización en la interfaz */
 .list-virtualized,
-.media-library-grid {
+.media-library-grid,
+.virtualizedTableBody,
+.notification-list {
   overflow-x: hidden !important;
   overflow-y: auto !important;
   width: 100% !important;
@@ -12,25 +14,66 @@
 }
 
 .list-virtualized::-webkit-scrollbar,
-.media-library-grid::-webkit-scrollbar {
+.media-library-grid::-webkit-scrollbar,
+.virtualizedTableBody::-webkit-scrollbar,
+.notification-list::-webkit-scrollbar {
   width: 6px;
 }
 
 .list-virtualized::-webkit-scrollbar-track,
-.media-library-grid::-webkit-scrollbar-track {
+.media-library-grid::-webkit-scrollbar-track,
+.virtualizedTableBody::-webkit-scrollbar-track,
+.notification-list::-webkit-scrollbar-track {
   background: rgba(0, 0, 0, 0.05);
   border-radius: 3px;
 }
 
 .list-virtualized::-webkit-scrollbar-thumb,
-.media-library-grid::-webkit-scrollbar-thumb {
+.media-library-grid::-webkit-scrollbar-thumb,
+.virtualizedTableBody::-webkit-scrollbar-thumb,
+.notification-list::-webkit-scrollbar-thumb {
   background: rgba(0, 0, 0, 0.1);
   border-radius: 3px;
 }
 
 .list-virtualized::-webkit-scrollbar-thumb:hover,
-.media-library-grid::-webkit-scrollbar-thumb:hover {
+.media-library-grid::-webkit-scrollbar-thumb:hover,
+.virtualizedTableBody::-webkit-scrollbar-thumb:hover,
+.notification-list::-webkit-scrollbar-thumb:hover {
   background: rgba(0, 0, 0, 0.2);
+}
+
+/* Estilos específicos para notificaciones virtualizadas */
+.notification-virtualized-container {
+  width: 100%;
+  overflow-x: hidden !important;
+}
+
+/* Estilos específicos para tablas virtualizadas */
+.virtualizedTableBody {
+  width: 100% !important;
+  border-collapse: collapse;
+  overflow: auto;
+}
+
+/* Estilos para las filas virtualizadas */
+.virtualizedTableBody .ReactVirtualized__Grid__innerScrollContainer {
+  overflow: visible !important;
+}
+
+/* Asegurar alineación adecuada en tablas virtualizadas */
+.Table__row {
+  display: flex;
+  flex-direction: row;
+  border-bottom: 1px solid hsl(var(--border));
+}
+
+.Table__cell {
+  flex: 1;
+  padding: 0.75rem 1rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 @layer base {

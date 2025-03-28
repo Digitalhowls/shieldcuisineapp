@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useRef, useEffect } from "react";
 import {
   Table,
   TableBody,
@@ -14,6 +14,12 @@ import {
   ChevronsLeft, 
   ChevronsRight, 
 } from "lucide-react";
+import { FixedSizeList as List } from "react-window";
+
+// Umbral para activar la virtualización
+const VIRTUALIZATION_THRESHOLD = 50; 
+// Altura por defecto de cada fila
+const ROW_HEIGHT = 48; 
 
 interface DataTableProps<TData> {
   columns: {
@@ -24,6 +30,8 @@ interface DataTableProps<TData> {
   data: TData[];
   pageSize?: number;
   onRowClick?: (row: TData) => void;
+  virtualizationThreshold?: number;
+  rowHeight?: number;
 }
 
 export function DataTable<TData>({
@@ -31,8 +39,12 @@ export function DataTable<TData>({
   data,
   pageSize = 10,
   onRowClick,
+  virtualizationThreshold = VIRTUALIZATION_THRESHOLD,
+  rowHeight = ROW_HEIGHT,
 }: DataTableProps<TData>) {
-  const [currentPage, setCurrentPage] = React.useState(0);
+  const [currentPage, setCurrentPage] = useState(0);
+  const [tableHeight, setTableHeight] = useState(400);
+  const tableBodyRef = useRef<HTMLDivElement>(null);
   
   const totalPages = Math.ceil(data.length / pageSize);
   const startIndex = currentPage * pageSize;
@@ -41,6 +53,31 @@ export function DataTable<TData>({
   
   const canPreviousPage = currentPage > 0;
   const canNextPage = currentPage < totalPages - 1;
+  
+  // Determinar si debemos usar virtualización
+  const useVirtualization = data.length > virtualizationThreshold;
+
+  // Medir el contenedor para ajustar la altura de la lista virtualizada
+  useEffect(() => {
+    if (tableBodyRef.current && useVirtualization) {
+      const updateHeight = () => {
+        const tableBounds = tableBodyRef.current?.getBoundingClientRect();
+        if (tableBounds) {
+          // Limitar la altura máxima para evitar que se extienda demasiado
+          // y usar al menos suficiente espacio para mostrar 10 filas
+          const calculatedHeight = Math.min(
+            Math.max(rowHeight * 10, window.innerHeight * 0.5),
+            currentData.length * rowHeight
+          );
+          setTableHeight(calculatedHeight);
+        }
+      };
+      
+      updateHeight();
+      window.addEventListener('resize', updateHeight);
+      return () => window.removeEventListener('resize', updateHeight);
+    }
+  }, [currentData.length, rowHeight, useVirtualization]);
   
   const goToPage = (page: number) => {
     setCurrentPage(Math.max(0, Math.min(page, totalPages - 1)));
@@ -58,6 +95,30 @@ export function DataTable<TData>({
     }
   };
 
+  // Renderizador de filas para la lista virtualizada
+  const VirtualRow = React.memo(({ index, style }: { index: number; style: React.CSSProperties }) => {
+    const row = currentData[index];
+    return (
+      <div 
+        style={style} 
+        className={`flex ${onRowClick ? "cursor-pointer hover:bg-muted" : ""} border-b border-border`}
+        onClick={onRowClick ? () => onRowClick(row) : undefined}
+      >
+        {columns.map((column, cellIndex) => (
+          <div 
+            key={cellIndex} 
+            className="p-4 flex-1 truncate"
+            style={{ flex: `1 1 ${100 / columns.length}%` }}
+          >
+            {column.cell 
+              ? column.cell({ row: { original: row } }) 
+              : (row as any)[column.accessorKey]}
+          </div>
+        ))}
+      </div>
+    );
+  });
+
   return (
     <div>
       <div className="rounded-md border">
@@ -71,34 +132,58 @@ export function DataTable<TData>({
               ))}
             </TableRow>
           </TableHeader>
-          <TableBody>
-            {currentData.length > 0 ? (
-              currentData.map((row, rowIndex) => (
-                <TableRow
-                  key={rowIndex}
-                  className={onRowClick ? "cursor-pointer hover:bg-muted" : undefined}
-                  onClick={onRowClick ? () => onRowClick(row) : undefined}
-                >
-                  {columns.map((column, cellIndex) => (
-                    <TableCell key={cellIndex}>
-                      {column.cell 
-                        ? column.cell({ row: { original: row } }) 
-                        : (row as any)[column.accessorKey]}
+          
+          {/* Contenedor del cuerpo de la tabla */}
+          <div ref={tableBodyRef}>
+            {!useVirtualization ? (
+              <TableBody>
+                {currentData.length > 0 ? (
+                  currentData.map((row, rowIndex) => (
+                    <TableRow
+                      key={rowIndex}
+                      className={onRowClick ? "cursor-pointer hover:bg-muted" : undefined}
+                      onClick={onRowClick ? () => onRowClick(row) : undefined}
+                    >
+                      {columns.map((column, cellIndex) => (
+                        <TableCell key={cellIndex}>
+                          {column.cell 
+                            ? column.cell({ row: { original: row } }) 
+                            : (row as any)[column.accessorKey]}
+                        </TableCell>
+                      ))}
+                    </TableRow>
+                  ))
+                ) : (
+                  <TableRow>
+                    <TableCell
+                      colSpan={columns.length}
+                      className="h-24 text-center"
+                    >
+                      No hay resultados.
                     </TableCell>
-                  ))}
-                </TableRow>
-              ))
+                  </TableRow>
+                )}
+              </TableBody>
             ) : (
-              <TableRow>
-                <TableCell
-                  colSpan={columns.length}
-                  className="h-24 text-center"
-                >
-                  No hay resultados.
-                </TableCell>
-              </TableRow>
+              <div className="virtualizedTableBody">
+                {currentData.length > 0 ? (
+                  <List
+                    height={tableHeight}
+                    width="100%"
+                    itemCount={currentData.length}
+                    itemSize={rowHeight}
+                    overscanCount={5}
+                  >
+                    {VirtualRow}
+                  </List>
+                ) : (
+                  <div className="h-24 text-center flex items-center justify-center">
+                    No hay resultados.
+                  </div>
+                )}
+              </div>
             )}
-          </TableBody>
+          </div>
         </Table>
       </div>
 

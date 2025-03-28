@@ -10,6 +10,18 @@ export const bankTransactionTypeEnum = z.enum(['payment', 'charge', 'transfer', 
 export const courseLevelEnum = z.enum(['basic', 'intermediate', 'advanced']);
 export const lessonTypeEnum = z.enum(['text', 'video', 'interactive', 'quiz']);
 
+// Definición de enumeraciones para el módulo de Notificaciones
+export const notificationTypeEnum = z.enum([
+  'security', 
+  'inventory', 
+  'appcc_control', 
+  'learning', 
+  'banking', 
+  'purchasing', 
+  'cms', 
+  'system'
+]);
+
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
   username: text("username").notNull(),
@@ -304,6 +316,67 @@ export const insertStudentProgressSchema = createInsertSchema(studentProgress)
 
 export type StudentProgress = typeof studentProgress.$inferSelect;
 export type InsertStudentProgress = z.infer<typeof insertStudentProgressSchema>;
+
+// Sistema de Notificaciones
+export const notifications = pgTable("notifications", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  title: text("title").notNull(),
+  body: text("body").notNull(),
+  type: text("type").notNull(), // security, inventory, appcc_control, learning, banking, system, purchasing, cms
+  isRead: boolean("is_read").notNull().default(false),
+  url: text("url"), // URL opcional para navegar al hacer clic
+  data: text("data"), // JSON string con datos adicionales específicos del tipo
+  sourceId: integer("source_id"), // ID opcional de la entidad relacionada (ej: ID de control, curso, etc)
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertNotificationSchema = createInsertSchema(notifications, {
+  type: notificationTypeEnum,
+  data: z.string().optional().refine(
+    (val) => {
+      if (!val) return true;
+      try {
+        JSON.parse(val);
+        return true;
+      } catch (e) {
+        return false;
+      }
+    },
+    { message: "Data must be a valid JSON string" }
+  ),
+}).omit({ id: true, createdAt: true });
+
+export type Notification = typeof notifications.$inferSelect;
+export type InsertNotification = z.infer<typeof insertNotificationSchema>;
+
+// Preferencias de Notificaciones por Usuario
+export const notificationPreferences = pgTable("notification_preferences", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull().unique(),
+  // Tipos de notificación por módulo
+  securityNotifications: boolean("security_notifications").notNull().default(true),
+  inventoryNotifications: boolean("inventory_notifications").notNull().default(true),
+  appccNotifications: boolean("appcc_notifications").notNull().default(true),
+  learningNotifications: boolean("learning_notifications").notNull().default(true),
+  bankingNotifications: boolean("banking_notifications").notNull().default(true),
+  purchasingNotifications: boolean("purchasing_notifications").notNull().default(true),
+  cmsNotifications: boolean("cms_notifications").notNull().default(true),
+  systemNotifications: boolean("system_notifications").notNull().default(true),
+  // Canales de notificación
+  emailNotifications: boolean("email_notifications").notNull().default(true),
+  pushNotifications: boolean("push_notifications").notNull().default(false),
+  smsNotifications: boolean("sms_notifications").notNull().default(false),
+  // Frecuencia de emails resumen
+  emailFrequency: text("email_frequency").notNull().default("daily"), // daily, weekly, never
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertNotificationPreferencesSchema = createInsertSchema(notificationPreferences)
+  .omit({ id: true, updatedAt: true });
+
+export type NotificationPreferences = typeof notificationPreferences.$inferSelect;
+export type InsertNotificationPreferences = z.infer<typeof insertNotificationPreferencesSchema>;
 
 // Relaciones entre las tablas E-Learning
 // Nota: Las relaciones están temporalmente comentadas porque el módulo 'relations' no está disponible
