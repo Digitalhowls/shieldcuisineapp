@@ -19,7 +19,7 @@ import {
   BrainCircuit,
   Lightbulb
 } from "lucide-react";
-import { useAuth } from "@/hooks/use-auth";
+import { useAuth } from "@/shared/hooks/use-auth";
 import { AnalysisCard } from "@/components/ai/analysis-card";
 import { 
   analyzeAPPCCControl, 
