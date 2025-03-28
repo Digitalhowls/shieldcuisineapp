@@ -8,6 +8,7 @@
 export type BlockType = 
   | 'heading'
   | 'paragraph'
+  | 'rich-text'
   | 'image'
   | 'gallery'
   | 'button'
@@ -20,23 +21,6 @@ export type BlockType =
   | 'form'
   | 'contact-form'
   | 'ai';
-
-// Unión de todos los posibles tipos de contenido
-export type BlockContent =
-  | HeadingContent
-  | ParagraphContent
-  | ImageContent
-  | GalleryContent
-  | ButtonContent
-  | QuoteContent
-  | TableContent
-  | VideoContent
-  | DividerContent
-  | ListContent
-  | HtmlContent
-  | FormContent
-  | ContactFormContent
-  | AiContent;
 
 export interface AnimationOptions {
   effect?: string;
@@ -51,13 +35,6 @@ export interface AnimationOptions {
   scrollTrigger?: boolean;
 }
 
-export interface Block {
-  id: string;
-  type: BlockType;
-  content: BlockContent;
-  animation?: AnimationOptions;
-}
-
 /**
  * Interfaces para los diferentes tipos de contenido de bloques
  */
@@ -70,6 +47,15 @@ export interface HeadingContent {
 
 export interface ParagraphContent {
   text: string;
+}
+
+/**
+ * Contenido para bloques de texto enriquecido
+ * Almacena HTML formateado con etiquetas permitidas
+ */
+export interface RichTextContent {
+  content: string;
+  textAlign?: 'left' | 'center' | 'right';
 }
 
 export interface ImageContent {
@@ -210,4 +196,29 @@ export interface MediaItem {
   };
   createdAt: Date;
   updatedAt: Date;
+}
+
+// Unión de todos los posibles tipos de contenido
+export type BlockContent =
+  | HeadingContent
+  | ParagraphContent
+  | RichTextContent
+  | ImageContent
+  | GalleryContent
+  | ButtonContent
+  | QuoteContent
+  | TableContent
+  | VideoContent
+  | DividerContent
+  | ListContent
+  | HtmlContent
+  | FormContent
+  | ContactFormContent
+  | AiContent;
+
+export interface Block {
+  id: string;
+  type: BlockType;
+  content: BlockContent;
+  animation?: AnimationOptions;
 }

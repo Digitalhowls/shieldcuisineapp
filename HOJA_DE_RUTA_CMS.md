@@ -43,8 +43,8 @@ El módulo CMS de ShieldCuisine busca ofrecer a restaurantes y negocios alimenta
 
 #### 2.1 Estructura del Editor
 - [ ] Refactorizar arquitectura de bloques
-- [ ] Implementar sistema de arrastrar y soltar mejorado
-- [ ] Soporte para atajos de teclado
+- [x] Implementar sistema de arrastrar y soltar mejorado
+- [x] Soporte para atajos de teclado
 
 #### 2.2 Biblioteca de Bloques Básicos
 - [ ] Bloques de texto enriquecido
@@ -170,8 +170,12 @@ El módulo CMS de ShieldCuisine busca ofrecer a restaurantes y negocios alimenta
 
 1. Completar Fase 1.4 (Estandarización de Código) - Algunos aspectos pendientes
 2. ✅ Completada: Fase 1.5 (Optimización de Rendimiento)
-3. Iniciar Fase 2.1: Diseñar arquitectura mejorada para editor de bloques
-4. Iniciar desarrollo de Fase 2.3: Crear prototipo funcional del nuevo panel de ajustes unificado
+3. ✅ Partes completadas de Fase 2.1: 
+   - ✅ Sistema de arrastrar y soltar mejorado
+   - ✅ Soporte para atajos de teclado
+   - Pendiente: Refactorizar arquitectura de bloques
+4. Iniciar desarrollo de Fase 2.2: Bloques de texto enriquecido
+5. Iniciar desarrollo de Fase 2.3: Crear prototipo funcional del nuevo panel de ajustes unificado
 
 ---
 
