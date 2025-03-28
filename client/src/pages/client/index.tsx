@@ -120,28 +120,6 @@ export default function ClientModule() {
                 onClick={() => setSidebarOpen(false)}
               />
             ))}
-            
-            {/* Enlace a la interfaz de administración (solo para administradores) */}
-            {user && user.role === 'admin' && (
-              <div className="mt-6 pt-6 border-t">
-                <div className="px-3 py-2">
-                  <Button 
-                    variant="secondary" 
-                    className="w-full justify-start border border-primary/20"
-                    asChild
-                  >
-                    <a
-                      href="/admin/dashboard"
-                      className="flex items-center"
-                      onClick={() => setSidebarOpen(false)}
-                    >
-                      <User className="h-4 w-4 mr-2 text-primary" />
-                      <span className="font-medium">Panel Administración</span>
-                    </a>
-                  </Button>
-                </div>
-              </div>
-            )}
           </div>
 
           {/* Usuario y logout */}

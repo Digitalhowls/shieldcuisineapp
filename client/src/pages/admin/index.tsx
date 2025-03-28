@@ -178,17 +178,6 @@ export default function AdminModule() {
           <div className="p-4 border-b">
             <h2 className="text-xl font-bold">ShieldCuisine</h2>
             <p className="text-sm text-muted-foreground mt-1">Panel de Administración</p>
-            <Button 
-              variant="secondary" 
-              size="sm"
-              asChild
-              className="mt-3 border border-primary/20"
-            >
-              <a href="/client/dashboard" className="inline-flex items-center">
-                <Globe className="h-4 w-4 mr-1 text-primary" />
-                <span className="font-medium">Portal Cliente</span>
-              </a>
-            </Button>
           </div>
 
           {/* Navegación principal */}
