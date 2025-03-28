@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useLocation } from "wouter";
 import { Loader2 } from "lucide-react";
-import { useAuth } from "@/hooks/use-auth";
+import { useAuth } from "@/shared/hooks/use-auth";
 import { hasValidAuthCookie } from "@/lib/cookie-auth";
 
 // Mapa de redirecciones entre rutas antiguas y nuevas

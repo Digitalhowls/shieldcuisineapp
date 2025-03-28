@@ -96,8 +96,8 @@ function AppRouter() {
       <ProtectedRoute path="/cms/animation-playground" component={AnimationPlayground} />
       <ProtectedRoute path="/cms/animated-blocks-demo" component={AnimatedBlocksDemo} />
       <ProtectedRoute path="/cms/gallery-demo" component={GalleryDemo} />
-      <ProtectedRoute path="/cms/rich-text-demo" component={RichTextDemo} />
-      <ProtectedRoute path="/cms/settings-panel-demo" component={SettingsPanelDemo} />
+      <Route path="/cms/rich-text-demo" component={RichTextDemo} />
+      <Route path="/cms/settings-panel-demo" component={SettingsPanelDemo} />
       <ProtectedRoute path="/cms/:rest*" component={CMSModule} />
       
       {/* Ruta de autenticación actualizada */}
