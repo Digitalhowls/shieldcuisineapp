@@ -33,6 +33,8 @@ import SettingsPanelDemo from "./pages/settings-panel-demo";
 import AdminModule from "./pages/admin"; // Panel de administración
 import ClientModule from "./pages/client"; // Panel de cliente
 import MediaPage from "./pages/admin/cms/media"; // Gestor de medios
+import AdminFormacionPage from "./pages/admin/formacion"; // Plataforma de formación (admin)
+import NuevoCursoPage from "./pages/admin/formacion/cursos/nuevo"; // Creación de cursos
 
 // Páginas públicas
 import PublicIndex from "./pages/public/index";
@@ -91,6 +93,10 @@ function AppRouter() {
       <ProtectedRoute path="/admin/cms/media" component={MediaPage} allowedRoles={['admin']} />
       <ProtectedRoute path="/admin/cms/branding" component={() => <CMSRedirect source="/admin/cms/branding" destination="/cms/configuracion" />} />
       <ProtectedRoute path="/admin/cms/:rest*" component={() => <CMSRedirect source={window.location.pathname} destination="/cms" />} />
+      
+      {/* Rutas de la plataforma de formación (admin) */}
+      <ProtectedRoute path="/admin/formacion" component={AdminFormacionPage} allowedRoles={['admin']} />
+      <ProtectedRoute path="/admin/formacion/cursos/nuevo" component={NuevoCursoPage} allowedRoles={['admin']} />
       
       {/* Rutas normales del CMS */}
       <ProtectedRoute path="/cms" component={CMSModule} />

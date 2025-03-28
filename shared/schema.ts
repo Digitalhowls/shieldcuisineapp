@@ -9,6 +9,10 @@ export const bankTransactionTypeEnum = z.enum(['payment', 'charge', 'transfer', 
 // Definición de enumeraciones para el módulo E-Learning
 export const courseLevelEnum = z.enum(['basic', 'intermediate', 'advanced']);
 export const lessonTypeEnum = z.enum(['text', 'video', 'interactive', 'quiz']);
+export const courseStatusEnum = z.enum(['draft', 'published', 'archived']);
+export const enrollmentStatusEnum = z.enum(['pending', 'active', 'completed', 'expired', 'canceled']);
+export const certificateTypeEnum = z.enum(['course_completion', 'module_completion', 'achievement']);
+export const licenseTypeEnum = z.enum(['single_user', 'team', 'unlimited', 'subscription']);
 
 // Definición de enumeraciones para el módulo de Notificaciones
 export const notificationTypeEnum = z.enum([
@@ -326,11 +330,32 @@ export const insertQuizQuestionSchema = createInsertSchema(quizQuestions, {
 export type QuizQuestion = typeof quizQuestions.$inferSelect;
 export type InsertQuizQuestion = z.infer<typeof insertQuizQuestionSchema>;
 
+// E-Learning Modules (unidades dentro de un curso)
+export const courseModules = pgTable("course_modules", {
+  id: serial("id").primaryKey(),
+  title: text("title").notNull(),
+  description: text("description"),
+  courseId: integer("course_id").notNull(),
+  order: integer("order").notNull().default(1),
+  published: boolean("published").notNull().default(false),
+  requiredForCompletion: boolean("required_for_completion").notNull().default(true),
+  createdBy: integer("created_by").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertCourseModuleSchema = createInsertSchema(courseModules)
+  .omit({ id: true, createdAt: true, updatedAt: true });
+
+export type CourseModule = typeof courseModules.$inferSelect;
+export type InsertCourseModule = z.infer<typeof insertCourseModuleSchema>;
+
 // E-Learning Student Progress
 export const studentProgress = pgTable("student_progress", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").notNull(),
   courseId: integer("course_id").notNull(),
+  moduleId: integer("module_id"),
   lessonId: integer("lesson_id"),
   quizId: integer("quiz_id"),
   status: text("status").notNull().default("in_progress"), // not_started, in_progress, completed
@@ -346,6 +371,105 @@ export const insertStudentProgressSchema = createInsertSchema(studentProgress)
 
 export type StudentProgress = typeof studentProgress.$inferSelect;
 export type InsertStudentProgress = z.infer<typeof insertStudentProgressSchema>;
+
+// E-Learning Course Enrollments
+export const courseEnrollments = pgTable("course_enrollments", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  courseId: integer("course_id").notNull(),
+  status: text("status").notNull().default("active"), // pending, active, completed, expired, canceled
+  enrolledAt: timestamp("enrolled_at").defaultNow(),
+  expiresAt: timestamp("expires_at"),
+  completedAt: timestamp("completed_at"),
+  purchaseId: integer("purchase_id"), // Referencia al registro de compra/licencia
+  licenseKey: text("license_key"), // Clave de licencia si es aplicable
+  issuedBy: integer("issued_by"), // Usuario que asignó el curso (administrador/instructor)
+  notes: text("notes"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertCourseEnrollmentSchema = createInsertSchema(courseEnrollments)
+  .omit({ id: true, createdAt: true, updatedAt: true, completedAt: true, enrolledAt: true });
+
+export type CourseEnrollment = typeof courseEnrollments.$inferSelect;
+export type InsertCourseEnrollment = z.infer<typeof insertCourseEnrollmentSchema>;
+
+// E-Learning Certificates
+export const certificates = pgTable("certificates", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  courseId: integer("course_id").notNull(),
+  title: text("title").notNull(),
+  certificateType: text("certificate_type").notNull(), // course_completion, module_completion, achievement
+  description: text("description"),
+  issuedAt: timestamp("issued_at").defaultNow(),
+  expiresAt: timestamp("expires_at"),
+  certificateUrl: text("certificate_url"),
+  certificateCode: text("certificate_code").notNull(), // Código único para verificación
+  metadata: text("metadata"), // JSON string con datos adicionales
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertCertificateSchema = createInsertSchema(certificates, {
+  metadata: z.string().optional().refine(
+    (val) => {
+      if (!val) return true;
+      try {
+        JSON.parse(val);
+        return true;
+      } catch (e) {
+        return false;
+      }
+    },
+    { message: "Metadata must be a valid JSON string" }
+  ),
+}).omit({ id: true, createdAt: true, updatedAt: true, issuedAt: true });
+
+export type Certificate = typeof certificates.$inferSelect;
+export type InsertCertificate = z.infer<typeof insertCertificateSchema>;
+
+// E-Learning Course Reviews
+export const courseReviews = pgTable("course_reviews", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  courseId: integer("course_id").notNull(),
+  rating: integer("rating").notNull(), // 1-5 stars
+  comment: text("comment"),
+  status: text("status").notNull().default("published"), // pending, published, rejected
+  isVerifiedPurchase: boolean("is_verified_purchase").notNull().default(false),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertCourseReviewSchema = createInsertSchema(courseReviews)
+  .omit({ id: true, createdAt: true, updatedAt: true });
+
+export type CourseReview = typeof courseReviews.$inferSelect;
+export type InsertCourseReview = z.infer<typeof insertCourseReviewSchema>;
+
+// E-Learning Course Licenses
+export const courseLicenses = pgTable("course_licenses", {
+  id: serial("id").primaryKey(),
+  courseId: integer("course_id").notNull(),
+  licenseType: text("license_type").notNull(), // single_user, team, unlimited, subscription
+  name: text("name").notNull(),
+  description: text("description"),
+  price: integer("price").notNull(), // precio en céntimos (ej: 9900 = 99€)
+  maxUsers: integer("max_users"),
+  validityDays: integer("validity_days"), // días de validez desde activación
+  isActive: boolean("is_active").notNull().default(true),
+  createdBy: integer("created_by").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertCourseLicenseSchema = createInsertSchema(courseLicenses)
+  .omit({ id: true, createdAt: true, updatedAt: true });
+
+export type CourseLicense = typeof courseLicenses.$inferSelect;
+export type InsertCourseLicense = z.infer<typeof insertCourseLicenseSchema>;
 
 // Sistema de Notificaciones
 export const notifications = pgTable("notifications", {
@@ -447,14 +571,31 @@ export type InsertCmsPageVersion = z.infer<typeof insertCmsPageVersionSchema>;
 /*
 export const courseRelations = relations(courses, ({ many, one }) => ({
   lessons: many(lessons),
+  modules: many(courseModules),
   quizzes: many(quizzes),
   progress: many(studentProgress),
+  enrollments: many(courseEnrollments),
+  reviews: many(courseReviews),
+  certificates: many(certificates),
+  licenses: many(courseLicenses),
   author: one(users, {
     fields: [courses.createdBy],
     references: [users.id],
   }),
   company: one(users, {
     fields: [courses.companyId],
+    references: [users.id],
+  }),
+}));
+
+export const courseModuleRelations = relations(courseModules, ({ one, many }) => ({
+  course: one(courses, {
+    fields: [courseModules.courseId],
+    references: [courses.id],
+  }),
+  lessons: many(lessons),
+  author: one(users, {
+    fields: [courseModules.createdBy],
     references: [users.id],
   }),
 }));
@@ -491,6 +632,55 @@ export const quizQuestionRelations = relations(quizQuestions, ({ one }) => ({
   }),
 }));
 
+export const courseReviewRelations = relations(courseReviews, ({ one }) => ({
+  user: one(users, {
+    fields: [courseReviews.userId],
+    references: [users.id],
+  }),
+  course: one(courses, {
+    fields: [courseReviews.courseId],
+    references: [courses.id],
+  }),
+}));
+
+export const certificateRelations = relations(certificates, ({ one }) => ({
+  user: one(users, {
+    fields: [certificates.userId],
+    references: [users.id],
+  }),
+  course: one(courses, {
+    fields: [certificates.courseId],
+    references: [courses.id],
+  }),
+}));
+
+export const courseLicenseRelations = relations(courseLicenses, ({ one, many }) => ({
+  course: one(courses, {
+    fields: [courseLicenses.courseId],
+    references: [courses.id],
+  }),
+  enrollments: many(courseEnrollments),
+  createdBy: one(users, {
+    fields: [courseLicenses.createdBy],
+    references: [users.id],
+  }),
+}));
+
+export const courseEnrollmentRelations = relations(courseEnrollments, ({ one }) => ({
+  user: one(users, {
+    fields: [courseEnrollments.userId],
+    references: [users.id],
+  }),
+  course: one(courses, {
+    fields: [courseEnrollments.courseId],
+    references: [courses.id],
+  }),
+  issuedBy: one(users, {
+    fields: [courseEnrollments.issuedBy],
+    references: [users.id],
+  }),
+}));
+
 export const studentProgressRelations = relations(studentProgress, ({ one }) => ({
   user: one(users, {
     fields: [studentProgress.userId],
@@ -499,6 +689,10 @@ export const studentProgressRelations = relations(studentProgress, ({ one }) => 
   course: one(courses, {
     fields: [studentProgress.courseId],
     references: [courses.id],
+  }),
+  module: one(courseModules, {
+    fields: [studentProgress.moduleId],
+    references: [courseModules.id],
   }),
   lesson: one(lessons, {
     fields: [studentProgress.lessonId],
