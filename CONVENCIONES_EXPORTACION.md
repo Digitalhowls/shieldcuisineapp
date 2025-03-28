@@ -1,116 +1,210 @@
-# Convenciones de Exportación para ShieldCuisine
+# Convenciones de Exportación en ShieldCuisine
 
-Este documento establece los estándares y convenciones de exportación de módulos y componentes para el proyecto ShieldCuisine, con el objetivo de mantener consistencia en todo el código y evitar errores comunes.
+Este documento detalla las convenciones de exportación a seguir en el proyecto ShieldCuisine, complementando los estándares de codificación generales definidos en CODIGO_ESTANDARES.md.
 
-## Convenciones Generales
+## 1. Exportación de Componentes React
 
-### 1. Exportación de Componentes React
+### 1.1 Exportación Nombrada (Recomendada)
 
-Para los componentes de React, se debe utilizar siempre el siguiente patrón:
-
-```tsx
-export default function ComponentName() {
-  // Implementación del componente
-  return (
-    // JSX
-  );
-}
-```
-
-**NO** usar el siguiente patrón:
+Preferir el uso de **exportaciones nombradas** para la mayoría de los componentes:
 
 ```tsx
-const ComponentName = () => {
+// En el archivo componente.tsx
+export const MiComponente = () => {
   // Implementación
 };
 
-export default ComponentName; // ¡EVITAR ESTA SINTAXIS!
+// Importación
+import { MiComponente } from '@/ruta/componente';
 ```
 
-### 2. Exportación de Múltiples Elementos
+Beneficios:
+- Facilita el uso de herramientas de análisis estático
+- Mejora la refactorización automática
+- Previene colisiones de nombres en las importaciones
+- Permite exportar múltiples componentes relacionados en un mismo archivo
 
-Cuando sea necesario exportar múltiples elementos desde un archivo:
+### 1.2 Exportación por Defecto (Casos Específicos)
+
+Usar exportaciones por defecto solo para:
+- Páginas completas
+- Componentes que representan la única exportación importante de un archivo
 
 ```tsx
-// Exportaciones nombradas para elementos secundarios
-export function HelperFunction() { /* ... */ }
-export const CONSTANT_VALUE = "value";
-export type CustomType = { /* ... */ };
+// En el archivo pagina.tsx
+const PaginaPrincipal = () => {
+  // Implementación
+};
 
-// Exportación por defecto para el elemento principal
-export default function MainComponent() { /* ... */ }
+export default PaginaPrincipal;
+
+// Importación
+import PaginaPrincipal from '@/paginas/pagina-principal';
 ```
 
-### 3. Barrel Files (index.tsx)
+## 2. Archivos de Barril (Index)
 
-Para archivos índice que exportan componentes de una carpeta:
+### 2.1 Propósito
+Utilizar archivos `index.ts` para:
+- Proporcionar una API limpia para cada módulo o carpeta
+- Facilitar la importación de múltiples componentes relacionados
+- Ocultar detalles de implementación internos
 
-```tsx
-// En /components/ui/index.tsx
-export { default as Button } from './Button';
-export { default as Card } from './Card';
-export { default as Input } from './Input';
+### 2.2 Estructura Recomendada
+
+```ts
+// En la carpeta /components/ui/index.ts
+
+// Re-exportaciones simples
+export { Button } from './button';
+export { Card, CardHeader, CardContent, CardFooter } from './card';
+
+// Re-exportación con alias para evitar conflictos
+export { default as MyInput } from './input';
+
+// Exportación de tipos
+export type { ButtonProps } from './button';
+export type { CardProps } from './card';
 ```
 
-### 4. Exportación de Hooks
-
-Para hooks personalizados:
+### 2.3 Importación desde Barriles
 
 ```tsx
-export function useCustomHook() {
-  // Implementación del hook
-  return { /* ... */ };
+// Importación desde un barril
+import { Button, Card, CardHeader } from '@/components/ui';
+```
+
+## 3. Módulos TypeScript
+
+### 3.1 Tipos e Interfaces
+
+Preferir exportaciones nombradas para tipos e interfaces:
+
+```ts
+// En types.ts
+export interface Usuario {
+  id: number;
+  nombre: string;
+}
+
+export type Rol = 'admin' | 'usuario' | 'invitado';
+
+// Importación
+import { Usuario, Rol } from '@/types';
+```
+
+### 3.2 Constantes y Configuraciones
+
+Para constantes, enumeraciones y objetos de configuración:
+
+```ts
+// En constantes.ts
+export const API_URL = 'https://api.ejemplo.com';
+
+export const ESTADOS_PEDIDO = {
+  PENDIENTE: 'pendiente',
+  PROCESANDO: 'procesando',
+  COMPLETADO: 'completado',
+  CANCELADO: 'cancelado'
+} as const;
+
+export enum TipoNotificacion {
+  INFO = 'info',
+  EXITO = 'exito',
+  ADVERTENCIA = 'advertencia',
+  ERROR = 'error'
 }
 ```
 
-## Importaciones Recomendadas
+## 4. Funciones Utilitarias
 
-### 1. Importación de Componentes
+### 4.1 Exportación de Funciones
 
-```tsx
-import ComponentName from './ComponentName';
+Preferir exportaciones nombradas para funciones utilitarias:
+
+```ts
+// En utils.ts
+export function formatearFecha(fecha: Date): string {
+  // Implementación
+}
+
+export const calcularTotal = (items: Item[]): number => {
+  // Implementación
+};
+
+// Importación
+import { formatearFecha, calcularTotal } from '@/utils';
 ```
 
-### 2. Importación de Múltiples Elementos
+### 4.2 Agrupación de Funciones Relacionadas
 
-```tsx
-import ComponentName, { HelperFunction, CONSTANT_VALUE } from './ComponentFile';
+Organizar funciones relacionadas en objetos cuando sea apropiado:
+
+```ts
+// En formato-utils.ts
+export const formatoUtils = {
+  fecha: (fecha: Date): string => {
+    // Implementación
+  },
+  
+  moneda: (valor: number, moneda = 'EUR'): string => {
+    // Implementación
+  },
+  
+  porcentaje: (valor: number): string => {
+    // Implementación
+  }
+};
+
+// Importación
+import { formatoUtils } from '@/utils/formato-utils';
+formatoUtils.moneda(12.95);
 ```
 
-### 3. Importación desde Barrel Files
+## 5. Hooks Personalizados
+
+### 5.1 Convención de Nombres
+
+Los hooks personalizados deben:
+- Comenzar con `use` (requisito de React)
+- Usar camelCase
+- Ser exportados de forma nombrada
 
 ```tsx
-import { Button, Card, Input } from '@/components/ui';
+// En hooks/use-auth.tsx
+export const useAuth = () => {
+  // Implementación
+};
+
+// Importación
+import { useAuth } from '@/hooks/use-auth';
 ```
 
-## Convenciones de Nomenclatura
+## 6. Migración al Nuevo Estándar
 
-1. **Componentes React**: PascalCase (ej. `UserProfile`)
-2. **Hooks**: camelCase con prefijo "use" (ej. `useAuth`)
-3. **Funciones Auxiliares**: camelCase (ej. `formatDate`)
-4. **Constantes**: UPPER_SNAKE_CASE (ej. `MAX_RETRY_COUNT`)
-5. **Interfaces y Types**: PascalCase (ej. `UserData`)
+### 6.1 Directrices de Transición
 
-## Buenas Prácticas
+Durante la fase de estandarización:
 
-1. Evitar tener múltiples exportaciones por defecto en un mismo archivo
-2. Preferir exportaciones nombradas para todo lo que no sea el componente principal
-3. Mantener un componente principal por archivo
-4. Utilizar barrel files (index.tsx) para exportar múltiples componentes relacionados
-5. Documentar con JSDoc las exportaciones públicas importantes
+1. Al crear nuevos archivos, seguir estrictamente estas convenciones
+2. Al modificar archivos existentes para otras tareas, aprovechar para adaptarlos a estas convenciones
+3. Mantener temporalmente compatibilidad con exportaciones anteriores durante la transición
+4. Documentar los cambios realizados en los commits
 
-## Resolución de Problemas Comunes
+### 6.2 Ejemplo de Transición Gradual
 
-### Problema: Exportación Duplicada
-Error: "A file can't have multiple default exports"
+```ts
+// Antes de la migración (mantener durante transición)
+export default MiComponente;
 
-**Solución**: Asegurarse de que solo hay una exportación por defecto en el archivo.
+// Añadir exportación nombrada (nuevo estándar)
+export { MiComponente };
+```
 
-### Problema: Importación Incorrecta
-Error: "Module has no exported member 'X'"
+## 7. Resolución de Conflictos
 
-**Solución**: Verificar si el elemento está siendo exportado como default o como exportación nombrada, y ajustar la sintaxis de importación según corresponda.
+En caso de conflicto o necesidad de desviarse de estas convenciones, discutirlo con el equipo y documentar la decisión y su justificación en forma de comentario en el código.
 
 ---
 
-Estas convenciones deben ser seguidas por todos los desarrolladores que trabajen en el proyecto ShieldCuisine para mantener la consistencia y evitar errores relacionados con exportaciones incorrectas.
+Seguir estas convenciones de exportación de manera consistente mejorará la coherencia y mantenibilidad del código. Este documento será revisado y actualizado a medida que el proyecto evolucione.

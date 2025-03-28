@@ -1,234 +1,523 @@
-# Implementación de Bloques para el Editor CMS
+# Implementación de Bloques en el Editor CMS
 
-Este documento describe los tipos de bloques disponibles en el editor del CMS de ShieldCuisine, su estructura y funcionalidades.
+Este documento proporciona una guía detallada para la implementación de nuevos bloques en el sistema de editor CMS. Esta guía complementa los estándares generales de codificación y exportación definidos en los documentos `CODIGO_ESTANDARES.md` y `CONVENCIONES_EXPORTACION.md`.
 
-## Tipos de Bloques
+## 1. Estructura de Tipos
 
-El editor de ShieldCuisine es un sistema modular basado en bloques que permite la construcción de páginas mediante drag & drop. Los siguientes tipos de bloques están disponibles:
+### 1.1 Tipo Base para Bloques
 
-### 1. Bloques de Texto
+Todos los bloques deben implementar la interfaz `BlockData`:
 
-#### Párrafo
-- Editor de texto enriquecido con opciones básicas
-- Soporte para enlaces, negritas, cursivas, subrayados
-- Opción de justificación y sangría
-
-#### Título
-- 6 niveles de título (H1-H6)
-- Opciones de estilo (tamaño, color, alineación)
-- Identificador automático para anclajes
-
-#### Lista
-- Listas ordenadas y no ordenadas
-- Listas anidadas
-- Marcadores personalizables
-
-#### Cita
-- Estilo de blockquote personalizable
-- Opción para atribución de autor
-- Variantes de diseño disponibles
-
-### 2. Bloques Multimedia
-
-#### Imagen
-- Carga desde biblioteca de medios
-- Recorte y ajuste integrado
-- Opciones de alineación y tamaño
-- Texto alternativo para accesibilidad
-- Lightbox opcional
-
-#### Galería
-- Diferentes layouts (grid, masonry, slider)
-- Opciones de espaciado y bordes
-- Lightbox integrado
-
-#### Vídeo
-- Soporte para vídeos subidos o embebidos (YouTube, Vimeo)
-- Opciones de reproducción automática, controles, etc.
-- Poster personalizable
-
-#### Audio
-- Reproductor de audio con controles
-- Soporte para archivos MP3, WAV, etc.
-- Visualización opcional de forma de onda
-
-### 3. Bloques de Interacción
-
-#### Botón
-- Personalización completa (color, tamaño, bordes)
-- Opciones de animación hover
-- Enlaces internos/externos o ejecución de acciones
-
-#### Formulario
-- Constructor de formularios drag & drop
-- Validación de campos
-- Integración con sistema de notificaciones
-- Anti-spam y CAPTCHA
-
-#### Acordeón/Tabs
-- Contenido colapsable
-- Personalización de diseño y comportamiento
-- Anidación de bloques dentro de cada sección
-
-### 4. Bloques Dinámicos
-
-#### Lista de Entradas
-- Muestra entradas de blog filtradas
-- Opciones de paginación, filtrado y ordenación
-- Múltiples layouts disponibles
-
-#### Cursos
-- Muestra cursos disponibles o seleccionados
-- Opciones de visualización (grid, lista, carrusel)
-- Filtrado por categoría, niveles, etc.
-
-#### Productos
-- Integración con WooCommerce
-- Diversos layouts de visualización
-- Filtrado por categoría, precio, etc.
-
-### 5. Bloques de Diseño
-
-#### Separador
-- Líneas, iconos o elementos decorativos
-- Personalización de estilo y espaciado
-
-#### Columnas
-- División flexible del contenido
-- Ajuste de ancho por breakpoint
-- Opción de fondo y bordes por columna
-
-#### Contenedor
-- Agrupa bloques con un estilo común
-- Opciones de fondo, bordes, sombras, etc.
-- Márgenes y rellenos personalizables
-
-### 6. Bloques Avanzados
-
-#### HTML Personalizado
-- Inserción directa de código HTML
-- Modo seguro para evitar scripts maliciosos
-
-#### Embebido
-- Inserción de cualquier contenido embebible (tweets, posts de Instagram, etc.)
-- Ajuste de ancho y altura
-- Caché opcional para mejorar rendimiento
-
-#### AI Content
-- Generación de contenido con IA
-- Opciones para tono, extensión, etc.
-- Edición posterior del contenido generado
-
-## Estructura Técnica
-
-Cada bloque sigue esta estructura técnica:
-
-```typescript
-interface Block {
-  id: string;           // Identificador único
-  type: string;         // Tipo de bloque
-  content: any;         // Contenido específico del bloque
-  settings: Settings;   // Configuración visual y comportamiento
-  metadata: Metadata;   // Datos adicionales no visuales
-}
-
-interface Settings {
-  layout?: string;      // Variante de layout si aplica
-  alignment?: string;   // Alineación del contenido
-  background?: Background; // Fondo (color, degradado, imagen)
-  spacing?: Spacing;    // Márgenes y padding
-  typography?: Typography; // Configuración de texto si aplica
-  responsive?: Responsive; // Comportamiento en diferentes dispositivos
-}
-
-interface Metadata {
-  createdAt: string;    // Fecha de creación
-  updatedAt: string;    // Fecha de última modificación
-  visibility?: string;  // Visibilidad condicional
-  animations?: Animation[]; // Animaciones asociadas
-  customClasses?: string[]; // Clases CSS personalizadas
+```tsx
+interface BlockData {
+  id: string;
+  type: BlockType;
+  content: any; // Se tipifica específicamente en cada tipo de bloque
 }
 ```
 
-## Sistema de Drag & Drop
+### 1.2 Tipos Específicos para Contenido de Bloques
 
-El sistema de drag & drop utiliza `react-dnd` para permitir:
+Cada tipo de bloque debe tener una interfaz específica que defina su estructura de contenido:
 
-1. Añadir nuevos bloques desde el selector
-2. Reordenar bloques existentes
-3. Mover bloques entre contenedores y columnas
-4. Duplicar bloques con todas sus propiedades
+```tsx
+// Para un bloque de texto
+interface TextContent {
+  text: string;
+  alignment?: 'left' | 'center' | 'right' | 'justify';
+  size?: 'small' | 'normal' | 'large';
+}
 
-Cada bloque tiene:
-- Manejadores de arrastre
-- Menú contextual (duplicar, eliminar, etc.)
-- Indicadores visuales durante el arrastre
+// Para un bloque de imagen
+interface ImageContent {
+  src: string;
+  alt: string;
+  caption?: string;
+  width?: number | string;
+  height?: number | string;
+}
+```
 
-## Guardado y Persistencia
+### 1.3 Tipado Completo de un Bloque
 
-Los bloques se serializan a JSON para su almacenamiento en la base de datos, incluyendo:
+```tsx
+interface TextBlockData extends BlockData {
+  type: 'text';
+  content: TextContent;
+}
+```
 
-```json
-{
-  "blocks": [
-    {
-      "id": "block-1",
-      "type": "heading",
-      "content": {
-        "text": "Título de la página",
-        "level": 1
-      },
-      "settings": {
-        "alignment": "center",
-        "typography": {
-          "font": "Roboto",
-          "size": 32,
-          "weight": 700
-        }
+## 2. Estructura de Componentes de Bloques
+
+### 2.1 Estructura de Archivos
+
+Cada bloque debe seguir esta estructura:
+- `blocks/[nombre-bloque]/index.ts` - Exporta el componente principal y tipos
+- `blocks/[nombre-bloque]/[nombre-bloque].tsx` - Implementación del componente
+- `blocks/[nombre-bloque]/[nombre-bloque]-settings.tsx` - Panel de configuración
+
+### 2.2 Props de Componentes de Bloque
+
+Todos los componentes de bloque deben recibir y manejar las siguientes props estándar:
+
+```tsx
+interface BlockProps<T extends BlockData> {
+  // Datos del bloque
+  block: T;
+  // Función para actualizar datos del bloque
+  onUpdate: (updatedBlock: T) => void;
+  // Flag para modo de edición
+  isEditing: boolean;
+  // Flag para modo de arrastrado
+  isDragging?: boolean;
+  // Flag para bloque seleccionado
+  isSelected: boolean;
+  // Función para seleccionar este bloque
+  onSelect: () => void;
+  // Opciones adicionales específicas del bloque
+  options?: BlockOptions;
+}
+```
+
+## 3. Implementación de un Nuevo Bloque
+
+### 3.1 Definición de Tipos
+
+Primero, define los tipos específicos para el nuevo bloque:
+
+```tsx
+// En blocks/quote/quote.types.ts
+export interface QuoteContent {
+  text: string;
+  author?: string;
+  citation?: string;
+  style?: 'simple' | 'bordered' | 'elegant';
+}
+
+export interface QuoteBlockData extends BlockData {
+  type: 'quote';
+  content: QuoteContent;
+}
+```
+
+### 3.2 Componente del Bloque
+
+Implementa el componente siguiendo el patrón establecido:
+
+```tsx
+// En blocks/quote/quote.tsx
+import React from 'react';
+import cn from 'clsx';
+import { BlockProps } from '../types';
+import { QuoteBlockData } from './quote.types';
+
+export const QuoteBlock = ({ 
+  block, 
+  onUpdate, 
+  isEditing,
+  isSelected,
+  onSelect,
+  isDragging
+}: BlockProps<QuoteBlockData>) => {
+  const { content } = block;
+  
+  // Función para actualizar contenido manteniendo otros valores
+  const updateContent = (updates: Partial<QuoteContent>) => {
+    onUpdate({
+      ...block,
+      content: {
+        ...content,
+        ...updates
       }
-    },
-    // Más bloques...
-  ],
-  "version": "1.0",
-  "metadata": {
-    "lastSaved": "2025-02-15T12:30:00Z",
-    "author": "admin"
+    });
+  };
+  
+  // Renderizado condicional según el estado de edición
+  if (isEditing) {
+    return (
+      <div 
+        className={cn(
+          "p-4 border rounded-md",
+          isSelected && "ring-2 ring-primary",
+          isDragging && "opacity-50"
+        )}
+        onClick={onSelect}
+      >
+        <textarea
+          className="w-full p-2 border rounded"
+          value={content.text}
+          onChange={(e) => updateContent({ text: e.target.value })}
+          placeholder="Escribe una cita..."
+        />
+        <input
+          className="w-full mt-2 p-2 border rounded"
+          value={content.author || ''}
+          onChange={(e) => updateContent({ author: e.target.value })}
+          placeholder="Autor (opcional)"
+        />
+      </div>
+    );
   }
+  
+  // Renderizado para visualización
+  return (
+    <blockquote 
+      className={cn(
+        "p-4 relative",
+        content.style === 'bordered' && "border-l-4 border-primary pl-6",
+        content.style === 'elegant' && "italic text-gray-700"
+      )}
+    >
+      <p className="text-lg">{content.text}</p>
+      {content.author && (
+        <footer className="mt-2 text-sm">
+          — <cite>{content.author}</cite>
+          {content.citation && <span className="text-muted-foreground"> ({content.citation})</span>}
+        </footer>
+      )}
+    </blockquote>
+  );
+};
+```
+
+### 3.3 Panel de Configuración
+
+Implementa el panel de configuración para el bloque:
+
+```tsx
+// En blocks/quote/quote-settings.tsx
+import React from 'react';
+import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { BlockSettingsPanelProps } from '../types';
+import { QuoteBlockData } from './quote.types';
+
+export const QuoteSettings = ({ 
+  block, 
+  onUpdate 
+}: BlockSettingsPanelProps<QuoteBlockData>) => {
+  const { content } = block;
+  
+  // Función para actualizar contenido manteniendo otros valores
+  const updateContent = (updates: Partial<QuoteContent>) => {
+    onUpdate({
+      ...block,
+      content: {
+        ...content,
+        ...updates
+      }
+    });
+  };
+
+  return (
+    <div className="space-y-4">
+      <div>
+        <Label htmlFor="citation">Fuente de la cita</Label>
+        <Input
+          id="citation"
+          value={content.citation || ''}
+          onChange={(e) => updateContent({ citation: e.target.value })}
+          placeholder="Libro, artículo, etc."
+        />
+      </div>
+      
+      <div>
+        <Label>Estilo</Label>
+        <Tabs 
+          value={content.style || 'simple'} 
+          onValueChange={(value) => updateContent({ 
+            style: value as 'simple' | 'bordered' | 'elegant' 
+          })}
+          className="mt-2"
+        >
+          <TabsList className="grid grid-cols-3">
+            <TabsTrigger value="simple">Simple</TabsTrigger>
+            <TabsTrigger value="bordered">Bordeado</TabsTrigger>
+            <TabsTrigger value="elegant">Elegante</TabsTrigger>
+          </TabsList>
+        </Tabs>
+      </div>
+    </div>
+  );
+};
+```
+
+### 3.4 Archivo Index para Exportaciones
+
+Configura el archivo de exportación:
+
+```tsx
+// En blocks/quote/index.ts
+export { QuoteBlock } from './quote';
+export { QuoteSettings } from './quote-settings';
+export type { QuoteContent, QuoteBlockData } from './quote.types';
+```
+
+## 4. Registro del Nuevo Bloque
+
+### 4.1 Actualización del Enum de Tipos
+
+Actualiza el enum de tipos de bloques:
+
+```tsx
+// En blocks/types.ts
+export enum BlockType {
+  // Tipos existentes
+  Heading = 'heading',
+  Text = 'text',
+  Image = 'image',
+  // Nuevo tipo
+  Quote = 'quote',
 }
 ```
 
-## Renderizado y Visualización
+### 4.2 Registro en el Mapa de Bloques
 
-El contenido estructurado en bloques se renderiza de dos formas:
+Añade el nuevo bloque al mapa de componentes:
 
-1. **Editor**: Con controles, manejadores y panel de opciones
-2. **Vista pública**: Solo el contenido final optimizado
+```tsx
+// En blocks/block-map.tsx
+import { BlockType } from './types';
+import { HeadingBlock } from './heading';
+import { TextBlock } from './text';
+import { ImageBlock } from './image';
+// Importar el nuevo bloque
+import { QuoteBlock } from './quote';
 
-La vista previa permite alternar entre diferentes tamaños de pantalla para verificar el diseño responsivo.
+export const blockMap = {
+  [BlockType.Heading]: HeadingBlock,
+  [BlockType.Text]: TextBlock,
+  [BlockType.Image]: ImageBlock,
+  // Registrar el nuevo bloque
+  [BlockType.Quote]: QuoteBlock,
+};
+```
 
-## Extensibilidad
+### 4.3 Registro en el Panel de Ajustes
 
-El sistema permite crear bloques personalizados mediante:
+Añade el panel de ajustes del nuevo bloque:
 
-1. Definición del esquema del bloque
-2. Componente de edición
-3. Componente de renderizado
-4. Controles de configuración
+```tsx
+// En block-settings-panel.tsx
+import { BlockType } from './types';
+import { HeadingSettings } from './heading';
+import { TextSettings } from './text';
+import { ImageSettings } from './image';
+// Importar ajustes del nuevo bloque
+import { QuoteSettings } from './quote';
 
-Los bloques personalizados aparecen en el selector junto a los bloques estándar.
+const settingsMap = {
+  [BlockType.Heading]: HeadingSettings,
+  [BlockType.Text]: TextSettings,
+  [BlockType.Image]: ImageSettings,
+  // Registrar panel de ajustes
+  [BlockType.Quote]: QuoteSettings,
+};
+```
 
-## Integración con la Biblioteca de Medios
+## 5. Creación de Bloques desde la Barra de Herramientas
 
-Los bloques multimedia (imagen, galería, video) se integran con la biblioteca de medios para:
+### 5.1 Actualización del Menú de Adición
 
-1. Seleccionar archivos existentes
-2. Subir nuevos archivos durante la edición
-3. Organizar los archivos por categorías
-4. Filtrar por tipo de archivo
+Añade una opción para el nuevo bloque en el menú de adición:
 
-## Próximas Mejoras
+```tsx
+// En editor-toolbar.tsx
+export const blockOptions = [
+  {
+    type: BlockType.Heading,
+    icon: <Heading className="h-5 w-5" />,
+    label: 'Encabezado',
+  },
+  {
+    type: BlockType.Text,
+    icon: <Type className="h-5 w-5" />,
+    label: 'Texto',
+  },
+  {
+    type: BlockType.Image,
+    icon: <ImageIcon className="h-5 w-5" />,
+    label: 'Imagen',
+  },
+  // Añadir nuevo bloque
+  {
+    type: BlockType.Quote,
+    icon: <Quote className="h-5 w-5" />,
+    label: 'Cita',
+  },
+];
+```
 
-1. Bloques templatizados (secciones prediseñadas)
-2. Sistema de revisiones para restaurar versiones anteriores
-3. Colaboración en tiempo real
-4. Mejora de la experiencia móvil para edición in-situ
+### 5.2 Configuración del Estado Inicial
+
+Define la estructura por defecto del nuevo bloque cuando se crea:
+
+```tsx
+// En editor-context.tsx o similar
+const getDefaultBlockContent = (type: BlockType): any => {
+  switch (type) {
+    case BlockType.Heading:
+      return { text: 'Nuevo título', level: 2 };
+    case BlockType.Text:
+      return { text: 'Escribe algo aquí...' };
+    case BlockType.Image:
+      return { src: '', alt: '', caption: '' };
+    // Configuración por defecto para el nuevo bloque
+    case BlockType.Quote:
+      return { text: 'Escribe una cita aquí...', author: '', style: 'simple' };
+    default:
+      return {};
+  }
+};
+```
+
+## 6. Persistencia y Serialización
+
+### 6.1 Validación para Guardado
+
+Si es necesario, implementa funciones de validación específicas para el nuevo tipo de bloque:
+
+```tsx
+// En validation-utils.ts
+export const validateQuoteBlock = (block: QuoteBlockData): string[] => {
+  const errors: string[] = [];
+  
+  if (!block.content.text) {
+    errors.push('El texto de la cita no puede estar vacío');
+  }
+  
+  return errors;
+};
+```
+
+### 6.2 Renderizado para Publicación
+
+Si es necesario, implementa un renderizador específico para la publicación:
+
+```tsx
+// En render-utils.ts
+export const renderQuoteBlock = (block: QuoteBlockData): string => {
+  const { content } = block;
+  
+  let html = `<blockquote class="quote quote-${content.style || 'simple'}">`;
+  html += `<p>${content.text}</p>`;
+  
+  if (content.author) {
+    html += `<footer>— <cite>${content.author}</cite>`;
+    if (content.citation) {
+      html += ` <span class="citation">(${content.citation})</span>`;
+    }
+    html += `</footer>`;
+  }
+  
+  html += `</blockquote>`;
+  
+  return html;
+};
+```
+
+## 7. Pruebas
+
+### 7.1 Pruebas Unitarias
+
+Crea pruebas para el componente del bloque:
+
+```tsx
+// En quote/quote.test.tsx
+import { render, screen, fireEvent } from '@testing-library/react';
+import { QuoteBlock } from './quote';
+
+describe('QuoteBlock', () => {
+  const mockBlock: QuoteBlockData = {
+    id: 'test-id',
+    type: 'quote',
+    content: {
+      text: 'Test quote',
+      author: 'Test Author',
+      style: 'simple'
+    }
+  };
+  
+  test('renders correctly in view mode', () => {
+    render(
+      <QuoteBlock 
+        block={mockBlock}
+        onUpdate={jest.fn()}
+        isEditing={false}
+        isSelected={false}
+        onSelect={jest.fn()}
+      />
+    );
+    
+    expect(screen.getByText('Test quote')).toBeInTheDocument();
+    expect(screen.getByText('Test Author')).toBeInTheDocument();
+  });
+  
+  // Añadir más pruebas...
+});
+```
+
+### 7.2 Pruebas de Integración
+
+Crea pruebas de integración con el editor:
+
+```tsx
+// En editor.test.tsx
+test('can add and configure a quote block', async () => {
+  // Configuración de la prueba
+  
+  // Comprobar que se añade correctamente
+  
+  // Comprobar que se configura correctamente
+  
+  // Comprobar que se renderiza correctamente
+});
+```
+
+## 8. Documentación
+
+### 8.1 Comentarios JSDoc
+
+Asegúrate de documentar correctamente tus componentes y funciones:
+
+```tsx
+/**
+ * Componente para mostrar y editar bloques de citas.
+ * Permite configurar el texto, autor, fuente y estilo visual.
+ *
+ * @param block - Datos del bloque de cita
+ * @param onUpdate - Función para actualizar el bloque
+ * @param isEditing - Si está en modo edición
+ * @param isSelected - Si el bloque está seleccionado
+ * @param onSelect - Función para seleccionar el bloque
+ * @param isDragging - Si el bloque está siendo arrastrado
+ */
+export const QuoteBlock = (...)
+```
+
+### 8.2 Actualización del Índice de Bloques Disponibles
+
+Actualiza el documento general de bloques disponibles:
+
+```markdown
+## Bloques Disponibles
+
+...
+
+### Cita (Quote)
+
+Propósito: Mostrar citas textuales con atribución al autor.
+
+Opciones:
+- Texto de la cita
+- Autor
+- Fuente/Citación
+- Estilo visual (Simple, Bordeado, Elegante)
+
+![Vista previa](./docs/assets/quote-block.png)
+```
+
+---
+
+Siguiendo esta guía, asegurarás una implementación consistente y de alta calidad para los nuevos bloques del editor CMS, manteniendo el sistema extensible y fácil de mantener.

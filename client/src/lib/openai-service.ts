@@ -1,7 +1,60 @@
 /**
  * Servicio para interactuar con la API de OpenAI
  * Permite generar contenido para usar en el CMS y el constructor web
+ * y realizar análisis de datos para los diferentes módulos de la aplicación
  */
+
+// Interfaces para el análisis APPCC
+export interface APPCCControlData {
+  recordId: string;
+  fecha: string;
+  temperatura: number;
+  ph: number;
+  humedad: number;
+  tiempoExposicion: number;
+  observaciones: string;
+  aceptable: boolean;
+}
+
+export interface APPCCAnalysisResult {
+  summary: string;
+  metrics: {
+    label: string;
+    value: string | number;
+    color?: string;
+  }[];
+  insights: string[];
+  recommendations: string[];
+  status: 'ready' | 'error';
+}
+
+// Interfaces para el análisis de inventario
+export interface InventoryAnalysisData {
+  productId: string;
+  nombre: string;
+  stock: number;
+  categoria: string;
+  rotacion: number;
+  caducidad?: string;
+  precioCompra: number;
+  precioVenta: number;
+  historialVentas: { 
+    fecha: string; 
+    cantidad: number;
+  }[];
+}
+
+export interface InventoryAnalysisResult {
+  summary: string;
+  metrics: {
+    label: string;
+    value: string | number;
+    color?: string;
+  }[];
+  insights: string[];
+  recommendations: string[];
+  status: 'ready' | 'error';
+}
 
 export interface OpenAIResponse {
   id: string;
@@ -284,5 +337,135 @@ export async function generateImageDescription(
   } catch (error) {
     console.error('Error generando descripción de imagen:', error);
     throw error;
+  }
+}
+
+/**
+ * Analiza los datos de control APPCC para encontrar patrones e insights
+ * @param data Array de datos de control APPCC
+ * @returns Resultado del análisis con métricas, insights y recomendaciones
+ */
+export async function analyzeAPPCCControl(
+  data: APPCCControlData[]
+): Promise<APPCCAnalysisResult> {
+  try {
+    // Si no hay datos, devolvemos un resultado de error
+    if (!data || data.length === 0) {
+      return {
+        summary: "No hay datos suficientes para realizar un análisis.",
+        metrics: [],
+        insights: [],
+        recommendations: [
+          "Registra datos de control APPCC para obtener análisis"
+        ],
+        status: 'error'
+      };
+    }
+
+    // Analizamos los datos utilizando la API de OpenAI
+    const prompt = `Analiza los siguientes datos de control APPCC y proporciona insights valiosos:
+    
+    ${JSON.stringify(data, null, 2)}
+    
+    Por favor, proporciona en formato JSON:
+    1. Un resumen conciso del estado general
+    2. Métricas clave (incluyendo: porcentaje de controles aceptables, temperatura promedio, pH promedio)
+    3. Insights importantes sobre tendencias o patrones
+    4. Recomendaciones para mejorar`;
+
+    const response = await generateContent({
+      instruction: prompt,
+      format: 'json',
+      maxTokens: 1000,
+    });
+    
+    const analysisData = JSON.parse(response);
+    
+    // Formateamos la respuesta según nuestra interfaz
+    return {
+      summary: analysisData.summary || "Análisis de datos APPCC completado",
+      metrics: analysisData.metrics || [],
+      insights: analysisData.insights || [],
+      recommendations: analysisData.recommendations || [],
+      status: 'ready'
+    };
+  } catch (error) {
+    console.error('Error analizando datos de control APPCC:', error);
+    return {
+      summary: "Error al analizar los datos de control APPCC.",
+      metrics: [],
+      insights: [],
+      recommendations: [
+        "Intenta de nuevo más tarde",
+        "Verifica la conexión a internet",
+        "Contacta con soporte si el problema persiste"
+      ],
+      status: 'error'
+    };
+  }
+}
+
+/**
+ * Analiza los datos de inventario para encontrar tendencias y oportunidades de mejora
+ * @param data Array de datos de productos en inventario
+ * @returns Resultado del análisis con métricas, insights y recomendaciones
+ */
+export async function analyzeInventoryTrends(
+  data: InventoryAnalysisData[]
+): Promise<InventoryAnalysisResult> {
+  try {
+    // Si no hay datos, devolvemos un resultado de error
+    if (!data || data.length === 0) {
+      return {
+        summary: "No hay datos suficientes de inventario para realizar un análisis.",
+        metrics: [],
+        insights: [],
+        recommendations: [
+          "Registra productos en el inventario para obtener análisis"
+        ],
+        status: 'error'
+      };
+    }
+
+    // Analizamos los datos utilizando la API de OpenAI
+    const prompt = `Analiza los siguientes datos de inventario y proporciona insights valiosos:
+    
+    ${JSON.stringify(data, null, 2)}
+    
+    Por favor, proporciona en formato JSON:
+    1. Un resumen conciso del estado general del inventario
+    2. Métricas clave (incluyendo: valor total del inventario, productos con baja rotación, margen promedio)
+    3. Insights importantes sobre tendencias o patrones
+    4. Recomendaciones para optimizar el inventario`;
+
+    const response = await generateContent({
+      instruction: prompt,
+      format: 'json',
+      maxTokens: 1000,
+    });
+    
+    const analysisData = JSON.parse(response);
+    
+    // Formateamos la respuesta según nuestra interfaz
+    return {
+      summary: analysisData.summary || "Análisis de inventario completado",
+      metrics: analysisData.metrics || [],
+      insights: analysisData.insights || [],
+      recommendations: analysisData.recommendations || [],
+      status: 'ready'
+    };
+  } catch (error) {
+    console.error('Error analizando datos de inventario:', error);
+    return {
+      summary: "Error al analizar los datos de inventario.",
+      metrics: [],
+      insights: [],
+      recommendations: [
+        "Intenta de nuevo más tarde",
+        "Verifica la conexión a internet",
+        "Contacta con soporte si el problema persiste"
+      ],
+      status: 'error'
+    };
   }
 }

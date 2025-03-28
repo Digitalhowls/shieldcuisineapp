@@ -1,131 +1,178 @@
-# Hoja de Ruta: Módulo CMS
+# Hoja de Ruta de Desarrollo del CMS
+
+Este documento detalla las fases planificadas para el desarrollo y mejora del módulo CMS (Constructor Web) de ShieldCuisine. La hoja de ruta está enfocada en la implementación de funcionalidades críticas y la mejora continua de la base de código.
 
 ## Visión General
-El módulo CMS de ShieldCuisine es una solución completa para la gestión de contenido que permite a los negocios de alimentación crear y gestionar su presencia digital de forma autónoma, sin depender de servicios externos como WordPress.
+
+El módulo CMS de ShieldCuisine busca ofrecer a restaurantes y negocios alimentarios una herramienta intuitiva y potente para crear, gestionar y publicar contenido web relacionado con la seguridad alimentaria, transparencia y oferta gastronómica, todo ello integrado con los demás módulos de la plataforma.
 
 ## Fases de Desarrollo
 
-### Fase 1: Infraestructura Base ✅
-- [x] Definición del esquema de base de datos para contenidos
-- [x] Creación de la estructura modular del CMS
-- [x] Implementación del sistema de autenticación y permisos
-- [x] Configuración de rutas API básicas
+### Fase 1: Mejoras de Arquitectura y Código Base (Actual)
 
-### Fase 2: Gestión de Medios ✅
-- [x] Biblioteca de medios con vista de cuadrícula/lista
-- [x] Uploader con soporte drag & drop
-- [x] Sistema de categorías para organización
-- [x] Optimización automática de imágenes
-- [x] Visualización y filtrado por tipo
+**Estado: En Progreso** ✓
 
-### Fase 3: Editor de Bloques ⚙️
-- [x] Estructura base del editor
-- [x] Bloques de texto básicos (párrafo, título, lista)
-- [x] Bloques multimedia (imagen, galería, vídeo)
-- [x] Sistema drag & drop para reordenamiento
-- [ ] Panel de configuración lateral para bloques
-- [ ] Guardado y recuperación del contenido
+#### 1.1 Reorganización de Carpetas ✓
+- [x] Establecer estructura coherente para componentes CMS
+- [x] Separar claramente implementaciones cliente/admin
+- [x] Organizar componentes reutilizables
 
-### Fase 4: Páginas y Blog 🔄
-- [ ] Estructura de páginas y directorio
-- [ ] Sistema de blog con categorías y etiquetas
-- [ ] Campos SEO (metadatos, slug personalizado)
-- [ ] Programación de publicaciones
-- [ ] Vista previa de contenido desde administración
+#### 1.2 Eliminación de Duplicaciones ✓
+- [x] Refactorizar componentes duplicados
+- [x] Centralizar lógica común
+- [x] Documentar componentes compartidos
 
-### Fase 5: Mejoras del Editor 📝
-- [ ] Bloques avanzados (tabs, acordeón, carrusel)
-- [ ] Bloques dinámicos (listados de entradas, cursos)
-- [ ] Bloques HTML y embebido de contenido externo
-- [ ] Historial de revisiones y control de versiones
-- [ ] Templates y secciones prediseñadas
+#### 1.3 Mejora de Tipos TypeScript ✓
+- [x] Fortalecer interfaces entre componentes
+- [x] Añadir tipado estricto a funciones críticas
+- [x] Documentar tipos con JSDoc
 
-### Fase 6: Personalización y Branding 🎨
-- [ ] Configuración de logo y favicon
-- [ ] Selector de paleta de colores
-- [ ] Biblioteca de tipografías (Google Fonts)
-- [ ] Personalización de dominio o subdominio
-- [ ] Configuraciones globales de estilo
+#### 1.4 Estandarización de Código (Actual)
+- [x] Crear documentación de estándares de código
+- [ ] Aplicar estándares a componentes existentes
+- [ ] Implementar linting para verificar cumplimiento
 
-### Fase 7: Integración con Módulos 🧩
-- [ ] Conexión con módulo de cursos para publicación
-- [ ] Integración con portal de transparencia
-- [ ] Conectividad con WooCommerce
-- [ ] Vinculación al sistema de notificaciones
-- [ ] Integración con módulo de facturación
+#### 1.5 Optimización de Rendimiento
+- [ ] Memoización de componentes intensivos
+- [ ] Virtualización de listas largas
+- [ ] Optimización de operaciones del editor
 
-### Fase 8: API y Extensibilidad 🔌
-- [ ] API REST completa para acceso externo
-- [ ] Documentación OpenAPI/Swagger
-- [ ] Sistema de webhooks para eventos
-- [ ] Tokens de autenticación para API
-- [ ] Soporte para headless CMS
+### Fase 2: Editor de Bloques Mejorado
 
-### Fase 9: Performance y SEO 🚀
-- [ ] Optimización de rendimiento (carga diferida)
-- [ ] Generación automática de sitemap.xml
-- [ ] Implementación Schema.org
-- [ ] Configuración de Open Graph para redes sociales
-- [ ] Soporte para microformatos
+**Estado: Planificado**
 
-### Fase 10: Inteligencia Artificial 🧠
-- [ ] Generación de contenido asistida por IA
-- [ ] Sugerencias de mejora SEO
-- [ ] Análisis de legibilidad y accesibilidad
-- [ ] Traducción automática preliminar
-- [ ] Asistente de diseño inteligente
+#### 2.1 Estructura del Editor
+- [ ] Refactorizar arquitectura de bloques
+- [ ] Implementar sistema de arrastrar y soltar mejorado
+- [ ] Soporte para atajos de teclado
 
-## Estado Actual
+#### 2.2 Biblioteca de Bloques Básicos
+- [ ] Bloques de texto enriquecido
+- [ ] Bloques de medios mejorados
+- [ ] Componentes interactivos básicos
 
-El módulo CMS se encuentra actualmente en la **Fase 3** de desarrollo, con las siguientes características implementadas:
+#### 2.3 Panel de Ajustes Unificado
+- [ ] Diseño mejorado del panel
+- [ ] Pestañas contextuales según bloque seleccionado
+- [ ] Previsualización en tiempo real
 
-### Implementado ✅
-- Sistema completo de gestión de medios con categorización
-- Estructura base del editor de bloques
-- Bloques fundamentales de texto y multimedia
-- API para gestión de categorías de medios
-- Integración con autenticación
+#### 2.4 Gestión de Historia y Cambios
+- [ ] Implementar historial de acciones
+- [ ] Funcionalidad de deshacer/rehacer
+- [ ] Guardado automático y respaldo
 
-### En Progreso 🔄
-- Sistema drag & drop para reordenamiento de bloques
-- Panel de configuración de bloques
-- Guardado y recuperación de contenido
-- Implementación de botones de acción en bloques
-- Edición contextual in-situ
+#### 2.5 Validación y Publicación
+- [ ] Verificación pre-publicación
+- [ ] Gestión de borradores
+- [ ] Vista previa para diferentes dispositivos
 
-### Próximos Pasos 📋
-1. Completar funcionalidades del editor de bloques
-2. Implementar la estructura de páginas y blog
-3. Crear vista previa de páginas en construcción
-4. Desarrollar sistema de revisiones básico
-5. Implementar campos y herramientas SEO
+### Fase 3: Gestor de Medios Avanzado
 
-## Integraciones Principales
+**Estado: Planificado**
 
-El CMS se conectará con otros módulos de ShieldCuisine:
+#### 3.1 Biblioteca de Medios
+- [ ] Organización por carpetas
+- [ ] Filtrado y búsqueda avanzada
+- [ ] Gestión de metadatos
 
-1. **Módulo de Cursos**: Publicación de cursos como páginas públicas o entradas de blog.
-2. **Portal de Transparencia**: Generación de páginas públicas con datos relevantes.
-3. **WooCommerce**: Sincronización con productos y categorías.
-4. **Sistema de Notificaciones**: Alertas sobre cambios y publicaciones.
-5. **Branding Global**: Compartir configuraciones de estilo con otros módulos.
+#### 3.2 Optimización de Imágenes
+- [ ] Redimensionamiento automático
+- [ ] Compresión inteligente
+- [ ] Generación de formatos modernos (WebP)
 
-## Consideraciones Técnicas
+#### 3.3 Manipulación de Imágenes
+- [ ] Editor básico integrado
+- [ ] Recorte y ajuste
+- [ ] Aplicación de filtros
 
-- **Frontend**: React + React DnD para sistema de bloques
-- **Backend**: Node.js + Express con PostgreSQL
-- **Imágenes**: Optimización y almacenamiento eficiente
-- **SSR/SSG**: Generación de páginas estáticas para SEO
-- **API**: Estructura RESTful con documentación completa
+#### 3.4 Gestión de Vídeos
+- [ ] Soporte para múltiples fuentes (YouTube, locales)
+- [ ] Miniaturas personalizadas
+- [ ] Configuraciones de reproducción
 
-## Monetización
+### Fase 4: Integración IA y Automatización
 
-El módulo CMS formará parte de los planes de suscripción de ShieldCuisine:
+**Estado: Planificado**
 
-1. **CMS Básico** (15€/mes): Páginas + blog + branding básico
-2. **CMS Pro** (29€/mes): + Cursos públicos + dominio propio + API + SEO avanzado
-3. **CMS White Label** (49-99€/mes): Full branding sin ShieldCuisine visible
+#### 4.1 Asistente de Contenido IA
+- [ ] Generación de textos específicos para restaurantes
+- [ ] Sugerencias de mejora de contenido existente
+- [ ] Traducción automatizada
+
+#### 4.2 Análisis de Imágenes
+- [ ] Generación automática de texto alternativo
+- [ ] Categorización automática de medios
+- [ ] Detección de calidad e idoneidad
+
+#### 4.3 Optimización SEO Automatizada
+- [ ] Análisis de contenido en tiempo real
+- [ ] Sugerencias de meta-etiquetas
+- [ ] Validación de estructura y accesibilidad
+
+#### 4.4 Personalización Inteligente
+- [ ] Recomendación de diseños según contenido
+- [ ] Ajustes automáticos para mejor legibilidad
+- [ ] Detección y corrección de problemas de UX
+
+### Fase 5: Integración con Módulos ShieldCuisine
+
+**Estado: Planificado**
+
+#### 5.1 Portal de Transparencia
+- [ ] Visualización de información APPCC
+- [ ] Bloques de certificaciones y cumplimiento
+- [ ] Indicadores de calidad alimentaria
+
+#### 5.2 WooCommerce
+- [ ] Bloques de productos y categorías
+- [ ] Información nutricional y alérgenos
+- [ ] Promociones y ofertas personalizadas
+
+#### 5.3 Plataforma de Formación
+- [ ] Integración de cursos y recursos formativos
+- [ ] Visualización de progreso y certificaciones
+- [ ] Acceso contextual a material de aprendizaje
+
+#### 5.4 Módulo Bancario
+- [ ] Bloques seguros para pagos y transacciones
+- [ ] Visualización de estados de cuenta
+- [ ] Gestión de métodos de pago
+
+## Plan de Lanzamiento
+
+### Versión 1.0 (Objetivo: Q2 2025)
+- Finalización de Fase 1 y Fase 2
+- Editor de bloques completamente funcional
+- Conjunto básico de bloques disponibles
+- Sistema de gestión de medios funcional
+
+### Versión 1.5 (Objetivo: Q3 2025)
+- Optimización de rendimiento completada
+- Integración inicial de asistente IA
+- Gestión avanzada de medios
+- Primeros bloques de integración con otros módulos
+
+### Versión 2.0 (Objetivo: Q1 2026)
+- Integración completa con todos los módulos
+- Suite completa de IA y automatización
+- Sistema avanzado de plantillas y temas
+- Optimización para SEO y rendimiento
+
+## Métricas de Éxito
+
+- **Adopción del CMS**: % de clientes utilizando el módulo regularmente
+- **Eficiencia**: Reducción de tiempo para crear y actualizar páginas
+- **Calidad**: Mejora en métricas de Core Web Vitals de páginas generadas
+- **Integración**: Uso de bloques conectados con otros módulos
+- **Satisfacción**: Valoraciones positivas en encuestas de usabilidad
+
+## Próximos Pasos Inmediatos
+
+1. Completar Fase 1.4 (Estandarización de Código)
+2. Iniciar evaluación técnica de Fase 1.5 (Optimización de Rendimiento)
+3. Diseñar arquitectura mejorada para editor de bloques (Fase 2.1)
+4. Crear prototipo funcional del nuevo panel de ajustes unificado (Fase 2.3)
 
 ---
 
-Esta hoja de ruta se actualizará periódicamente para reflejar el progreso y ajustar las prioridades según las necesidades del proyecto.
+Este documento se revisará y actualizará trimestralmente para reflejar el progreso y ajustar prioridades según necesidades del negocio y feedback de usuarios.

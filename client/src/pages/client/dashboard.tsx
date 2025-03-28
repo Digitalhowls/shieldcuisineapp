@@ -21,12 +21,13 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/shared/hooks/use-auth";
 import { AnalysisCard } from "@/components/ai/analysis-card";
-import { 
-  analyzeAPPCCControl, 
-  type APPCCControlData, 
+import {
+  type APPCCControlData,
   type APPCCAnalysisResult,
-  analyzeInventoryTrends,
-  type InventoryAnalysisData
+  type InventoryAnalysisData,
+  type InventoryAnalysisResult,
+  analyzeAPPCCControl,
+  analyzeInventoryTrends
 } from "@/lib/openai-service";
 
 export default function ClientDashboard() {

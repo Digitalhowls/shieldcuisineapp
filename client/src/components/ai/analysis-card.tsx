@@ -1,24 +1,54 @@
 import React, { useState } from "react";
+
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, BrainCircuit, ChevronDown, ChevronUp, BarChart2, Lightbulb } from "lucide-react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Loader2, BrainCircuit, ChevronDown, ChevronUp, BarChart2, Lightbulb } from "lucide-react";
 
+/**
+ * Interfaz para una métrica que será mostrada en la tarjeta de análisis
+ */
+interface AnalysisMetric {
+  /** Etiqueta descriptiva de la métrica */
+  label: string;
+  /** Valor numérico o textual de la métrica */
+  value: string | number;
+  /** Color opcional para resaltar la métrica (verde, amarillo, rojo, o sin especificar para azul) */
+  color?: string;
+}
+
+/**
+ * Interfaz para las propiedades del componente AnalysisCard
+ */
 interface AnalysisCardProps {
+  /** Título del análisis */
   title: string;
+  /** Descripción breve del análisis */
   description: string;
+  /** Tipo de análisis que determina el icono y estilo */
   type: 'appcc' | 'inventory' | 'purchases' | 'general';
+  /** Estado actual del análisis */
   status?: 'loading' | 'ready' | 'error';
+  /** Resumen textual del análisis */
   summary?: string;
+  /** Lista de hallazgos o insights del análisis */
   insights?: string[];
-  metrics?: { label: string; value: string | number; color?: string }[];
+  /** Métricas clave con sus valores */
+  metrics?: AnalysisMetric[];
+  /** Recomendaciones basadas en el análisis */
   recommendations?: string[];
+  /** Función para actualizar/refrescar el análisis */
   onRefresh?: () => void;
+  /** Función para ver detalles adicionales del análisis */
   onViewDetails?: () => void;
 }
 
-export function AnalysisCard({
+/**
+ * Tarjeta de análisis que muestra resultados de procesos analíticos
+ * con diferentes secciones como resumen, métricas, insights y recomendaciones.
+ */
+export const AnalysisCard = ({
   title,
   description,
   type,
@@ -29,11 +59,13 @@ export function AnalysisCard({
   recommendations = [],
   onRefresh,
   onViewDetails
-}: AnalysisCardProps) {
+}: AnalysisCardProps) => {
   const [insightsOpen, setInsightsOpen] = useState(false);
   const [recommendationsOpen, setRecommendationsOpen] = useState(false);
 
-  // Iconos según el tipo de análisis
+  /**
+   * Retorna el icono correspondiente al tipo de análisis
+   */
   const getIcon = () => {
     switch (type) {
       case 'appcc':

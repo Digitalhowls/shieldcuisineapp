@@ -1,172 +1,152 @@
-# Mejoras Futuras para el Módulo CMS
+# Mejoras Futuras para el CMS de ShieldCuisine
 
-Este documento describe las mejoras y expansiones planificadas para el módulo CMS de ShieldCuisine en futuras iteraciones del desarrollo.
+Este documento describe las mejoras planificadas para el sistema CMS (Constructor Web) de ShieldCuisine. Estas mejoras están pensadas para implementarse en fases futuras luego de completar las mejoras fundamentales de código descritas en la hoja de ruta actual.
 
-## 1. Bloques y Componentes Avanzados
+## 1. Bloques Avanzados para el Editor
 
-### Bloques Templatizados
-- Implementar secciones prediseñadas completas que se puedan insertar como un conjunto
-- Crear categorías de templates (hero, testimonios, precios, equipo, etc.)
-- Permitir guardar combinaciones de bloques como templates personalizados
+### 1.1 Bloques de Datos Dinámicos
+- **Bloque Menú/Carta**: Mostrará información de productos desde el catálogo con opciones de filtrado
+- **Bloque Testimonios**: Mostrará y rotará testimonios de clientes con sistema de clasificación
+- **Bloque Equipo**: Mostrará información de miembros del equipo con opciones de diseño
 
-### Sistema de Patrones
-- Biblioteca de patrones de diseño reutilizables
-- Sincronización de estilos entre patrones (cambiar uno actualiza todos)
-- Sistema de versiones de patrones
+### 1.2 Bloques de Interacción
+- **Bloque Formulario**: Configurador visual de formularios con validación y envío de datos
+- **Bloque Reservas**: Calendario de reservas integrado con opciones de horarios
+- **Bloque Chat de Asistencia**: Chat con asistente de IA para responder preguntas sobre seguridad alimentaria
 
-### Bloques Interactivos Avanzados
-- Carruseles multi-modo
-- Mapas interactivos
-- Calculadoras y herramientas específicas para restauración 
-- Visualizadores 3D de productos o espacios
+### 1.3 Bloques de Visualización
+- **Bloque Galería Avanzada**: Con opciones de masonry, carrusel, y lightbox
+- **Bloque Mapa**: Ubicación con geolocalización y personalización del pin/marcador
+- **Bloque Vídeo**: Reproductor ligero de vídeo con opciones de autoplay condicional y miniaturas
 
-## 2. Sistema de Revisiones y Versiones
+## 2. Sistema de Plantillas y Temas
 
-### Control de Versiones
-- Historial completo de cambios con timestamps
-- Comparación visual entre versiones
-- Restauración selectiva (página completa o bloques individuales)
+### 2.1 Gestor de Plantillas
+- Crear, guardar y aplicar plantillas de página completas
+- Biblioteca de plantillas predefinidas para diferentes tipos de página
+- Importar/exportar plantillas entre proyectos
 
-### Flujo de Aprobaciones
-- Implementar estado "pendiente de revisión" para cambios
-- Notificaciones para revisores designados
-- Comentarios y feedback sobre versiones específicas
+### 2.2 Sistema de Temas
+- Definición de temas con paletas de colores, tipografías y estilos de componentes
+- Editor visual de temas con vista previa en tiempo real
+- Aplicación de temas a nivel global o por sección
 
-### Programación Temporal
-- Programar cambios para publicarse en fechas específicas
-- Versiones estacionales o por eventos
-- Revertir automáticamente después de un período
+### 2.3 Variables de Diseño
+- Sistema de variables CSS globales para mantener consistencia 
+- Panel de administración de variables de estilo
+- Herramientas de validación para asegurar cumplimiento de identidad visual
 
 ## 3. Herramientas de Colaboración
 
-### Edición Colaborativa
-- Edición en tiempo real tipo Google Docs
-- Indicadores de presencia de usuarios
-- Bloqueo de bloques en edición
+### 3.1 Edición Colaborativa
+- Edición simultánea por múltiples usuarios
+- Sistema de bloqueo de bloques en edición
+- Historial de cambios con atribución a usuarios
 
-### Comentarios y Notas
-- Sistema de comentarios sobre bloques específicos
-- Asignación de tareas a miembros del equipo
-- Estado de resolución de comentarios
+### 3.2 Comentarios y Feedback
+- Añadir comentarios sobre bloques específicos
+- Sistema de aprobación/revisión de cambios
+- Notificaciones de actividad colaborativa
 
-### Notificaciones de Cambios
-- Alertas sobre modificaciones en páginas suscritas
-- Resumen diario/semanal de cambios
-- Integración con sistema de mensajería interna
+### 3.3 Administración de Roles
+- Roles específicos para el CMS (Editor, Revisor, Administrador)
+- Permisos granulares por tipo de bloque y acción
+- Flujos de trabajo de aprobación configurables
 
-## 4. Optimizaciones Técnicas
+## 4. Mejoras de SEO y Rendimiento
 
-### Rendimiento Mejorado
-- Carga diferida de bloques fuera de pantalla
-- Optimización automática de imágenes (WebP, AVIF)
-- Minificación y bundle de CSS/JS por página
+### 4.1 Asistente SEO Avanzado
+- Análisis de contenido y sugerencias de optimización en tiempo real
+- Herramienta de investigación de palabras clave integrada
+- Validación automática de meta-tags, alt-text y estructura de encabezados
 
-### SEO Avanzado
-- Análisis de contenido para sugerencias SEO
-- Verificación de accesibilidad integrada (WCAG)
-- Previsualizaciones de resultados de búsqueda
+### 4.2 Optimización de Medios
+- Compresión automática de imágenes con preservación de calidad
+- Generación de imágenes adaptadas a diferentes dispositivos (srcset)
+- Lazy-loading inteligente para mejorar la velocidad de carga
 
-### Caché Inteligente
-- Invalidación selectiva de caché por bloque
-- Generación previa de páginas populares
-- Estrategias avanzadas de CDN
+### 4.3 Análisis de Rendimiento
+- Medición de Core Web Vitals en tiempo real durante la edición
+- Recomendaciones específicas para mejorar la velocidad
+- Panel de métricas de rendimiento por página
 
-## 5. Expansiones de Funcionalidad
+## 5. Generación de Contenido con IA
 
-### Branding Avanzado
-- Paquetes completos de marca (colores, tipografía, componentes)
-- Cambio estacional programado de branding
-- Vista previa A/B de opciones de marca
+### 5.1 Expansión del Asistente IA
+- Sugerencias de contenido contextual según análisis de la página
+- Mejora de textos existentes (tono, longitud, claridad)
+- Generación automática de meta-descripciones optimizadas
 
-### Analíticas Integradas
-- Seguimiento de interacción por bloque o sección
-- Mapas de calor y scroll integrados
-- Vinculación con objetivos de conversión
+### 5.2 Análisis Visual Inteligente
+- Mejora automática de accesibilidad (contraste, textos alternativos)
+- Sugerencias de disposición y espaciado para mejor jerarquía visual
+- Detección y corrección de problemas de diseño (texto sobre imágenes, densidad de contenido)
 
-### Integraciones Extendidas
-- Más plataformas sociales y embebibles
-- Integración con CRM para personalización
-- Conexión con sistemas POS para mostrar disponibilidad
+### 5.3 Personalización de Contenido
+- Creación de variantes de contenido para diferentes audiencias
+- Configuración de reglas de visualización condicional
+- Herramientas de A/B testing incorporadas
 
-## 6. Internacionalización y Localización
+## 6. Mejoras de Usabilidad
 
-### Gestión Multiidioma Mejorada
-- Editor paralelo de versiones por idioma
-- Traducción asistida por IA con revisión humana
-- Detección y sugerencias de contenido sin traducir
+### 6.1 Accesibilidad
+- Verificación automática de WCAG 2.1 AA durante la edición
+- Herramientas de simulación para diferentes discapacidades
+- Sugerencias de mejora de accesibilidad contextuales
 
-### Regionalización
-- Adaptación de contenido por ubicación geográfica
-- Ajustes automáticos de moneda, formatos de fecha y unidades
-- Cumplimiento automático de regulaciones regionales (GDPR, CCPA, etc.)
+### 6.2 Experiencia Móvil
+- Editor completamente funcional en dispositivos táctiles
+- Vista previa en diferentes tamaños de pantalla en tiempo real
+- Ajustes específicos para comportamiento en móvil para cada bloque
 
-## 7. Bloques AI Avanzados
+### 6.3 Atajos y Eficiencia
+- Sistema de atajos de teclado configurables
+- Historial inteligente con vista previa visual
+- Biblioteca de bloques frecuentes y favoritos
 
-### Generación Contextual
-- Contenido generado basado en análisis del sitio completo
-- Adaptación de tono y estilo a la marca
-- Resumen y adaptación de contenido existente
+## 7. Integración con Módulos de ShieldCuisine
 
-### Asistente Inteligente de Diseño
-- Sugerencias de combinaciones de color y tipografía
-- Corrección automática de problemas de contraste
-- Propuestas de mejora de layout basadas en mejores prácticas
+### 7.1 Portal de Transparencia
+- Bloques para mostrar información de seguridad alimentaria
+- Acceso condicional a documentos de APPCC para clientes
+- Visualización de sellos y certificaciones con verificación
 
-### Análisis de Rendimiento
-- Identificación de páginas de bajo rendimiento
-- Recomendaciones de contenido basadas en analíticas
-- Predicción de tendencias de interacción
+### 7.2 Catálogo WooCommerce
+- Bloques de productos destacados con información nutricional y alérgenos
+- Presentación de promociones específicas según temporada
+- Personalización avanzada de fichas de producto y categorías
 
-## 8. API Y Extensibilidad
+### 7.3 Plataforma de Formación
+- Vista previa de cursos disponibles para empleados y clientes
+- Integración de progreso de formación en perfiles públicos
+- Certificaciones y badges con verificación automática
 
-### GraphQL API
-- Implementar API GraphQL completa
-- Playground integrado para desarrolladores
-- Sistema de suscripciones para actualizaciones en tiempo real
+## 8. Exportación y Publicación Avanzada
 
-### SDK para Desarrolladores
-- Crear bloques personalizados vía API
-- Webhooks expandidos para más eventos
-- Documentación interactiva y ejemplos
+### 8.1 Publicación Programada
+- Programar cambios en contenido para fechas específicas
+- Visualización de calendario editorial con contenido planificado
+- Sistema de recordatorios y notificaciones de publicación
 
-### Marketplace de Extensiones
-- Sistema para compartir bloques personalizados
-- Marketplace de templates y temas
-- Plugins para integración con servicios de terceros
+### 8.2 Canales Múltiples
+- Exportación adaptada para diferentes plataformas (web, móvil, quioscos)
+- Configuración específica de visualización por canal
+- Análisis de rendimiento por canal de publicación
 
-## 9. Modo Headless CMS
+### 8.3 Versionado y Rollback
+- Sistema completo de versiones con etiquetado
+- Comparación visual entre versiones
+- Rollback selectivo de elementos específicos
 
-### API Headless Completa
-- Separación completa de frontend y backend
-- Endpoints para todos los tipos de contenido
-- Autenticación y gestión de permisos granular
+## Priorización y Planificación
 
-### Múltiples Frontends
-- Soporte para aplicaciones móviles nativas
-- Integración con frameworks frontend populares
-- Capacidades omnicanal (web, móvil, quiosco, etc.)
+Las mejoras descritas se agruparán en fases de desarrollo según:
+1. Valor para el usuario
+2. Complejidad técnica
+3. Dependencias con otros sistemas
 
-## Priorización de Desarrollo
+Se establecerá una hoja de ruta detallada para cada fase tras completar las mejoras fundamentales de código actualmente en desarrollo.
 
-Las mejoras se implementarán siguiendo esta priorización:
+---
 
-### Fase 1 (Próximos 3 meses)
-- Sistema de revisiones básico
-- Bloques templatizados
-- Optimizaciones de rendimiento críticas
-
-### Fase 2 (3-6 meses)
-- Herramientas de colaboración básicas
-- Expansión de bloques AI
-- Mejoras en analíticas
-
-### Fase 3 (6-12 meses)
-- API GraphQL completa
-- Modo headless
-- Colaboración en tiempo real
-- Sistema de patrones
-
-### Fase 4 (12+ meses)
-- Marketplace de extensiones
-- SDK para desarrolladores
-- Sistema completo de personalización regional
+Este documento será revisado y actualizado periódicamente para reflejar las necesidades cambiantes del producto y la retroalimentación de los usuarios.
