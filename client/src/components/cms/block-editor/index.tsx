@@ -30,25 +30,51 @@ import {
   ContactFormContent
 } from './types';
 
-// Interfaz para el contenido de la página completa
+/**
+ * Interfaz para el contenido completo de la página en el editor
+ */
 export interface PageContent {
+  /** Lista de bloques que componen la página */
   blocks: Block[];
+  /** Configuración general de la página */
   settings?: {
+    /** Ancho del contenido ('full' = 100%, 'boxed' = contenedor) */
     layout?: 'full' | 'boxed';
+    /** Espaciado entre bloques */
     spacing?: 'tight' | 'normal' | 'loose';
+    /** Color o URL de imagen de fondo */
     background?: string;
   };
 }
 
+/**
+ * Propiedades para el componente BlockEditor
+ */
 interface BlockEditorProps {
+  /** Contenido inicial para cargar en el editor (objeto o JSON string) */
   initialContent?: PageContent | string;
+  /** Callback llamado cuando cambia el contenido */
   onChange?: (content: PageContent) => void;
+  /** Callback llamado al guardar el contenido */
   onSave?: (content: PageContent) => void;
+  /** Callback llamado para previsualizar el contenido */
   onPreview?: (content: PageContent) => void;
+  /** Si el editor está en modo solo lectura */
   readOnly?: boolean;
 }
 
-const BlockEditor: React.FC<BlockEditorProps> = ({
+/**
+ * Editor de bloques para el CMS
+ * 
+ * Componente principal que gestiona la creación, edición y organización
+ * de bloques de contenido para páginas web. Implementa funcionalidad
+ * drag & drop y una interfaz visual para editar diferentes tipos de contenido.
+ * 
+ * @module BlockEditor
+ * @category CMS
+ * @subcategory BlockEditor
+ */
+export const BlockEditor: React.FC<BlockEditorProps> = ({
   initialContent,
   onChange,
   onSave,
@@ -368,10 +394,17 @@ const BlockEditor: React.FC<BlockEditorProps> = ({
     });
   }, [onChange]);
 
+  /**
+   * Configuraciones generales de la página
+   */
   interface PageSettings {
+    /** Ancho del contenido ('full' = 100%, 'boxed' = contenedor) */
     layout?: 'full' | 'boxed';
+    /** Espaciado entre bloques */
     spacing?: 'tight' | 'normal' | 'loose';
+    /** Color o URL de imagen de fondo */
     background?: string;
+    /** Otras propiedades configurables */
     [key: string]: any; // Para permitir configuraciones adicionales
   }
 
@@ -393,6 +426,10 @@ const BlockEditor: React.FC<BlockEditorProps> = ({
     });
   }, [onChange]);
 
+  /**
+   * Gestiona el evento de guardar el contenido
+   * Invoca el callback onSave y muestra una notificación
+   */
   const handleSave = () => {
     if (onSave) {
       onSave(content);
@@ -403,6 +440,10 @@ const BlockEditor: React.FC<BlockEditorProps> = ({
     }
   };
 
+  /**
+   * Gestiona el evento de previsualizar el contenido
+   * Invoca el callback onPreview con el contenido actual
+   */
   const handlePreview = () => {
     if (onPreview) {
       onPreview(content);
@@ -559,4 +600,5 @@ const BlockEditor: React.FC<BlockEditorProps> = ({
   );
 };
 
+// Mantiene la exportación por defecto para compatibilidad con código existente
 export default BlockEditor;
