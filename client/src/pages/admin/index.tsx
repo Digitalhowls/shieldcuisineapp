@@ -183,6 +183,10 @@ export default function AdminModule() {
               target="_blank" 
               rel="noopener noreferrer"
               className="mt-3 inline-flex items-center text-sm text-primary hover:underline font-medium"
+              onClick={(e) => {
+                e.preventDefault();
+                window.open('/client/dashboard', '_blank', 'noopener,noreferrer');
+              }}
             >
               <Globe className="h-4 w-4 mr-1" />
               Abrir interfaz de cliente
@@ -325,6 +329,10 @@ export default function AdminModule() {
               target="_blank" 
               rel="noopener noreferrer"
               className="inline-flex items-center text-sm text-primary hover:underline mr-4"
+              onClick={(e) => {
+                e.preventDefault();
+                window.open('/client/dashboard', '_blank', 'noopener,noreferrer');
+              }}
             >
               <Globe className="h-4 w-4 mr-1" />
               <span className="hidden sm:inline">Portal Cliente</span>
