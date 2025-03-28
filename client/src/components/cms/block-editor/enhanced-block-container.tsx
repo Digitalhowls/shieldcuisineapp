@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import { Block } from './index';
+import { Block } from './types';
 import Animation from '../animations/animation';
 import AnimationBlockOptions from './animation-block-options';
-import { AnimationConfig } from '../animations/animation-utils';
+import { AnimationConfig, AnimationLibrary } from '../animations/animation-config';
 import { Card, CardContent } from '@/components/ui/card';
 import {
   DropdownMenu,
@@ -21,9 +21,6 @@ import {
   Paintbrush,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-
-// Tipo para la biblioteca de animación
-type AnimationLibrary = 'framer-motion' | 'react-spring' | 'gsap' | 'aos' | 'none';
 
 // Extender el tipo Block para incluir animación
 export interface EnhancedBlock extends Block {
@@ -79,10 +76,10 @@ export const EnhancedBlockContainer: React.FC<EnhancedBlockContainerProps> = ({
   const [showControls, setShowControls] = useState(false);
   
   // Manejo de animaciones
-  const handleAnimationChange = (config: AnimationConfig, library: AnimationLibrary) => {
+  const handleAnimationChange = (config: Partial<AnimationConfig>, library: AnimationLibrary) => {
     updateBlockMeta(block.id, {
       animation: {
-        config,
+        config: config as AnimationConfig,
         library,
       },
     });
@@ -99,10 +96,21 @@ export const EnhancedBlockContainer: React.FC<EnhancedBlockContainerProps> = ({
     // Aplicar estilos personalizados si existen
     const customStyles = block.styles || {};
     
-    return hasAnimation ? (
+    return hasAnimation && block.animation ? (
       <Animation
+        // Pasar la biblioteca de animación
         library={block.animation.library}
-        {...block.animation.config}
+        // Pasar las propiedades de configuración individualmente
+        effect={block.animation.config.effect}
+        duration={block.animation.config.duration}
+        delay={block.animation.config.delay}
+        repeat={block.animation.config.repeat}
+        threshold={block.animation.config.threshold}
+        intensity={block.animation.config.intensity}
+        direction={block.animation.config.direction}
+        easing={block.animation.config.easing}
+        scrollTrigger={block.animation.config.scrollTrigger}
+        // Propiedades de estilo
         className="mb-6 last:mb-0"
         style={customStyles}
       >
@@ -139,9 +147,10 @@ export const EnhancedBlockContainer: React.FC<EnhancedBlockContainerProps> = ({
       <div className="flex items-center gap-1">
         {/* Opciones de animación */}
         <AnimationBlockOptions
-          animationConfig={block.animation?.config || {}}
-          animationLibrary={block.animation?.library || 'none'}
-          onChange={handleAnimationChange}
+          blockId={block.id}
+          animation={block.animation?.config || {}}
+          onUpdate={(newConfig) => handleAnimationChange(newConfig, block.animation?.library || 'none')}
+          onRemove={() => updateBlockMeta(block.id, { animation: undefined })}
         />
         
         {/* Menú de opciones */}
