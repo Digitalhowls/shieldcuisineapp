@@ -230,7 +230,11 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
         break;
       }
       case 'video': {
-        const videoContent: VideoContent = { src: '', type: 'youtube' };
+        const videoContent: VideoContent = { 
+          src: '', 
+          videoType: 'youtube',
+          type: 'video' 
+        };
         newBlock = {
           id: uuidv4(),
           type,
@@ -387,14 +391,25 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
     // Asegurarnos de que el contenido esté completo
     const block = blocks[id];
     if (block) {
+      // Según el tipo de bloque, añadimos el tipo discriminante correspondiente al contenido
+      // para ayudar al sistema de tipos de TypeScript a inferir correctamente
+      let typeSpecificContent = updatedContent;
+      
+      // Añadimos el tipo discriminante basado en el tipo del bloque
+      // Esto ayuda a TypeScript a realizar verificaciones de tipo correctamente
+      if (!('type' in updatedContent)) {
+        // En este punto, el block.type y el tipo del discriminante deberían coincidir
+        typeSpecificContent = { ...updatedContent, type: block.type };
+      }
+      
       // Combinamos el contenido actual con las actualizaciones
       const mergedContent = {
         ...block.content,
-        ...updatedContent
+        ...typeSpecificContent
       };
       
       // Registrar la actualización con el contenido combinado
-      recordUpdateBlock(id, { content: mergedContent });
+      recordUpdateBlock(id, { content: mergedContent as BlockContent });
     }
     
     // Notificar cambios si hay un callback

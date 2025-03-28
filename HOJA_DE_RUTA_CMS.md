@@ -39,7 +39,7 @@ El módulo CMS de ShieldCuisine busca ofrecer a restaurantes y negocios alimenta
 
 ### Fase 2: Editor de Bloques Mejorado
 
-**Estado: En Progreso**
+**Estado: En Progreso - Fase 2.5 Completada**
 
 #### 2.1 Estructura del Editor
 - [ ] Refactorizar arquitectura de bloques
@@ -61,10 +61,10 @@ El módulo CMS de ShieldCuisine busca ofrecer a restaurantes y negocios alimenta
 - [x] Funcionalidad de deshacer/rehacer
 - [x] Guardado automático y respaldo
 
-#### 2.5 Validación y Publicación
-- [ ] Verificación pre-publicación
-- [ ] Gestión de borradores
-- [ ] Vista previa para diferentes dispositivos
+#### 2.5 Validación y Publicación ✓
+- [x] Verificación pre-publicación
+- [x] Gestión de borradores
+- [x] Vista previa para diferentes dispositivos
 
 ### Fase 3: Gestor de Medios Avanzado
 
@@ -177,7 +177,8 @@ El módulo CMS de ShieldCuisine busca ofrecer a restaurantes y negocios alimenta
 4. ✅ Completada: Fase 2.2 (Bloques de texto enriquecido)
 5. ✅ Completada: Fase 2.3 (Panel de Ajustes Unificado)
 6. ✅ Completada: Fase 2.4 (Gestión de Historia y Cambios)
-7. Iniciar desarrollo de Fase 2.5: Validación y Publicación
+7. ✅ Completada: Fase 2.5 (Validación y Publicación)
+8. Iniciar desarrollo de Fase 3.1: Biblioteca de Medios
 
 ---
 
