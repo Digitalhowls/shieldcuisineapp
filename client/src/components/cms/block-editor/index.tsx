@@ -10,7 +10,10 @@ import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { Separator } from '@/components/ui/separator';
 import { Card, CardContent } from '@/components/ui/card';
-import { Save, Eye } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Save, Eye, Keyboard } from 'lucide-react';
+import { useKeyboardShortcuts } from './keyboard-shortcuts';
+import { KeyboardShortcutsModal } from './keyboard-shortcuts-modal';
 
 import {
   Block,
@@ -450,6 +453,26 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
       onPreview(content);
     }
   };
+  
+  /**
+   * Estado para mostrar/ocultar la ayuda de atajos de teclado
+   */
+  const [showKeyboardShortcuts, setShowKeyboardShortcuts] = useState(false);
+  
+  /**
+   * Configuración e integración de atajos de teclado
+   */
+  useKeyboardShortcuts({
+    content,
+    activeBlockId,
+    actions: {
+      onSave: onSave ? handleSave : undefined,
+      onPreview: onPreview ? handlePreview : undefined,
+      addBlock,
+      updateContent: setContent,
+      setActiveBlockId,
+    },
+  });
 
   // Renderiza un bloque individual 
   const renderBlock = (block: Block, index: number) => {
@@ -592,6 +615,23 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
           <div className="flex justify-between items-center">
             <BlockToolbar onAddBlock={addBlock} />
             <div className="flex space-x-2">
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setShowKeyboardShortcuts(true)}
+                      className="hover:bg-muted"
+                    >
+                      <Keyboard className="h-4 w-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Atajos de teclado</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
               <Button 
                 variant="outline" 
                 size="sm" 
@@ -610,6 +650,12 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
             </div>
           </div>
         )}
+        
+        {/* Modal de atajos de teclado */}
+        <KeyboardShortcutsModal 
+          open={showKeyboardShortcuts} 
+          onOpenChange={setShowKeyboardShortcuts} 
+        />
         
         <Separator />
         
