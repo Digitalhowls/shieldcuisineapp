@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect, useRef } from 'react';
+import React, { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import { DndProvider } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
 import { v4 as uuidv4 } from 'uuid';
@@ -11,9 +11,12 @@ import { useToast } from '@/hooks/use-toast';
 import { Separator } from '@/components/ui/separator';
 import { Card, CardContent } from '@/components/ui/card';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { Save, Eye, Keyboard } from 'lucide-react';
+import { Save, Eye, Keyboard, History, RotateCcw, Undo, Redo } from 'lucide-react';
 import { useKeyboardShortcuts } from './keyboard-shortcuts';
 import { KeyboardShortcutsModal } from './keyboard-shortcuts-modal';
+import { useEditorHistory } from './hooks/use-editor-history';
+import { HistoryManager } from './history-manager';
+import { AutoRecoveryDialog } from './auto-recovery-dialog';
 
 import {
   Block,
@@ -86,33 +89,82 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
   readOnly = false
 }) => {
   const { toast } = useToast();
-  // Estado para los bloques
-  const [content, setContent] = useState<PageContent>({ blocks: [] });
+  // Estado para bloques y historial
   const [activeBlockId, setActiveBlockId] = useState<string | null>(null);
+  const [showRecoveryDialog, setShowRecoveryDialog] = useState<boolean>(false);
+  
+  // Preparar datos iniciales para el editor
+  const [initialBlocks, setInitialBlocks] = useState<Record<string, Block>>({});
+  const [initialBlockIds, setInitialBlockIds] = useState<string[]>([]);
   
   // Inicializar con el contenido proporcionado
   useEffect(() => {
     if (initialContent) {
+      let parsedContent: PageContent;
+      
       if (typeof initialContent === 'string') {
         try {
-          setContent(JSON.parse(initialContent));
+          parsedContent = JSON.parse(initialContent);
         } catch (e) {
           // Si no se puede parsear, crear un bloque de párrafo con el contenido
-          setContent({
+          const id = uuidv4();
+          parsedContent = {
             blocks: [
               {
-                id: uuidv4(),
+                id,
                 type: 'paragraph',
                 content: { text: initialContent }
               }
             ]
-          });
+          };
         }
       } else {
-        setContent(initialContent);
+        parsedContent = initialContent;
       }
+      
+      // Convertir el array de bloques a formato de diccionario para el historial
+      const blocksDict: Record<string, Block> = {};
+      const blockIds: string[] = [];
+      
+      parsedContent.blocks.forEach(block => {
+        blocksDict[block.id] = block;
+        blockIds.push(block.id);
+      });
+      
+      setInitialBlocks(blocksDict);
+      setInitialBlockIds(blockIds);
     }
   }, [initialContent]);
+  
+  // Inicializar el sistema de historial
+  const {
+    blocks,
+    blockIds,
+    canUndo,
+    canRedo,
+    undo,
+    redo,
+    saveSnapshot,
+    restoreSnapshot,
+    recordAddBlock,
+    recordUpdateBlock,
+    recordDeleteBlock,
+    recordMoveBlock,
+    recordDuplicateBlock,
+    recordReorderBlocks,
+    historyService
+  } = useEditorHistory({
+    initialBlocks,
+    initialBlockIds,
+    enableLocalStorage: true,
+    localStorageKey: 'editor_history_state'
+  });
+  
+  // Construir el objeto de contenido a partir del estado del historial
+  const content: PageContent = useMemo(() => {
+    const pageBlocks = blockIds.map(id => blocks[id]);
+    return { blocks: pageBlocks };
+  }, [blocks, blockIds]);
 
   // Manipulación de bloques con tipado seguro
   /**
@@ -121,201 +173,200 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
    * @param type - Tipo de bloque a crear
    * @param index - Posición opcional donde insertar el bloque (al final por defecto)
    */
+  // Crear un nuevo bloque con un tipo específico
   const addBlock = useCallback((type: BlockType, index?: number) => {
-    setContent(prevContent => {
-      // Crear un bloque con contenido tipado específicamente para cada tipo
-      let newBlock: Block;
-      
-      // Contenido predeterminado según el tipo con el tipado correcto
-      switch (type) {
-        case 'heading': {
-          const headingContent: HeadingContent = { text: 'Título nuevo', level: 'h2' };
-          newBlock = {
-            id: uuidv4(),
-            type,
-            content: headingContent
-          };
-          break;
-        }
-        case 'paragraph': {
-          const paragraphContent: ParagraphContent = { text: 'Escribe aquí el contenido...' };
-          newBlock = {
-            id: uuidv4(),
-            type,
-            content: paragraphContent
-          };
-          break;
-        }
-        case 'image': {
-          const imageContent: ImageContent = { src: '', alt: '', caption: '' };
-          newBlock = {
-            id: uuidv4(),
-            type,
-            content: imageContent
-          };
-          break;
-        }
-        case 'gallery': {
-          const galleryContent: GalleryContent = { images: [] };
-          newBlock = {
-            id: uuidv4(),
-            type,
-            content: galleryContent
-          };
-          break;
-        }
-        case 'button': {
-          const buttonContent: ButtonContent = { text: 'Botón', url: '#', variant: 'default' };
-          newBlock = {
-            id: uuidv4(),
-            type,
-            content: buttonContent
-          };
-          break;
-        }
-        case 'video': {
-          const videoContent: VideoContent = { src: '', type: 'youtube' };
-          newBlock = {
-            id: uuidv4(),
-            type,
-            content: videoContent
-          };
-          break;
-        }
-        case 'divider': {
-          const dividerContent: DividerContent = { style: 'solid' };
-          newBlock = {
-            id: uuidv4(),
-            type,
-            content: dividerContent
-          };
-          break;
-        }
-        case 'quote': {
-          const quoteContent: QuoteContent = { text: 'Cita', author: '' };
-          newBlock = {
-            id: uuidv4(),
-            type,
-            content: quoteContent
-          };
-          break;
-        }
-        case 'list': {
-          const listContent: ListContent = { 
-            items: [{ text: 'Elemento 1', level: 0 }], 
-            type: 'unordered' 
-          };
-          newBlock = {
-            id: uuidv4(),
-            type,
-            content: listContent
-          };
-          break;
-        }
-        case 'html': {
-          const htmlContent: HtmlContent = { code: '<!-- Inserta tu código HTML aquí -->' };
-          newBlock = {
-            id: uuidv4(),
-            type,
-            content: htmlContent
-          };
-          break;
-        }
-        case 'contact-form': {
-          const contactFormContent: ContactFormContent = { 
-            title: 'Formulario de contacto',
-            fields: [
-              { name: 'name', label: 'Nombre', type: 'text', required: true },
-              { name: 'email', label: 'Email', type: 'email', required: true },
-              { name: 'message', label: 'Mensaje', type: 'textarea', required: true }
-            ],
-            successMessage: 'Gracias por contactarnos',
-            errorMessage: 'Hubo un error al enviar el formulario'
-          };
-          newBlock = {
-            id: uuidv4(),
-            type,
-            content: contactFormContent
-          };
-          break;
-        }
-        case 'table': {
-          const tableContent: TableContent = {
-            rows: [
-              [{ content: 'Encabezado 1', header: true }, { content: 'Encabezado 2', header: true }],
-              [{ content: 'Celda 1' }, { content: 'Celda 2' }]
-            ],
-            withHeader: true,
-            withBorder: true,
-            striped: false,
-            caption: 'Tabla de datos'
-          };
-          newBlock = {
-            id: uuidv4(),
-            type,
-            content: tableContent
-          };
-          break;
-        }
-        case 'ai': {
-          // Contenido para bloque AI
-          const aiContent = {
-            prompt: '',
-            content: '',
-            format: 'text' as const
-          };
-          newBlock = {
-            id: uuidv4(),
-            type,
-            content: aiContent
-          };
-          break;
-        }
-        case 'form': {
-          // Contenido predeterminado para bloque de formulario
-          const formContent: FormContent = {
-            fields: [],
-            submitButtonText: 'Enviar'
-          };
-          newBlock = {
-            id: uuidv4(),
-            type,
-            content: formContent
-          };
-          break;
-        }
-        default: {
-          // Caso predeterminado con un contenido vacío
-          newBlock = {
-            id: uuidv4(),
-            type,
-            content: {}
-          };
-        }
+    // Crear un bloque con contenido tipado específicamente para cada tipo
+    let newBlock: Block;
+    
+    // Contenido predeterminado según el tipo con el tipado correcto
+    switch (type) {
+      case 'heading': {
+        const headingContent: HeadingContent = { text: 'Título nuevo', level: 'h2' };
+        newBlock = {
+          id: uuidv4(),
+          type,
+          content: headingContent
+        };
+        break;
       }
-  
-      // Insertar el bloque en la posición indicada o al final
-      const insertIndex = typeof index === 'number' ? index : prevContent.blocks.length;
-      const newBlocks = [
-        ...prevContent.blocks.slice(0, insertIndex),
-        newBlock,
-        ...prevContent.blocks.slice(insertIndex)
-      ];
-  
-      // Creamos el nuevo estado con type assertion
-      const newState = { 
-        ...prevContent, 
-        blocks: newBlocks 
-      } as PageContent;
-      
-      // Notificamos cambios si hay un callback
-      if (onChange) {
-        onChange(newState);
+      case 'paragraph': {
+        const paragraphContent: ParagraphContent = { text: 'Escribe aquí el contenido...' };
+        newBlock = {
+          id: uuidv4(),
+          type,
+          content: paragraphContent
+        };
+        break;
       }
-      
-      return newState;
+      case 'image': {
+        const imageContent: ImageContent = { src: '', alt: '', caption: '' };
+        newBlock = {
+          id: uuidv4(),
+          type,
+          content: imageContent
+        };
+        break;
+      }
+      case 'gallery': {
+        const galleryContent: GalleryContent = { images: [] };
+        newBlock = {
+          id: uuidv4(),
+          type,
+          content: galleryContent
+        };
+        break;
+      }
+      case 'button': {
+        const buttonContent: ButtonContent = { text: 'Botón', url: '#', variant: 'default' };
+        newBlock = {
+          id: uuidv4(),
+          type,
+          content: buttonContent
+        };
+        break;
+      }
+      case 'video': {
+        const videoContent: VideoContent = { src: '', type: 'youtube' };
+        newBlock = {
+          id: uuidv4(),
+          type,
+          content: videoContent
+        };
+        break;
+      }
+      case 'divider': {
+        const dividerContent: DividerContent = { style: 'solid' };
+        newBlock = {
+          id: uuidv4(),
+          type,
+          content: dividerContent
+        };
+        break;
+      }
+      case 'quote': {
+        const quoteContent: QuoteContent = { text: 'Cita', author: '' };
+        newBlock = {
+          id: uuidv4(),
+          type,
+          content: quoteContent
+        };
+        break;
+      }
+      case 'list': {
+        const listContent: ListContent = { 
+          items: [{ text: 'Elemento 1', level: 0 }], 
+          type: 'unordered' 
+        };
+        newBlock = {
+          id: uuidv4(),
+          type,
+          content: listContent
+        };
+        break;
+      }
+      case 'html': {
+        const htmlContent: HtmlContent = { code: '<!-- Inserta tu código HTML aquí -->' };
+        newBlock = {
+          id: uuidv4(),
+          type,
+          content: htmlContent
+        };
+        break;
+      }
+      case 'contact-form': {
+        const contactFormContent: ContactFormContent = { 
+          title: 'Formulario de contacto',
+          fields: [
+            { name: 'name', label: 'Nombre', type: 'text', required: true },
+            { name: 'email', label: 'Email', type: 'email', required: true },
+            { name: 'message', label: 'Mensaje', type: 'textarea', required: true }
+          ],
+          successMessage: 'Gracias por contactarnos',
+          errorMessage: 'Hubo un error al enviar el formulario'
+        };
+        newBlock = {
+          id: uuidv4(),
+          type,
+          content: contactFormContent
+        };
+        break;
+      }
+      case 'table': {
+        const tableContent: TableContent = {
+          rows: [
+            [{ content: 'Encabezado 1', header: true }, { content: 'Encabezado 2', header: true }],
+            [{ content: 'Celda 1' }, { content: 'Celda 2' }]
+          ],
+          withHeader: true,
+          withBorder: true,
+          striped: false,
+          caption: 'Tabla de datos'
+        };
+        newBlock = {
+          id: uuidv4(),
+          type,
+          content: tableContent
+        };
+        break;
+      }
+      case 'ai': {
+        // Contenido para bloque AI
+        const aiContent = {
+          prompt: '',
+          content: '',
+          format: 'text' as const
+        };
+        newBlock = {
+          id: uuidv4(),
+          type,
+          content: aiContent
+        };
+        break;
+      }
+      case 'form': {
+        // Contenido predeterminado para bloque de formulario
+        const formContent: FormContent = {
+          fields: [],
+          submitButtonText: 'Enviar'
+        };
+        newBlock = {
+          id: uuidv4(),
+          type,
+          content: formContent
+        };
+        break;
+      }
+      default: {
+        // Caso predeterminado con un contenido vacío
+        newBlock = {
+          id: uuidv4(),
+          type,
+          content: {}
+        };
+      }
+    }
+
+    // Registrar la acción en el historial
+    const insertIndex = typeof index === 'number' ? index : blockIds.length;
+    
+    // Determinar el ID del bloque antes o después según la posición
+    const afterId = insertIndex > 0 ? blockIds[insertIndex - 1] : undefined;
+    const beforeId = insertIndex < blockIds.length ? blockIds[insertIndex] : undefined;
+    
+    // Registrar la acción con metadata adecuada
+    recordAddBlock(newBlock, { 
+      afterId,
+      beforeId
     });
-  }, [onChange]);
+    
+    // Notificar cambios si hay un callback
+    if (onChange) {
+      // Construir el nuevo objeto de contenido para pasarlo al callback
+      const pageBlocks = [...blockIds, newBlock.id].map(id => blocks[id] || newBlock);
+      const newPageContent: PageContent = { blocks: pageBlocks };
+      onChange(newPageContent);
+    }
+  }, [blockIds, blocks, onChange, recordAddBlock]);
 
   /**
    * Actualiza el contenido de un bloque específico
@@ -324,79 +375,60 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
    * @param updatedContent - Nuevo contenido parcial para el bloque
    */
   const updateBlock = useCallback((id: string, updatedContent: Partial<BlockContent>) => {
-    setContent(prevContent => {
-      // Creamos nuevos bloques actualizando el bloque específico
-      const newBlocks = prevContent.blocks.map(block => {
-        if (block.id === id) {
-          // Usamos type assertion para evitar errores de tipos
-          return {
-            ...block,
-            content: {
-              ...block.content,
-              ...updatedContent
-            }
-          } as Block;
-        }
-        return block;
-      });
+    // Registrar la actualización en el historial
+    // Creamos una actualización que se aplicará directamente al bloque
+    // Asegurarnos de que el contenido esté completo
+    const block = blocks[id];
+    if (block) {
+      // Combinamos el contenido actual con las actualizaciones
+      const mergedContent = {
+        ...block.content,
+        ...updatedContent
+      };
       
-      // Creamos el nuevo estado con type assertion
-      const newState = {
-        ...prevContent,
-        blocks: newBlocks
-      } as PageContent;
-      
-      // Notificamos cambios si hay un callback
-      if (onChange) {
-        onChange(newState);
-      }
-      
-      return newState;
-    });
-  }, [onChange]);
+      // Registrar la actualización con el contenido combinado
+      recordUpdateBlock(id, { content: mergedContent });
+    }
+    
+    // Notificar cambios si hay un callback
+    if (onChange) {
+      onChange(content);
+    }
+  }, [onChange, recordUpdateBlock, content, blocks]);
 
   /**
    * Elimina un bloque según su ID
    */
   const removeBlock = useCallback((id: string) => {
-    setContent(prevContent => {
-      const newBlocks = prevContent.blocks.filter(block => block.id !== id);
-      
-      const newState = {
-        ...prevContent,
-        blocks: newBlocks
-      } as PageContent;
-      
-      if (onChange) {
-        onChange(newState);
-      }
-      
-      return newState;
-    });
-  }, [onChange]);
+    // Registrar la eliminación en el historial
+    recordDeleteBlock(id);
+    
+    // Notificar cambios si hay un callback
+    if (onChange) {
+      onChange(content);
+    }
+  }, [onChange, recordDeleteBlock, content]);
 
   /**
    * Mueve un bloque de una posición a otra
    */
   const moveBlock = useCallback((dragIndex: number, hoverIndex: number) => {
-    setContent(prevContent => {
-      const dragBlock = prevContent.blocks[dragIndex];
-      const newBlocks = [...prevContent.blocks];
-      newBlocks.splice(dragIndex, 1);
-      newBlocks.splice(hoverIndex, 0, dragBlock);
-      
-      const newState = {
-        ...prevContent,
-        blocks: newBlocks
-      } as PageContent;
-      
-      if (onChange) {
-        onChange(newState);
-      }
-      
-      return newState;
-    });
-  }, [onChange]);
+    if (dragIndex === hoverIndex) return;
+    
+    // Obtener los IDs de los bloques a mover
+    const dragId = blockIds[dragIndex];
+    const hoverId = blockIds[hoverIndex];
+    
+    if (!dragId || !hoverId) return;
+    
+    // Registrar la acción en el historial
+    recordMoveBlock(dragId, dragIndex, hoverIndex);
+    
+    // Notificar cambios si hay un callback
+    if (onChange) {
+      onChange(content);
+    }
+  }, [onChange, blockIds, recordMoveBlock, content]);
 
   /**
    * Configuraciones generales de la página
@@ -416,19 +448,21 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
    * Actualiza la configuración de la página
    */
   const updateSettings = useCallback((settings: Partial<PageSettings>) => {
-    setContent(prevContent => {
-      const newState = { 
-        ...prevContent, 
-        settings: { ...prevContent.settings, ...settings } 
-      } as PageContent;
-      
-      if (onChange) {
-        onChange(newState);
-      }
-      
-      return newState;
-    });
-  }, [onChange]);
+    // En el futuro, podríamos implementar un historial específico para
+    // los cambios en la configuración de la página
+    // Por ahora, simplemente actualizamos el estado del contenido
+    
+    // Creamos un nuevo objeto de contenido con los settings actualizados
+    const newContent: PageContent = { 
+      ...content, 
+      settings: { ...content.settings, ...settings } 
+    };
+    
+    // Notificamos cambios si hay un callback
+    if (onChange) {
+      onChange(newContent);
+    }
+  }, [onChange, content]);
 
   /**
    * Gestiona el evento de guardar el contenido
@@ -462,6 +496,51 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
   /**
    * Configuración e integración de atajos de teclado
    */
+  /**
+   * Actualiza el contenido completo (utilizado por atajos de teclado)
+   */
+  const updateContent = useCallback((newContent: PageContent) => {
+    // En un futuro, podríamos implementar una función específica en el historial
+    // para actualizar todo el contenido de una vez
+    if (onChange) {
+      onChange(newContent);
+    }
+  }, [onChange]);
+  
+  /**
+   * Ejecuta la acción de deshacer con notificación
+   */
+  const performUndo = useCallback(() => {
+    if (canUndo) {
+      undo();
+      if (onChange) {
+        onChange(content);
+      }
+      toast({
+        title: "Acción deshecha",
+        description: "Se ha deshecho la última acción realizada.",
+        variant: "default"
+      });
+    }
+  }, [canUndo, undo, onChange, content, toast]);
+  
+  /**
+   * Ejecuta la acción de rehacer con notificación
+   */
+  const performRedo = useCallback(() => {
+    if (canRedo) {
+      redo();
+      if (onChange) {
+        onChange(content);
+      }
+      toast({
+        title: "Acción rehecha",
+        description: "Se ha rehecho la última acción deshecha.",
+        variant: "default"
+      });
+    }
+  }, [canRedo, redo, onChange, content, toast]);
+  
   useKeyboardShortcuts({
     content,
     activeBlockId,
@@ -469,8 +548,10 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
       onSave: onSave ? handleSave : undefined,
       onPreview: onPreview ? handlePreview : undefined,
       addBlock,
-      updateContent: setContent,
+      updateContent,
       setActiveBlockId,
+      undo: canUndo ? performUndo : undefined,
+      redo: canRedo ? performRedo : undefined
     },
   });
 
@@ -489,30 +570,19 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
         onMove={moveBlock}
         onDelete={() => removeBlock(block.id)}
         onDuplicate={() => {
-          setContent(prevContent => {
-            // Crear una copia del bloque con nuevo ID
-            const newBlock = {
-              ...block,
-              id: uuidv4()
-            };
-            
-            // Insertar después del bloque actual
-            const newBlocks = [...prevContent.blocks];
-            newBlocks.splice(index + 1, 0, newBlock);
-            
-            // Creamos el nuevo estado con type assertion
-            const newState = {
-              ...prevContent,
-              blocks: newBlocks
-            } as PageContent;
-            
-            // Notificamos cambios si hay un callback
-            if (onChange) {
-              onChange(newState);
-            }
-            
-            return newState;
-          });
+          // Crear una copia del bloque con nuevo ID
+          const newBlock = {
+            ...block,
+            id: uuidv4()
+          };
+          
+          // Registrar la acción en el historial
+          recordDuplicateBlock(block.id, newBlock);
+          
+          // Notificar cambios si hay un callback
+          if (onChange) {
+            onChange(content);
+          }
         }}
         updateBlock={updateBlock}
         readOnly={readOnly}
@@ -632,6 +702,45 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
                   </TooltipContent>
                 </Tooltip>
               </TooltipProvider>
+              
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={performUndo}
+                      disabled={!canUndo}
+                      className="hover:bg-muted"
+                    >
+                      <Undo className="h-4 w-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Deshacer (Ctrl+Z)</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+              
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={performRedo}
+                      disabled={!canRedo}
+                      className="hover:bg-muted"
+                    >
+                      <Redo className="h-4 w-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Rehacer (Ctrl+Shift+Z)</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+              
               <Button 
                 variant="outline" 
                 size="sm" 

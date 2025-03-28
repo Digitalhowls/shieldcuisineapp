@@ -42,6 +42,10 @@ export interface KeyboardShortcutsConfig {
   moveBlockDown: string;
   /** Atajo para abrir panel de configuración (Ej: 'Alt+S') */
   openSettings: string;
+  /** Atajo para deshacer (Ej: 'Ctrl+Z', 'Meta+Z') */
+  undo: string;
+  /** Atajo para rehacer (Ej: 'Ctrl+Shift+Z', 'Meta+Shift+Z', 'Ctrl+Y') */
+  redo: string;
 }
 
 /**
@@ -59,6 +63,8 @@ export const DEFAULT_SHORTCUTS: KeyboardShortcutsConfig = {
   moveBlockUp: 'Alt+ArrowUp',
   moveBlockDown: 'Alt+ArrowDown',
   openSettings: 'Alt+S',
+  undo: 'Meta+Z,Ctrl+Z',
+  redo: 'Meta+Shift+Z,Ctrl+Shift+Z,Ctrl+Y',
 };
 
 /**
@@ -129,6 +135,8 @@ export function useKeyboardShortcuts({
     addBlock: (type: BlockType, index?: number) => void;
     updateContent: (newContent: PageContent) => void;
     setActiveBlockId: (id: string | null) => void;
+    undo?: () => void;
+    redo?: () => void;
   };
   config?: KeyboardShortcutsConfig;
 }) {
@@ -230,6 +238,20 @@ export function useKeyboardShortcuts({
         newBlocks[activeIndex + 1] = temp;
         actions.updateContent({ ...content, blocks: newBlocks });
       }
+      return;
+    }
+    
+    // Deshacer
+    if (matchesShortcut(event, config.undo) && actions.undo) {
+      event.preventDefault();
+      actions.undo();
+      return;
+    }
+    
+    // Rehacer
+    if (matchesShortcut(event, config.redo) && actions.redo) {
+      event.preventDefault();
+      actions.redo();
       return;
     }
   }, [config, content, activeBlockId, actions]);

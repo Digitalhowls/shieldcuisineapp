@@ -77,6 +77,16 @@ export function KeyboardShortcutsModal({ open, onOpenChange }: KeyboardShortcuts
       description: 'Abrir el panel de configuración del bloque seleccionado',
       shortcut: formatShortcut(DEFAULT_SHORTCUTS.openSettings),
     },
+    {
+      title: 'Deshacer',
+      description: 'Deshacer la última acción realizada',
+      shortcut: formatShortcut(DEFAULT_SHORTCUTS.undo),
+    },
+    {
+      title: 'Rehacer',
+      description: 'Rehacer la última acción deshecha',
+      shortcut: formatShortcut(DEFAULT_SHORTCUTS.redo),
+    },
   ];
 
   return (
