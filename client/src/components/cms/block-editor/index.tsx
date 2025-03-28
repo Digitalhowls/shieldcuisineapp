@@ -1,7 +1,8 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { DndProvider } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
 import { v4 as uuidv4 } from 'uuid';
+import { FixedSizeList as List } from 'react-window';
 import BlockToolbar from './BlockToolbar';
 import BlockContainer from './BlockContainer';
 import EmptyState from './EmptyState';
@@ -450,6 +451,127 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
     }
   };
 
+  // Renderiza un bloque individual
+  const renderBlock = (block: Block, index: number) => {
+    return (
+      <BlockContainer
+        key={block.id}
+        id={block.id}
+        type={block.type}
+        block={block}
+        index={index}
+        isActive={activeBlockId === block.id}
+        onActivate={() => setActiveBlockId(block.id)}
+        onDeactivate={() => setActiveBlockId(null)}
+        onMove={moveBlock}
+        onDelete={() => removeBlock(block.id)}
+        onDuplicate={() => {
+          setContent(prevContent => {
+            // Crear una copia del bloque con nuevo ID
+            const newBlock = {
+              ...block,
+              id: uuidv4()
+            };
+            
+            // Insertar después del bloque actual
+            const newBlocks = [...prevContent.blocks];
+            newBlocks.splice(index + 1, 0, newBlock);
+            
+            // Creamos el nuevo estado con type assertion
+            const newState = {
+              ...prevContent,
+              blocks: newBlocks
+            } as PageContent;
+            
+            // Notificamos cambios si hay un callback
+            if (onChange) {
+              onChange(newState);
+            }
+            
+            return newState;
+          });
+        }}
+        updateBlock={updateBlock}
+        readOnly={readOnly}
+      >
+        {/* Contenido visual del bloque según su tipo */}
+        <div className="block-content">
+          {block.type === 'heading' && (
+            <div className={`heading-${(block.content as HeadingContent).level || 'h2'}`}>
+              {(block.content as HeadingContent).text || 'Título'}
+            </div>
+          )}
+          
+          {block.type === 'paragraph' && (
+            <p>{(block.content as ParagraphContent).text || 'Texto del párrafo'}</p>
+          )}
+          
+          {block.type === 'image' && (
+            <div className="image-block">
+              {(block.content as ImageContent).src ? (
+                <img 
+                  src={(block.content as ImageContent).src} 
+                  alt={(block.content as ImageContent).alt || ''} 
+                  className="max-w-full"
+                />
+              ) : (
+                <div className="border-2 border-dashed border-gray-300 rounded-md p-12 text-center">
+                  <p className="text-muted-foreground">Selecciona una imagen</p>
+                </div>
+              )}
+              {(block.content as ImageContent).caption && (
+                <p className="text-sm text-muted-foreground mt-2">{(block.content as ImageContent).caption}</p>
+              )}
+            </div>
+          )}
+          
+          {/* Visualización para formulario de contacto */}
+          {block.type === 'contact-form' && (
+            <div className="p-4 border rounded-md">
+              <h3 className="text-lg font-medium mb-2">
+                {(block.content as ContactFormContent).title}
+              </h3>
+              <div className="space-y-2">
+                {((block.content as ContactFormContent).fields || []).map((field: { label: string; required?: boolean; type: string; }, i: number) => (
+                  <div key={i} className="flex flex-col">
+                    <p className="text-sm font-medium mb-1">
+                      {field.label}{field.required && ' *'}
+                    </p>
+                    <div className="h-8 bg-muted/20 rounded-md"></div>
+                  </div>
+                ))}
+                <div className="mt-4">
+                  <div className="bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2 rounded-md inline-flex items-center justify-center text-sm font-medium">
+                    Enviar
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+          
+          {/* Placeholder para otros tipos de bloques */}
+          {!['heading', 'paragraph', 'image', 'contact-form'].includes(block.type) && (
+            <div className="p-4 border rounded-md bg-muted/20">
+              <p className="text-sm text-muted-foreground">
+                Bloque de tipo: <strong>{block.type}</strong>
+              </p>
+            </div>
+          )}
+        </div>
+      </BlockContainer>
+    );
+  };
+
+  // Renderiza un elemento en la lista virtualizada
+  const renderVirtualizedItem = ({ index, style }: { index: number, style: React.CSSProperties }) => {
+    const block = content.blocks[index];
+    return (
+      <div style={{ ...style, paddingBottom: '16px' }}>
+        {renderBlock(block, index)}
+      </div>
+    );
+  };
+
   return (
     <DndProvider backend={HTML5Backend}>
       <div className="flex flex-col space-y-4">
@@ -484,113 +606,21 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
               <EmptyState onAddBlock={addBlock} />
             ) : (
               <div className="space-y-4">
-                {content.blocks.map((block, index) => (
-                  <BlockContainer
-                    key={block.id}
-                    id={block.id}
-                    type={block.type}
-                    block={block}
-                    index={index}
-                    isActive={activeBlockId === block.id}
-                    onActivate={() => setActiveBlockId(block.id)}
-                    onDeactivate={() => setActiveBlockId(null)}
-                    onMove={moveBlock}
-                    onDelete={() => removeBlock(block.id)}
-                    onDuplicate={() => {
-                      setContent(prevContent => {
-                        // Crear una copia del bloque con nuevo ID
-                        const newBlock = {
-                          ...block,
-                          id: uuidv4()
-                        };
-                        
-                        // Insertar después del bloque actual
-                        const newBlocks = [...prevContent.blocks];
-                        newBlocks.splice(index + 1, 0, newBlock);
-                        
-                        // Creamos el nuevo estado con type assertion
-                        const newState = {
-                          ...prevContent,
-                          blocks: newBlocks
-                        } as PageContent;
-                        
-                        // Notificamos cambios si hay un callback
-                        if (onChange) {
-                          onChange(newState);
-                        }
-                        
-                        return newState;
-                      });
-                    }}
-                    updateBlock={updateBlock}
-                    readOnly={readOnly}
+                {content.blocks.length > 20 ? (
+                  // Renderización virtualizada para listas largas
+                  <List
+                    height={600}
+                    itemCount={content.blocks.length}
+                    itemSize={150}
+                    width="100%"
+                    className="list-virtualized"
                   >
-                    {/* Contenido visual del bloque según su tipo */}
-                    <div className="block-content">
-                      {block.type === 'heading' && (
-                        <div className={`heading-${(block.content as HeadingContent).level || 'h2'}`}>
-                          {(block.content as HeadingContent).text || 'Título'}
-                        </div>
-                      )}
-                      
-                      {block.type === 'paragraph' && (
-                        <p>{(block.content as ParagraphContent).text || 'Texto del párrafo'}</p>
-                      )}
-                      
-                      {block.type === 'image' && (
-                        <div className="image-block">
-                          {(block.content as ImageContent).src ? (
-                            <img 
-                              src={(block.content as ImageContent).src} 
-                              alt={(block.content as ImageContent).alt || ''} 
-                              className="max-w-full"
-                            />
-                          ) : (
-                            <div className="border-2 border-dashed border-gray-300 rounded-md p-12 text-center">
-                              <p className="text-muted-foreground">Selecciona una imagen</p>
-                            </div>
-                          )}
-                          {(block.content as ImageContent).caption && (
-                            <p className="text-sm text-muted-foreground mt-2">{(block.content as ImageContent).caption}</p>
-                          )}
-                        </div>
-                      )}
-                      
-                      {/* Visualización para formulario de contacto */}
-                      {block.type === 'contact-form' && (
-                        <div className="p-4 border rounded-md">
-                          <h3 className="text-lg font-medium mb-2">
-                            {(block.content as ContactFormContent).title}
-                          </h3>
-                          <div className="space-y-2">
-                            {((block.content as ContactFormContent).fields || []).map((field: { label: string; required?: boolean; type: string; }, i: number) => (
-                              <div key={i} className="flex flex-col">
-                                <p className="text-sm font-medium mb-1">
-                                  {field.label}{field.required && ' *'}
-                                </p>
-                                <div className="h-8 bg-muted/20 rounded-md"></div>
-                              </div>
-                            ))}
-                            <div className="mt-4">
-                              <div className="bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2 rounded-md inline-flex items-center justify-center text-sm font-medium">
-                                Enviar
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      )}
-                      
-                      {/* Placeholder para otros tipos de bloques */}
-                      {!['heading', 'paragraph', 'image', 'contact-form'].includes(block.type) && (
-                        <div className="p-4 border rounded-md bg-muted/20">
-                          <p className="text-sm text-muted-foreground">
-                            Bloque de tipo: <strong>{block.type}</strong>
-                          </p>
-                        </div>
-                      )}
-                    </div>
-                  </BlockContainer>
-                ))}
+                    {renderVirtualizedItem}
+                  </List>
+                ) : (
+                  // Renderización normal para listas cortas
+                  content.blocks.map((block, index) => renderBlock(block, index))
+                )}
               </div>
             )}
           </CardContent>

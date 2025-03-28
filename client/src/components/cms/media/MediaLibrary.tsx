@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
+import { FixedSizeGrid as VirtualGrid } from "react-window";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
@@ -43,11 +44,11 @@ import { Badge } from "@/components/ui/badge";
 import {
   Search,
   Upload,
-  Grid,
+  Grid as GridIcon,
   List,
   Trash2,
   Edit,
-  Image,
+  Image as ImageIcon,
   FileText,
   FileVideo,
   File,
@@ -97,7 +98,7 @@ type FilterOptions = {
 };
 
 // Componente para mostrar un elemento multimedia
-const MediaItem: React.FC<{
+const MediaItemComponent: React.FC<{
   item: MediaItem;
   viewMode: ViewMode;
   onView: (item: MediaItem) => void;
@@ -107,7 +108,7 @@ const MediaItem: React.FC<{
   // Función para determinar el icono según el tipo de archivo
   const getFileIcon = () => {
     if (item.mimeType.startsWith("image/")) {
-      return <Image className="h-8 w-8 text-blue-500" />;
+      return <ImageIcon className="h-8 w-8 text-blue-500" />;
     } else if (item.mimeType.startsWith("video/")) {
       return <FileVideo className="h-8 w-8 text-red-500" />;
     } else if (
@@ -312,6 +313,10 @@ const MediaLibrary: React.FC = () => {
     type: "all",
     categoryId: null,
   });
+  
+  // Referencia al contenedor para medir el ancho disponible
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [containerSize, setContainerSize] = useState({ width: 0, height: 0 });
 
   // Cargar medios
   const {
@@ -350,6 +355,26 @@ const MediaLibrary: React.FC = () => {
       return response.json();
     },
   });
+
+  // Medir tamaño del contenedor para la cuadrícula virtual
+  useEffect(() => {
+    if (containerRef.current) {
+      const resizeObserver = new ResizeObserver(entries => {
+        for (let entry of entries) {
+          const { width, height } = entry.contentRect;
+          setContainerSize({ width, height });
+        }
+      });
+      
+      resizeObserver.observe(containerRef.current);
+      
+      return () => {
+        if (containerRef.current) {
+          resizeObserver.unobserve(containerRef.current);
+        }
+      };
+    }
+  }, []);
 
   // Mutación para eliminar medio
   const deleteMediaMutation = useMutation({
@@ -535,75 +560,90 @@ const MediaLibrary: React.FC = () => {
             )}
           </div>
           <div className="flex items-center gap-2">
-            <Dialog open={isUploadDialogOpen} onOpenChange={setIsUploadDialogOpen}>
-              <DialogTrigger asChild>
-                <Button className="gap-2">
-                  <Upload size={16} />
-                  <span>Subir Archivos</span>
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="sm:max-w-[500px]">
-                <DialogHeader>
-                  <DialogTitle>Subir Archivos</DialogTitle>
-                  <DialogDescription>
-                    Sube tus archivos a la biblioteca de medios
-                  </DialogDescription>
-                </DialogHeader>
-                <MediaUploader 
-                  onUploadComplete={() => {
-                    queryClient.invalidateQueries({ queryKey: ["/api/cms/media"] });
-                    setIsUploadDialogOpen(false);
-                  }}
-                  onClose={() => setIsUploadDialogOpen(false)}
-                  categories={categories}
-                />
-              </DialogContent>
-            </Dialog>
+            <Button
+              variant="outline"
+              className="gap-2"
+              onClick={() => setIsUploadDialogOpen(true)}
+            >
+              <Upload className="h-4 w-4" />
+              <span>Subir</span>
+            </Button>
+            <div className="flex border rounded-md overflow-hidden">
+              <Button
+                size="sm"
+                variant={viewMode === "grid" ? "default" : "ghost"}
+                className="px-3 rounded-none"
+                onClick={() => setViewMode("grid")}
+              >
+                <GridIcon className="h-4 w-4" />
+              </Button>
+              <Button
+                size="sm"
+                variant={viewMode === "list" ? "default" : "ghost"}
+                className="px-3 rounded-none"
+                onClick={() => setViewMode("list")}
+              >
+                <List className="h-4 w-4" />
+              </Button>
+            </div>
           </div>
         </div>
         
-        <Card className="text-center py-16">
-          <CardContent>
-            <div className="flex flex-col items-center space-y-4">
-              <div className="h-20 w-20 rounded-full bg-muted flex items-center justify-center">
-                <Image className="h-10 w-10 text-muted-foreground" />
-              </div>
-              <div className="space-y-2">
-                <h3 className="text-lg font-medium">No hay archivos multimedia</h3>
-                <p className="text-sm text-muted-foreground max-w-md mx-auto">
-                  Sube tus primeros archivos para comenzar a construir tu biblioteca de medios.
-                </p>
-              </div>
-              <Dialog open={isUploadDialogOpen} onOpenChange={setIsUploadDialogOpen}>
-                <DialogTrigger asChild>
-                  <Button className="gap-2">
-                    <Upload size={16} />
-                    <span>Subir Archivos</span>
-                  </Button>
-                </DialogTrigger>
-                <DialogContent className="sm:max-w-[500px]">
-                  <DialogHeader>
-                    <DialogTitle>Subir Archivos</DialogTitle>
-                    <DialogDescription>
-                      Sube tus archivos a la biblioteca de medios
-                    </DialogDescription>
-                  </DialogHeader>
-                  <MediaUploader 
-                    onUploadComplete={() => {
-                      queryClient.invalidateQueries({ queryKey: ["/api/cms/media"] });
-                      setIsUploadDialogOpen(false);
-                    }}
-                    onClose={() => setIsUploadDialogOpen(false)}
-                    categories={categories}
-                  />
-                </DialogContent>
-              </Dialog>
-            </div>
-          </CardContent>
+        <Card className="p-12 flex flex-col items-center justify-center text-center">
+          <FileText className="h-16 w-16 text-muted-foreground mb-4" />
+          <h3 className="text-xl font-medium mb-2">No hay archivos multimedia</h3>
+          <p className="text-muted-foreground mb-6">
+            No se encontraron archivos que coincidan con los filtros aplicados.
+          </p>
+          <Button className="gap-2" onClick={() => setIsUploadDialogOpen(true)}>
+            <Upload className="h-4 w-4" />
+            <span>Subir archivos</span>
+          </Button>
         </Card>
       </div>
     );
   }
+
+  // Calcular dimensiones para la cuadrícula virtual en modo grid
+  const calculateGridDimensions = () => {
+    // Tamaño por defecto si no tenemos el contenedor
+    if (!containerSize.width) {
+      return { columnCount: 4, columnWidth: 250, rowHeight: 300 };
+    }
+    
+    let columnCount = 1;
+    if (containerSize.width >= 1280) columnCount = 4;      // xl
+    else if (containerSize.width >= 1024) columnCount = 3; // lg
+    else if (containerSize.width >= 768) columnCount = 2;  // md
+    
+    const columnWidth = Math.floor((containerSize.width - (16 * (columnCount - 1))) / columnCount);
+    const rowHeight = columnWidth + 80; // Altura para el aspecto cuadrado + espacio para el pie
+    
+    return { columnCount, columnWidth, rowHeight };
+  };
+  
+  const { columnCount, columnWidth, rowHeight } = calculateGridDimensions();
+
+  // Renderiza una celda en la cuadrícula virtual
+  const GridCell = ({ columnIndex, rowIndex, style }: { columnIndex: number, rowIndex: number, style: React.CSSProperties }) => {
+    const itemIndex = rowIndex * columnCount + columnIndex;
+    if (itemIndex >= mediaItems.length) {
+      return <div style={style}></div>;
+    }
+    
+    const item = mediaItems[itemIndex];
+    return (
+      <div style={{ ...style, padding: '8px' }}>
+        <MediaItemComponent
+          item={item}
+          viewMode="grid"
+          onView={handleViewItem}
+          onEdit={handleEditItem}
+          onDelete={handleDeleteItem}
+        />
+      </div>
+    );
+  };
 
   // Renderizar biblioteca de medios
   return (
@@ -656,366 +696,365 @@ const MediaLibrary: React.FC = () => {
             </Select>
           )}
         </div>
-        <div className="flex items-center gap-3">
-          <div className="border rounded-md p-1 flex">
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            className="gap-2"
+            onClick={() => setIsUploadDialogOpen(true)}
+          >
+            <Upload className="h-4 w-4" />
+            <span>Subir</span>
+          </Button>
+          <div className="flex border rounded-md overflow-hidden">
             <Button
+              size="sm"
               variant={viewMode === "grid" ? "default" : "ghost"}
-              size="icon"
-              className="h-8 w-8"
+              className="px-3 rounded-none"
               onClick={() => setViewMode("grid")}
             >
-              <Grid className="h-4 w-4" />
+              <GridIcon className="h-4 w-4" />
             </Button>
             <Button
+              size="sm"
               variant={viewMode === "list" ? "default" : "ghost"}
-              size="icon"
-              className="h-8 w-8"
+              className="px-3 rounded-none"
               onClick={() => setViewMode("list")}
             >
               <List className="h-4 w-4" />
             </Button>
           </div>
-          <Dialog open={isUploadDialogOpen} onOpenChange={setIsUploadDialogOpen}>
-            <DialogTrigger asChild>
-              <Button className="gap-2">
-                <Upload size={16} />
-                <span>Subir Archivos</span>
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-[500px]">
-              <DialogHeader>
-                <DialogTitle>Subir Archivos</DialogTitle>
-                <DialogDescription>
-                  Sube tus archivos a la biblioteca de medios
-                </DialogDescription>
-              </DialogHeader>
-              <MediaUploader 
-                onUploadComplete={() => {
-                  queryClient.invalidateQueries({ queryKey: ["/api/cms/media"] });
-                  setIsUploadDialogOpen(false);
-                }}
-                onClose={() => setIsUploadDialogOpen(false)}
-                categories={categories}
-              />
-            </DialogContent>
-          </Dialog>
         </div>
       </div>
-
-      {viewMode === "grid" ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-          {mediaItems.map((item) => (
-            <MediaItem
-              key={item.id}
-              item={item}
-              viewMode={viewMode}
-              onView={handleViewItem}
-              onEdit={handleEditItem}
-              onDelete={handleDeleteItem}
-            />
-          ))}
-        </div>
-      ) : (
-        <div className="border rounded-md">
-          {mediaItems.map((item) => (
-            <MediaItem
-              key={item.id}
-              item={item}
-              viewMode={viewMode}
-              onView={handleViewItem}
-              onEdit={handleEditItem}
-              onDelete={handleDeleteItem}
-            />
-          ))}
-        </div>
-      )}
-
-      {/* Diálogo de vista de detalles */}
-      <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
-        <DialogContent className="sm:max-w-[800px]">
-          {selectedItem && (
-            <>
-              <DialogHeader>
-                <DialogTitle className="truncate">{selectedItem.fileName}</DialogTitle>
-                <DialogDescription>
-                  Subido el {new Date(selectedItem.createdAt).toLocaleString()}
-                </DialogDescription>
-              </DialogHeader>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 py-4">
-                <div className="flex items-center justify-center bg-muted rounded-md overflow-hidden">
-                  {selectedItem.mimeType.startsWith("image/") ? (
-                    <img
-                      src={selectedItem.fileUrl}
-                      alt={selectedItem.alt || selectedItem.fileName}
-                      className="max-w-full max-h-[300px] object-contain"
-                    />
-                  ) : (
-                    <div className="flex flex-col items-center justify-center p-8">
-                      {selectedItem.mimeType.startsWith("video/") ? (
-                        <FileVideo className="h-16 w-16 text-red-500" />
-                      ) : selectedItem.mimeType === "application/pdf" ||
-                        selectedItem.mimeType.includes("text/") ? (
-                        <FileText className="h-16 w-16 text-orange-500" />
-                      ) : (
-                        <File className="h-16 w-16 text-gray-500" />
-                      )}
-                      <span className="mt-4 text-sm text-muted-foreground">
-                        {selectedItem.mimeType}
-                      </span>
-                    </div>
-                  )}
+      
+      <div ref={containerRef} className="w-full min-h-[500px]">
+        {viewMode === "grid" ? (
+          mediaItems.length > 30 ? (
+            // Renderizar con virtualización para colecciones grandes
+            <VirtualGrid
+              columnCount={columnCount}
+              columnWidth={columnWidth}
+              height={Math.min(rowHeight * Math.ceil(mediaItems.length / columnCount), 600)}
+              rowCount={Math.ceil(mediaItems.length / columnCount)}
+              rowHeight={rowHeight}
+              width={containerSize.width || 1200}
+              className="media-library-grid"
+            >
+              {GridCell}
+            </VirtualGrid>
+          ) : (
+            // Renderizar normal para colecciones pequeñas
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+              {mediaItems.map((item) => (
+                <MediaItemComponent
+                  key={item.id}
+                  item={item}
+                  viewMode="grid"
+                  onView={handleViewItem}
+                  onEdit={handleEditItem}
+                  onDelete={handleDeleteItem}
+                />
+              ))}
+            </div>
+          )
+        ) : (
+          // Vista de lista
+          <div className="space-y-1">
+            {mediaItems.map((item) => (
+              <MediaItemComponent
+                key={item.id}
+                item={item}
+                viewMode="list"
+                onView={handleViewItem}
+                onEdit={handleEditItem}
+                onDelete={handleDeleteItem}
+              />
+            ))}
+          </div>
+        )}
+      </div>
+      
+      {/* Diálogo de carga de archivos */}
+      <Dialog open={isUploadDialogOpen} onOpenChange={setIsUploadDialogOpen}>
+        <DialogContent className="sm:max-w-[600px]">
+          <DialogHeader>
+            <DialogTitle>Subir archivos</DialogTitle>
+            <DialogDescription>
+              Sube archivos multimedia a tu biblioteca. Puedes seleccionar varios archivos a la vez.
+            </DialogDescription>
+          </DialogHeader>
+          <MediaUploader
+            onUploadComplete={() => {
+              queryClient.invalidateQueries({ queryKey: ["/api/cms/media"] });
+              setIsUploadDialogOpen(false);
+            }}
+            onClose={() => setIsUploadDialogOpen(false)}
+            categories={categories}
+          />
+        </DialogContent>
+      </Dialog>
+      
+      {/* Diálogo de visualización de detalles */}
+      {selectedItem && (
+        <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
+          <DialogContent className="sm:max-w-[600px]">
+            <DialogHeader>
+              <DialogTitle>Detalles del archivo</DialogTitle>
+            </DialogHeader>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="bg-muted rounded-md overflow-hidden flex items-center justify-center">
+                {selectedItem.mimeType.startsWith("image/") ? (
+                  <img
+                    src={selectedItem.fileUrl}
+                    alt={selectedItem.alt || selectedItem.fileName}
+                    className="max-w-full max-h-[300px] object-contain"
+                  />
+                ) : (
+                  <div className="p-12">
+                    {selectedItem.mimeType.startsWith("video/") ? (
+                      <FileVideo className="h-24 w-24 text-red-500" />
+                    ) : selectedItem.mimeType === "application/pdf" ? (
+                      <FileText className="h-24 w-24 text-orange-500" />
+                    ) : (
+                      <File className="h-24 w-24 text-gray-500" />
+                    )}
+                  </div>
+                )}
+              </div>
+              <div className="space-y-3">
+                <div>
+                  <h3 className="text-sm font-medium text-muted-foreground">Nombre de archivo</h3>
+                  <p className="text-md break-all">{selectedItem.fileName}</p>
                 </div>
                 <div>
-                  <div className="space-y-3">
-                    <div>
-                      <div className="text-sm font-medium">Nombre del archivo</div>
-                      <div className="break-all">{selectedItem.fileName}</div>
-                    </div>
-                    <div>
-                      <div className="text-sm font-medium">URL</div>
-                      <div className="text-sm break-all text-muted-foreground">
-                        {selectedItem.fileUrl}
-                      </div>
-                    </div>
-                    <div>
-                      <div className="text-sm font-medium">Tipo</div>
-                      <div className="text-sm text-muted-foreground">
-                        {selectedItem.mimeType}
-                      </div>
-                    </div>
-                    <div>
-                      <div className="text-sm font-medium">Tamaño</div>
-                      <div className="text-sm text-muted-foreground">
-                        {(selectedItem.fileSize / 1024).toFixed(2)} KB
-                      </div>
-                    </div>
-                    {selectedItem.width && selectedItem.height && (
-                      <div>
-                        <div className="text-sm font-medium">Dimensiones</div>
-                        <div className="text-sm text-muted-foreground">
-                          {selectedItem.width} × {selectedItem.height} píxeles
-                        </div>
-                      </div>
-                    )}
-                    {selectedItem.categories && selectedItem.categories.length > 0 && (
-                      <div>
-                        <div className="text-sm font-medium">Categorías</div>
-                        <div className="flex flex-wrap gap-1 mt-1">
-                          {selectedItem.categories.map((category) => (
-                            <Badge key={category.id} variant="outline">
-                              {category.name}
-                            </Badge>
-                          ))}
-                        </div>
-                      </div>
-                    )}
+                  <h3 className="text-sm font-medium text-muted-foreground">Tamaño</h3>
+                  <p className="text-md">
+                    {selectedItem.fileSize < 1024
+                      ? `${selectedItem.fileSize} B`
+                      : selectedItem.fileSize < 1024 * 1024
+                      ? `${(selectedItem.fileSize / 1024).toFixed(2)} KB`
+                      : `${(selectedItem.fileSize / (1024 * 1024)).toFixed(2)} MB`}
+                  </p>
+                </div>
+                <div>
+                  <h3 className="text-sm font-medium text-muted-foreground">Tipo</h3>
+                  <p className="text-md">{selectedItem.mimeType}</p>
+                </div>
+                <div>
+                  <h3 className="text-sm font-medium text-muted-foreground">Fecha de subida</h3>
+                  <p className="text-md">
+                    {new Date(selectedItem.createdAt).toLocaleDateString()}
+                  </p>
+                </div>
+                {selectedItem.width && selectedItem.height && (
+                  <div>
+                    <h3 className="text-sm font-medium text-muted-foreground">Dimensiones</h3>
+                    <p className="text-md">{selectedItem.width} × {selectedItem.height}</p>
                   </div>
-                </div>
+                )}
+                {selectedItem.alt && (
+                  <div>
+                    <h3 className="text-sm font-medium text-muted-foreground">Texto alternativo</h3>
+                    <p className="text-md">{selectedItem.alt}</p>
+                  </div>
+                )}
+                {selectedItem.description && (
+                  <div>
+                    <h3 className="text-sm font-medium text-muted-foreground">Descripción</h3>
+                    <p className="text-md">{selectedItem.description}</p>
+                  </div>
+                )}
+                {selectedItem.categories && selectedItem.categories.length > 0 && (
+                  <div>
+                    <h3 className="text-sm font-medium text-muted-foreground">Categorías</h3>
+                    <div className="flex flex-wrap gap-1 mt-1">
+                      {selectedItem.categories.map((category) => (
+                        <Badge key={category.id} variant="outline">
+                          {category.name}
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
-              <DialogFooter className="flex justify-between sm:justify-between">
-                <div className="flex gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      setIsViewDialogOpen(false);
-                      handleEditItem(selectedItem);
-                    }}
-                  >
-                    <Edit className="h-4 w-4 mr-2" />
-                    <span>Editar</span>
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    asChild
-                  >
-                    <a
-                      href={selectedItem.fileUrl}
-                      download
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      <Download className="h-4 w-4 mr-2" />
-                      <span>Descargar</span>
-                    </a>
-                  </Button>
-                </div>
-                <Button
-                  variant="destructive"
-                  size="sm"
-                  onClick={() => {
-                    setIsViewDialogOpen(false);
-                    handleDeleteItem(selectedItem);
-                  }}
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setIsViewDialogOpen(false)}>
+                Cerrar
+              </Button>
+              <Button 
+                variant="outline" 
+                className="gap-2" 
+                asChild
+              >
+                <a 
+                  href={selectedItem.fileUrl} 
+                  download 
+                  target="_blank" 
+                  rel="noopener noreferrer"
                 >
-                  <Trash2 className="h-4 w-4 mr-2" />
-                  <span>Eliminar</span>
-                </Button>
-              </DialogFooter>
-            </>
-          )}
-        </DialogContent>
-      </Dialog>
-
-      {/* Diálogo de confirmación de eliminación */}
-      <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Confirmar eliminación</DialogTitle>
-            <DialogDescription>
-              ¿Estás seguro de que deseas eliminar este archivo?
-              Esta acción no se puede deshacer.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setIsDeleteDialogOpen(false)}
-            >
-              Cancelar
-            </Button>
-            <Button
-              variant="destructive"
-              onClick={confirmDelete}
-              disabled={deleteMediaMutation.isPending}
-            >
-              {deleteMediaMutation.isPending ? "Eliminando..." : "Eliminar"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
+                  <Download className="h-4 w-4" />
+                  <span>Descargar</span>
+                </a>
+              </Button>
+              <Button onClick={() => {
+                setIsViewDialogOpen(false);
+                handleEditItem(selectedItem);
+              }}>
+                Editar
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
+      
       {/* Diálogo de edición */}
-      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Editar archivo</DialogTitle>
-            <DialogDescription>
-              Actualiza los metadatos del archivo
-            </DialogDescription>
-          </DialogHeader>
-          {selectedItem && (
+      {selectedItem && (
+        <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+          <DialogContent className="sm:max-w-[600px]">
+            <DialogHeader>
+              <DialogTitle>Editar archivo</DialogTitle>
+              <DialogDescription>
+                Modifica los detalles del archivo multimedia
+              </DialogDescription>
+            </DialogHeader>
             <div className="grid gap-4 py-4">
               <div className="grid grid-cols-4 items-center gap-4">
-                <label className="text-right text-sm">
-                  Nombre:
-                </label>
-                <Input
-                  className="col-span-3"
-                  value={selectedItem.title || selectedItem.fileName}
-                  onChange={(e) =>
-                    setSelectedItem({
-                      ...selectedItem,
-                      title: e.target.value,
-                    })
-                  }
-                />
-              </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <label className="text-right text-sm">
-                  Texto alternativo:
-                </label>
-                <Input
-                  className="col-span-3"
-                  value={selectedItem.alt || ""}
-                  onChange={(e) =>
-                    setSelectedItem({
-                      ...selectedItem,
-                      alt: e.target.value,
-                    })
-                  }
-                  placeholder="Descripción para accesibilidad"
-                />
-              </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <label className="text-right text-sm">
-                  Descripción:
-                </label>
-                <Input
-                  className="col-span-3"
-                  value={selectedItem.description || ""}
-                  onChange={(e) =>
-                    setSelectedItem({
-                      ...selectedItem,
-                      description: e.target.value,
-                    })
-                  }
-                  placeholder="Descripción opcional"
-                />
-              </div>
-              {categories.length > 0 && (
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <label className="text-right text-sm">
-                    Categorías:
-                  </label>
-                  <div className="col-span-3">
-                    <Select
-                      // value={selectedItem.categoryId?.toString() || ""}
-                      value=""
-                      onValueChange={(value) => {
-                        // IMPLEMENTAR: Asignar categoría
-                      }}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Seleccionar categoría" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="">Sin categoría</SelectItem>
-                        {categories.map((category) => (
-                          <SelectItem key={category.id} value={category.id.toString()}>
-                            {category.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    {selectedItem.categories && selectedItem.categories.length > 0 && (
-                      <div className="flex flex-wrap gap-1 mt-2">
-                        {selectedItem.categories.map((category) => (
-                          <Badge key={category.id} variant="secondary">
-                            {category.name}
-                            <button
-                              className="ml-1 text-xs hover:text-destructive"
-                              onClick={() => {
-                                // IMPLEMENTAR: Eliminar categoría
-                              }}
-                            >
-                              ×
-                            </button>
-                          </Badge>
-                        ))}
-                      </div>
-                    )}
-                  </div>
+                <div className="col-span-4 space-y-1">
+                  <Input
+                    id="fileName"
+                    value={selectedItem.fileName}
+                    onChange={(e) => setSelectedItem({ ...selectedItem, fileName: e.target.value })}
+                    className="w-full"
+                  />
+                  <p className="text-xs text-muted-foreground">Nombre del archivo</p>
                 </div>
-              )}
+                <div className="col-span-4 space-y-1">
+                  <Input
+                    id="alt"
+                    value={selectedItem.alt || ""}
+                    onChange={(e) => setSelectedItem({ ...selectedItem, alt: e.target.value })}
+                    className="w-full"
+                    placeholder="Texto alternativo para la imagen"
+                  />
+                  <p className="text-xs text-muted-foreground">Texto alternativo (para imágenes)</p>
+                </div>
+                <div className="col-span-4 space-y-1">
+                  <Input
+                    id="title"
+                    value={selectedItem.title || ""}
+                    onChange={(e) => setSelectedItem({ ...selectedItem, title: e.target.value })}
+                    className="w-full"
+                    placeholder="Título del archivo"
+                  />
+                  <p className="text-xs text-muted-foreground">Título</p>
+                </div>
+                <div className="col-span-4 space-y-1">
+                  <textarea
+                    id="description"
+                    value={selectedItem.description || ""}
+                    onChange={(e) => setSelectedItem({ ...selectedItem, description: e.target.value })}
+                    className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                    placeholder="Descripción del archivo"
+                  />
+                  <p className="text-xs text-muted-foreground">Descripción</p>
+                </div>
+                {categories.length > 0 && (
+                  <div className="col-span-4 space-y-1">
+                    <p className="text-sm mb-2">Categorías</p>
+                    <div className="flex flex-wrap gap-2">
+                      {categories.map((category) => {
+                        const isSelected =
+                          selectedItem.categories?.some(
+                            (cat) => cat.id === category.id
+                          ) || false;
+                        return (
+                          <Badge
+                            key={category.id}
+                            variant={isSelected ? "default" : "outline"}
+                            className="cursor-pointer"
+                            onClick={() => {
+                              const newCategories = isSelected
+                                ? selectedItem.categories?.filter(
+                                    (cat) => cat.id !== category.id
+                                  ) || []
+                                : [
+                                    ...(selectedItem.categories || []),
+                                    category,
+                                  ];
+                              setSelectedItem({
+                                ...selectedItem,
+                                categories: newCategories,
+                              });
+                            }}
+                          >
+                            {category.name}
+                          </Badge>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
-          )}
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setIsEditDialogOpen(false)}
-            >
-              Cancelar
-            </Button>
-            <Button
-              onClick={() => {
-                if (selectedItem) {
-                  const updates: Partial<MediaItem> = {
-                    title: selectedItem.title,
-                    alt: selectedItem.alt,
-                    description: selectedItem.description,
-                  };
+            <DialogFooter>
+              <Button
+                variant="destructive"
+                onClick={() => {
+                  setIsEditDialogOpen(false);
+                  handleDeleteItem(selectedItem);
+                }}
+              >
+                Eliminar
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => setIsEditDialogOpen(false)}
+              >
+                Cancelar
+              </Button>
+              <Button
+                onClick={() => {
+                  const { id, ...updates } = selectedItem;
                   handleUpdateMedia(updates);
-                }
-              }}
-              disabled={updateMediaMutation.isPending}
-            >
-              {updateMediaMutation.isPending ? "Guardando..." : "Guardar cambios"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+                }}
+                disabled={updateMediaMutation.isPending}
+              >
+                {updateMediaMutation.isPending ? "Guardando..." : "Guardar cambios"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
+      
+      {/* Diálogo de confirmación de eliminación */}
+      {selectedItem && (
+        <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Confirmar eliminación</DialogTitle>
+              <DialogDescription>
+                ¿Estás seguro de que quieres eliminar este archivo? Esta acción no se puede deshacer.
+              </DialogDescription>
+            </DialogHeader>
+            <p className="font-medium">{selectedItem.fileName}</p>
+            <DialogFooter>
+              <Button
+                variant="outline"
+                onClick={() => setIsDeleteDialogOpen(false)}
+              >
+                Cancelar
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={confirmDelete}
+                disabled={deleteMediaMutation.isPending}
+              >
+                {deleteMediaMutation.isPending ? "Eliminando..." : "Eliminar"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   );
 };

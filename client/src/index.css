@@ -2,6 +2,37 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Estilos para la virtualización en la interfaz */
+.list-virtualized,
+.media-library-grid {
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+  width: 100% !important;
+  border-radius: 0.375rem;
+}
+
+.list-virtualized::-webkit-scrollbar,
+.media-library-grid::-webkit-scrollbar {
+  width: 6px;
+}
+
+.list-virtualized::-webkit-scrollbar-track,
+.media-library-grid::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.05);
+  border-radius: 3px;
+}
+
+.list-virtualized::-webkit-scrollbar-thumb,
+.media-library-grid::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.1);
+  border-radius: 3px;
+}
+
+.list-virtualized::-webkit-scrollbar-thumb:hover,
+.media-library-grid::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.2);
+}
+
 @layer base {
   * {
     @apply border-border;
