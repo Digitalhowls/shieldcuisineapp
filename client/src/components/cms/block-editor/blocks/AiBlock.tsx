@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -9,50 +8,29 @@ import { generateContent } from '@/lib/openai-service';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Wand2 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
-
-export interface AiBlockData {
-  id: string;
-  type: 'ai';
-  content: string;
-  generatedContent?: string;
-  prompt?: string;
-  tone?: string;
-  format?: 'text' | 'html';
-}
+import { Block, AiContent } from '../types';
 
 interface AiBlockProps {
-  data: AiBlockData;
-  onUpdate: (data: Partial<AiBlockData>) => void;
-  preview?: boolean;
-  readOnly?: boolean;
+  block: Block & { content: AiContent };
+  onChange: (block: Block & { content: AiContent }) => void;
+  editable?: boolean;
 }
 
-export const AiBlock: React.FC<AiBlockProps> = ({ data, onUpdate, preview = false, readOnly = false }) => {
-  const [prompt, setPrompt] = useState(data.prompt || '');
-  const [tone, setTone] = useState(data.tone || 'profesional');
-  const [format, setFormat] = useState(data.format || 'html');
+export const AiBlock: React.FC<AiBlockProps> = ({ block, onChange, editable = true }) => {
+  const content = block.content;
+  const [prompt, setPrompt] = useState(content.prompt || '');
+  const [tone, setTone] = useState(content.tone || 'profesional');
+  const [format, setFormat] = useState(content.format || 'html');
   const [isGenerating, setIsGenerating] = useState(false);
   const [showOptions, setShowOptions] = useState(false);
 
-  // Cuando estamos en preview, mostrar el contenido generado
-  if (preview) {
-    if (data.generatedContent) {
+  // Si no es editable, mostrar el contenido generado
+  if (!editable) {
+    if (content.generatedContent) {
       if (format === 'html') {
-        return <div dangerouslySetInnerHTML={{ __html: data.generatedContent }} />;
+        return <div dangerouslySetInnerHTML={{ __html: content.generatedContent }} />;
       } else {
-        return <div className="whitespace-pre-wrap">{data.generatedContent}</div>;
-      }
-    }
-    return <div className="text-muted-foreground italic">No hay contenido generado</div>;
-  }
-
-  // Si es de solo lectura, mostrar el contenido sin edición
-  if (readOnly) {
-    if (data.generatedContent) {
-      if (format === 'html') {
-        return <div dangerouslySetInnerHTML={{ __html: data.generatedContent }} />;
-      } else {
-        return <div className="whitespace-pre-wrap">{data.generatedContent}</div>;
+        return <div className="whitespace-pre-wrap">{content.generatedContent}</div>;
       }
     }
     return <div className="text-muted-foreground italic">No hay contenido generado</div>;
@@ -72,7 +50,7 @@ export const AiBlock: React.FC<AiBlockProps> = ({ data, onUpdate, preview = fals
       setIsGenerating(true);
       
       // Obtener el contenido existente como contexto, si hay
-      const existingContent = data.content || '';
+      const existingContent = content.content || '';
       
       const generatedContent = await generateContent({
         instruction: prompt,
@@ -83,11 +61,15 @@ export const AiBlock: React.FC<AiBlockProps> = ({ data, onUpdate, preview = fals
       });
       
       // Actualizar los datos del bloque
-      onUpdate({
-        prompt,
-        tone,
-        format,
-        generatedContent,
+      onChange({
+        ...block,
+        content: {
+          ...content,
+          prompt,
+          tone,
+          format,
+          generatedContent,
+        }
       });
       
       toast({
@@ -181,14 +163,14 @@ export const AiBlock: React.FC<AiBlockProps> = ({ data, onUpdate, preview = fals
             </div>
           )}
           
-          {data.generatedContent && (
+          {content.generatedContent && (
             <div className="space-y-2">
               <Label>Contenido generado</Label>
               <div className="rounded-md border bg-muted p-4 max-h-[300px] overflow-y-auto">
                 {format === 'html' ? (
-                  <div dangerouslySetInnerHTML={{ __html: data.generatedContent }} />
+                  <div dangerouslySetInnerHTML={{ __html: content.generatedContent }} />
                 ) : (
-                  <div className="whitespace-pre-wrap">{data.generatedContent}</div>
+                  <div className="whitespace-pre-wrap">{content.generatedContent}</div>
                 )}
               </div>
             </div>

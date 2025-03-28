@@ -18,7 +18,8 @@ export type BlockType =
   | 'list'
   | 'html'
   | 'form'
-  | 'contact-form';
+  | 'contact-form'
+  | 'ai';
 
 // Unión de todos los posibles tipos de contenido
 export type BlockContent =
@@ -34,7 +35,8 @@ export type BlockContent =
   | ListContent
   | HtmlContent
   | FormContent
-  | ContactFormContent;
+  | ContactFormContent
+  | AiContent;
 
 export interface AnimationOptions {
   effect?: string;
@@ -184,6 +186,14 @@ export interface ContactFormContent {
   successMessage?: string;
   errorMessage?: string;
   redirectUrl?: string;
+}
+
+export interface AiContent {
+  prompt: string;
+  content: string;
+  generatedContent?: string;
+  tone?: string;
+  format?: 'text' | 'html';
 }
 
 export interface MediaItem {
