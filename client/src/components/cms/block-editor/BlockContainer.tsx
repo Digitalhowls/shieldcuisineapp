@@ -1,4 +1,4 @@
-import React, { useRef, useState } from "react";
+import React, { useRef, useState, useEffect } from "react";
 import { useDrag, useDrop, DropTargetMonitor } from "react-dnd";
 import { Trash2, Copy, Move, Settings, ChevronUp, ChevronDown } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -16,45 +16,81 @@ import BlockSettingsPanel from "./block-settings-panel";
 import { Block, BlockType, BlockContent } from "./types";
 
 /**
- * Este archivo gestiona el contenedor de bloques en el editor.
- * Proporciona la funcionalidad de arrastrar y soltar, activación/desactivación, 
- * y controles para cada bloque.
+ * Contenedor para los bloques en el editor que gestiona su interactividad.
+ * 
+ * Proporciona funcionalidades de:
+ * - Arrastrar y soltar (drag & drop) para reordenar
+ * - Activación/desactivación de bloques seleccionados
+ * - Controles de edición (mover, duplicar, eliminar)
+ * - Panel de configuración contextual
+ * 
+ * @module BlockContainer
+ * @category CMS
+ * @subcategory BlockEditor
  */
 
 // Tipo constante para el tipo de arrastre
 const DRAG_TYPE = "BLOCK" as const;
 
-// Interfaz para las propiedades del componente
+/**
+ * Propiedades para el componente BlockContainer
+ */
 interface BlockContainerProps {
+  /** Identificador único del bloque */
   id: string;
+  /** Tipo de bloque (heading, text, image, etc.) */
   type: BlockType;
+  /** Posición del bloque en la lista */
   index: number;
+  /** Si el bloque está actualmente seleccionado/activo */
   isActive: boolean;
+  /** Contenido del bloque a renderizar */
   children: React.ReactNode;
-  block?: Block; // Datos del bloque
+  /** Datos completos del bloque (opcional) */
+  block?: Block;
+  /** Función a llamar cuando se activa el bloque */
   onActivate: () => void;
+  /** Función a llamar cuando se desactiva el bloque */
   onDeactivate: () => void;
+  /** Función para mover el bloque de una posición a otra */
   onMove: (dragIndex: number, hoverIndex: number) => void;
+  /** Función para eliminar el bloque */
   onDelete: () => void;
+  /** Función para duplicar el bloque */
   onDuplicate: () => void;
-  updateBlock?: (id: string, content: Partial<BlockContent>) => void; // Función para actualizar el contenido del bloque
+  /** Función para actualizar el contenido del bloque */
+  updateBlock?: (id: string, content: Partial<BlockContent>) => void;
+  /** Si el bloque está en modo solo lectura (sin edición) */
   readOnly?: boolean;
 }
 
-// Interfaz para el item de arrastre
+/**
+ * Elemento de arrastre para React DnD
+ */
 interface DragItem {
+  /** Posición del elemento en la lista */
   index: number;
+  /** Identificador único del elemento */
   id: string;
+  /** Tipo de elemento arrastrable */
   type: typeof DRAG_TYPE;
 }
 
-// Interfaz para el resultado de drop
+/**
+ * Resultado del evento drop para React DnD
+ */
 interface DropResult {
+  /** ID del manejador de drop */
   handlerId: string | symbol | null;
+  /** Si el cursor está sobre la zona de drop */
   isOver: boolean;
 }
 
-const BlockContainer: React.FC<BlockContainerProps> = ({
+/**
+ * Componente contenedor para bloques en el editor CMS.
+ * Proporciona funcionalidad drag & drop y controles de edición.
+ */
+export const BlockContainer = ({
   id,
   type,
   index,
@@ -68,7 +104,7 @@ const BlockContainer: React.FC<BlockContainerProps> = ({
   onDuplicate,
   updateBlock,
   readOnly = false,
-}) => {
+}: BlockContainerProps) => {
   const ref = useRef<HTMLDivElement>(null);
   const [isSettingsPanelOpen, setIsSettingsPanelOpen] = useState(false);
   
@@ -317,7 +353,7 @@ const BlockContainer: React.FC<BlockContainerProps> = ({
         <BlockSettingsPanel
           blockType={type}
           blockData={block.content}
-          onChange={(newContent) => {
+          onChange={(newContent: Partial<BlockContent>) => {
             if (updateBlock) {
               updateBlock(id, newContent);
             }
@@ -330,4 +366,5 @@ const BlockContainer: React.FC<BlockContainerProps> = ({
   );
 };
 
+// Mantiene la exportación por defecto para compatibilidad con código existente
 export default BlockContainer;

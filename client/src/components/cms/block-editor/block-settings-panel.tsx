@@ -70,10 +70,17 @@ interface BlockSettingsPanelProps {
 }
 
 /**
- * Panel de configuración para bloques del editor
- * Proporciona controles específicos según el tipo de bloque
+ * Panel de configuración para bloques del editor CMS
+ * 
+ * Proporciona una interfaz contextual para ajustar las propiedades
+ * específicas de cada tipo de bloque en el editor, como estilos,
+ * alineación, vínculos y animaciones.
+ * 
+ * @module BlockSettingsPanel
+ * @category CMS
+ * @subcategory BlockEditor
  */
-const BlockSettingsPanel: React.FC<BlockSettingsPanelProps> = ({
+export const BlockSettingsPanel: React.FC<BlockSettingsPanelProps> = ({
   blockType,
   blockData,
   onChange,
@@ -1119,4 +1126,5 @@ const BlockSettingsPanel: React.FC<BlockSettingsPanelProps> = ({
   );
 };
 
+// Mantiene la exportación por defecto para compatibilidad con código existente
 export default BlockSettingsPanel;
