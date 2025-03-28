@@ -122,7 +122,7 @@ export default function AdminFormacionPage() {
   
   // Consulta para obtener los cursos
   const { data: coursesData, isLoading: isLoadingCourses, error: coursesError } = useQuery({
-    queryKey: ['/api/learning/courses'],
+    queryKey: ['/api/elearning/courses'],
   });
 
   // Extraer cursos y metadata
@@ -208,7 +208,7 @@ export default function AdminFormacionPage() {
               <p className="text-destructive mb-2">Error al cargar los cursos</p>
               <Button 
                 variant="outline" 
-                onClick={() => queryClient.invalidateQueries({ queryKey: ['/api/learning/courses'] })}
+                onClick={() => queryClient.invalidateQueries({ queryKey: ['/api/elearning/courses'] })}
               >
                 Reintentar
               </Button>

@@ -72,7 +72,7 @@ export default function NuevoCursoPage() {
         price: data.price * 100, // Convertir a centavos
       };
       
-      const response = await apiRequest('POST', '/api/learning/courses', courseData);
+      const response = await apiRequest('POST', '/api/elearning/courses', courseData);
       
       if (!response.ok) {
         const errorData = await response.json();
@@ -90,7 +90,7 @@ export default function NuevoCursoPage() {
       });
       
       // Invalidar consultas para refrescar la lista de cursos
-      queryClient.invalidateQueries({ queryKey: ['/api/learning/courses'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/elearning/courses'] });
       
       // Redirigir al listado de cursos
       navigate('/admin/formacion');
