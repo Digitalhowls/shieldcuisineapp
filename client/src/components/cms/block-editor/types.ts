@@ -216,9 +216,17 @@ export type BlockContent =
   | ContactFormContent
   | AiContent;
 
+// Importa las interfaces de cada componente de configuración
+import { StyleOptions } from './settings-panel/style-settings';
+import { LayoutOptions } from './settings-panel/layout-settings';
+import { AdvancedOptions } from './settings-panel/advanced-settings';
+
 export interface Block {
   id: string;
   type: BlockType;
   content: BlockContent;
   animation?: AnimationOptions;
+  style?: StyleOptions;
+  layout?: LayoutOptions;
+  advanced?: AdvancedOptions;
 }
