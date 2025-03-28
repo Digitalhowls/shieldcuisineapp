@@ -1,4 +1,4 @@
-import { FC, useCallback, useMemo, memo } from 'react';
+import { FC, useCallback, useMemo, memo, useState } from 'react';
 import { useEditor, EditorContent, Editor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Underline from '@tiptap/extension-underline';
@@ -9,9 +9,10 @@ import TextStyle from '@tiptap/extension-text-style';
 import Color from '@tiptap/extension-color';
 import { RichTextContent } from '../types';
 import { Card, CardContent } from '@/components/ui/card';
-import { Toggle } from '@/components/ui/toggle';
 import { Button } from '@/components/ui/button';
-import { Bold, Italic, Underline as UnderlineIcon, AlignLeft, AlignCenter, AlignRight } from 'lucide-react';
+import { Sparkles } from 'lucide-react';
+import { Toolbar } from './rich-text/Toolbar';
+import { AiAssistant } from './rich-text/ai-assistant';
 
 /**
  * Interfaz para el bloque de texto enriquecido
@@ -28,92 +29,57 @@ interface RichTextBlockProps {
 }
 
 /**
- * Barra de herramientas simple para el editor
- */
-const Toolbar: FC<{ editor: Editor }> = ({ editor }) => {
-  if (!editor) {
-    return null;
-  }
-
-  return (
-    <div className="flex flex-wrap items-center gap-1 p-1 mb-2 border rounded-md bg-background">
-      <div className="flex gap-1 mr-2">
-        <Toggle
-          pressed={editor.isActive('bold')}
-          onPressedChange={() => editor.chain().focus().toggleBold().run()}
-          className="h-8 w-8 p-0"
-          size="sm"
-        >
-          <Bold className="h-4 w-4" />
-        </Toggle>
-        <Toggle
-          pressed={editor.isActive('italic')}
-          onPressedChange={() => editor.chain().focus().toggleItalic().run()}
-          className="h-8 w-8 p-0"
-          size="sm"
-        >
-          <Italic className="h-4 w-4" />
-        </Toggle>
-        <Toggle
-          pressed={editor.isActive('underline')}
-          onPressedChange={() => editor.chain().focus().toggleUnderline().run()}
-          className="h-8 w-8 p-0"
-          size="sm"
-        >
-          <UnderlineIcon className="h-4 w-4" />
-        </Toggle>
-      </div>
-
-      <div className="flex gap-1 mr-2">
-        <Toggle
-          pressed={editor.isActive({ textAlign: 'left' })}
-          onPressedChange={() => editor.chain().focus().setTextAlign('left').run()}
-          className="h-8 w-8 p-0"
-          size="sm"
-        >
-          <AlignLeft className="h-4 w-4" />
-        </Toggle>
-        <Toggle
-          pressed={editor.isActive({ textAlign: 'center' })}
-          onPressedChange={() => editor.chain().focus().setTextAlign('center').run()}
-          className="h-8 w-8 p-0"
-          size="sm"
-        >
-          <AlignCenter className="h-4 w-4" />
-        </Toggle>
-        <Toggle
-          pressed={editor.isActive({ textAlign: 'right' })}
-          onPressedChange={() => editor.chain().focus().setTextAlign('right').run()}
-          className="h-8 w-8 p-0"
-          size="sm"
-        >
-          <AlignRight className="h-4 w-4" />
-        </Toggle>
-      </div>
-    </div>
-  );
-};
-
-/**
  * Componente interno del editor
  */
 const RichTextEditor = ({ 
   editor, 
   isActive, 
-  readOnly 
+  readOnly,
+  onAiContentGenerated
 }: { 
   editor: Editor | null;
   isActive: boolean;
   readOnly?: boolean;
+  onAiContentGenerated?: (content: string) => void;
 }) => {
+  const [showAiAssistant, setShowAiAssistant] = useState(false);
+  
   if (!editor) {
     return null;
   }
 
+  const handleAiContentGenerated = (content: string) => {
+    if (onAiContentGenerated) {
+      onAiContentGenerated(content);
+    }
+    setShowAiAssistant(false);
+  };
+
   return (
     <div className="rich-text-editor">
       {!readOnly && isActive && (
-        <Toolbar editor={editor} />
+        <>
+          <div className="flex items-center justify-between mb-2">
+            <Toolbar editor={editor} />
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="flex items-center gap-1 ml-2" 
+              onClick={() => setShowAiAssistant(!showAiAssistant)}
+            >
+              <Sparkles className="h-4 w-4" /> 
+              {showAiAssistant ? 'Ocultar IA' : 'Asistente IA'}
+            </Button>
+          </div>
+          {showAiAssistant && (
+            <div className="mb-4 border rounded-md p-3 bg-secondary/10">
+              <AiAssistant 
+                onContentGenerated={handleAiContentGenerated}
+                initialPrompt={editor.getText().substring(0, 100)}
+              />
+            </div>
+          )}
+        </>
       )}
       <EditorContent 
         editor={editor}
@@ -128,6 +94,7 @@ const RichTextEditor = ({
  * 
  * Permite la edición de texto con formato enriquecido utilizando TipTap
  * con soporte para negrita, cursiva, enlaces, listas, alineación, etc.
+ * Integra un asistente de IA para generar contenido.
  */
 const RichTextBlock: FC<RichTextBlockProps> = ({ 
   data, 
@@ -176,10 +143,26 @@ const RichTextBlock: FC<RichTextBlockProps> = ({
     }
   }, [editor, content]);
 
+  // Maneja el contenido generado por el asistente de IA
+  const handleAiContentGenerated = useCallback((generatedContent: string) => {
+    if (editor) {
+      // Inserta el contenido generado en la posición actual del cursor
+      editor.chain().focus().insertContent(generatedContent).run();
+      
+      // También actualiza el contenido en el almacenamiento
+      handleUpdate(editor.getHTML());
+    }
+  }, [editor, handleUpdate]);
+
   return (
     <Card className={`w-full overflow-hidden ${isActive ? 'ring-2 ring-primary' : ''}`}>
       <CardContent className="p-4">
-        <RichTextEditor editor={editor} isActive={isActive} readOnly={readOnly} />
+        <RichTextEditor 
+          editor={editor} 
+          isActive={isActive} 
+          readOnly={readOnly} 
+          onAiContentGenerated={handleAiContentGenerated}
+        />
       </CardContent>
     </Card>
   );
