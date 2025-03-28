@@ -27,6 +27,7 @@ import AnimatedBlocksDemo from "./pages/cms/animated-blocks-demo";
 import GalleryDemo from "./pages/cms/gallery-demo";
 import CMSRedirect from "./pages/cms/cms-redirect";
 import RichTextDemo from "./pages/rich-text-demo";
+import SettingsPanelDemo from "./pages/settings-panel-demo";
 
 // Nuevos módulos de interfaz dual
 import AdminModule from "./pages/admin"; // Panel de administración
@@ -96,6 +97,7 @@ function AppRouter() {
       <ProtectedRoute path="/cms/animated-blocks-demo" component={AnimatedBlocksDemo} />
       <ProtectedRoute path="/cms/gallery-demo" component={GalleryDemo} />
       <ProtectedRoute path="/cms/rich-text-demo" component={RichTextDemo} />
+      <ProtectedRoute path="/cms/settings-panel-demo" component={SettingsPanelDemo} />
       <ProtectedRoute path="/cms/:rest*" component={CMSModule} />
       
       {/* Ruta de autenticación actualizada */}
