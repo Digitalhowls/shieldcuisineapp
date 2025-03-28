@@ -103,4 +103,5 @@ export const AnimatedBlockContainer: React.FC<AnimatedBlockContainerProps> = ({
   );
 };
 
+// Mantiene la exportación por defecto para compatibilidad con código existente
 export default AnimatedBlockContainer;

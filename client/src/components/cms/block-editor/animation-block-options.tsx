@@ -14,10 +14,17 @@ import {
 import { Button } from "@/components/ui/button";
 import { Wand2 } from "lucide-react";
 
+/**
+ * Propiedades para el componente AnimationBlockOptions
+ */
 interface AnimationBlockOptionsProps {
+  /** ID único del bloque que será animado */
   blockId: string;
+  /** Configuración actual de animación del bloque (parcial) */
   animation?: Partial<AnimationConfig>;
+  /** Función llamada cuando se actualiza la configuración de animación */
   onUpdate: (animation: Partial<AnimationConfig>) => void;
+  /** Función llamada cuando se elimina la animación */
   onRemove: () => void;
 }
 
@@ -25,7 +32,12 @@ interface AnimationBlockOptionsProps {
  * Panel de opciones de animación para bloques
  * 
  * Este componente permite configurar las animaciones de un bloque
- * en el editor CMS.
+ * en el editor CMS, incluyendo tipo, duración, retraso y otras
+ * propiedades de animación.
+ * 
+ * @module AnimationBlockOptions
+ * @category CMS
+ * @subcategory BlockEditor
  */
 export const AnimationBlockOptions: React.FC<AnimationBlockOptionsProps> = ({
   blockId,
@@ -94,4 +106,5 @@ export const AnimationBlockOptions: React.FC<AnimationBlockOptionsProps> = ({
   );
 };
 
+// Mantiene la exportación por defecto para compatibilidad con código existente
 export default AnimationBlockOptions;

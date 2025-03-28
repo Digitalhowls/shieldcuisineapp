@@ -1,13 +1,27 @@
 import React from 'react';
 import { PlusCircle, LayoutTemplate } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { BlockType } from './index';
+import { BlockType } from './types';
 
+/**
+ * Propiedades para el componente EmptyState
+ */
 interface EmptyStateProps {
+  /** Función a llamar cuando se selecciona un tipo de bloque para añadir */
   onAddBlock: (type: BlockType) => void;
 }
 
-const EmptyState: React.FC<EmptyStateProps> = ({ onAddBlock }) => {
+/**
+ * Componente que se muestra cuando el editor no tiene bloques
+ * 
+ * Proporciona una interfaz amigable con botones para añadir
+ * los tipos de bloques más comunes
+ * 
+ * @module EmptyState
+ * @category CMS
+ * @subcategory BlockEditor
+ */
+export const EmptyState: React.FC<EmptyStateProps> = ({ onAddBlock }) => {
   return (
     <div className="flex flex-col items-center justify-center py-12 px-4 border-2 border-dashed rounded-md bg-muted/20">
       <LayoutTemplate className="h-12 w-12 text-muted-foreground mb-4" />
@@ -33,4 +47,5 @@ const EmptyState: React.FC<EmptyStateProps> = ({ onAddBlock }) => {
   );
 };
 
+// Mantiene la exportación por defecto para compatibilidad con código existente
 export default EmptyState;

@@ -24,23 +24,34 @@ import {
   List,
   Code,
   MessageSquare,
-  PanelTop,
-  Plus,
   PlusCircle,
   Images,
   Table,
 } from 'lucide-react';
-import { BlockType } from './index';
+import { BlockType } from './types';
 import { Button } from '@/components/ui/button';
 
+/**
+ * Propiedades para el componente BlockTool
+ */
 interface BlockToolProps {
+  /** Icono a mostrar en el botón */
   icon: React.ReactNode;
+  /** Texto descriptivo que se muestra en el tooltip */
   label: string;
+  /** Tipo de bloque que se añadirá */
   type: BlockType;
+  /** Función a llamar cuando se hace clic en el botón */
   onClick: (type: BlockType) => void;
 }
 
-const BlockTool: React.FC<BlockToolProps> = ({ icon, label, type, onClick }) => (
+/**
+ * Componente para un botón de herramienta individual
+ * 
+ * Renderiza un botón con un icono y un tooltip que muestra
+ * una descripción al hacer hover
+ */
+export const BlockTool: React.FC<BlockToolProps> = ({ icon, label, type, onClick }) => (
   <TooltipProvider>
     <Tooltip>
       <TooltipTrigger asChild>
@@ -60,11 +71,25 @@ const BlockTool: React.FC<BlockToolProps> = ({ icon, label, type, onClick }) => 
   </TooltipProvider>
 );
 
+/**
+ * Propiedades para el componente BlockToolbar
+ */
 interface BlockToolbarProps {
+  /** Función a llamar cuando se selecciona un tipo de bloque para añadir */
   onAddBlock: (type: BlockType) => void;
 }
 
-const BlockToolbar: React.FC<BlockToolbarProps> = ({ onAddBlock }) => {
+/**
+ * Barra de herramientas para añadir bloques al editor
+ * 
+ * Proporciona acceso rápido a los tipos de bloques más comunes
+ * y un menú desplegable para acceder a tipos adicionales.
+ * 
+ * @module BlockToolbar
+ * @category CMS
+ * @subcategory BlockEditor
+ */
+export const BlockToolbar: React.FC<BlockToolbarProps> = ({ onAddBlock }) => {
   const commonTools = [
     { icon: <Type size={16} />, label: 'Título', type: 'heading' as BlockType },
     { icon: <FileText size={16} />, label: 'Párrafo', type: 'paragraph' as BlockType },
@@ -120,4 +145,5 @@ const BlockToolbar: React.FC<BlockToolbarProps> = ({ onAddBlock }) => {
   );
 };
 
+// Mantiene la exportación por defecto para compatibilidad con código existente
 export default BlockToolbar;

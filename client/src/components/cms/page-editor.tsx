@@ -52,7 +52,7 @@ import { AIAssistantPanel } from "./ai-assistant";
 import PreviewPanel from "./page-editor/PreviewPanel";
 
 // Componentes del editor
-import BlockEditor from "./block-editor/BlockEditor";
+import BlockEditor from "./block-editor"; // Importar del archivo index.tsx estandarizado
 
 interface PageEditorProps {
   isNew?: boolean;

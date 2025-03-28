@@ -22,10 +22,16 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
-// Extender el tipo Block para incluir animación
+/**
+ * Extender el tipo Block para incluir animación
+ * Permite añadir propiedades de animación a cualquier bloque del editor
+ */
 export interface EnhancedBlock extends Block {
+  /** Configuración de animación para el bloque */
   animation?: {
+    /** Configuración detallada de la animación */
     config: AnimationConfig;
+    /** Biblioteca de animación a utilizar */
     library: AnimationLibrary;
   };
   styles?: {
@@ -42,16 +48,29 @@ export interface EnhancedBlock extends Block {
   };
 }
 
+/**
+ * Propiedades para el componente EnhancedBlockContainer
+ */
 interface EnhancedBlockContainerProps {
+  /** Bloque a renderizar con sus propiedades */
   block: EnhancedBlock;
+  /** Posición del bloque en la lista */
   index: number;
+  /** Función para mover el bloque a otra posición */
   moveBlock: (dragIndex: number, hoverIndex: number) => void;
+  /** Función para actualizar el contenido del bloque */
   updateBlock: (id: string, updatedContent: any) => void;
+  /** Función para actualizar metadatos del bloque (no el contenido) */
   updateBlockMeta: (id: string, meta: Partial<Omit<EnhancedBlock, 'content'>>) => void;
+  /** Función para eliminar el bloque */
   removeBlock: (id: string) => void;
+  /** Función para duplicar el bloque */
   duplicateBlock: (id: string) => void;
+  /** Función para añadir un nuevo bloque después de este */
   addBlockAfter: (id: string, type: string) => void;
+  /** Si el bloque está en modo solo lectura */
   readOnly?: boolean;
+  /** Contenido del bloque */
   children: React.ReactNode;
 }
 
@@ -59,7 +78,12 @@ interface EnhancedBlockContainerProps {
  * Contenedor mejorado para bloques con soporte para animaciones y estilos
  * 
  * Este componente extiende la funcionalidad del BlockContainer para
- * incluir opciones de animación y estilo.
+ * incluir opciones de animación y estilo, así como un menú de acciones
+ * para manipular el bloque.
+ * 
+ * @module EnhancedBlockContainer
+ * @category CMS
+ * @subcategory BlockEditor
  */
 export const EnhancedBlockContainer: React.FC<EnhancedBlockContainerProps> = ({
   block,
@@ -267,4 +291,5 @@ const getBlockTypeName = (type: string): string => {
   return blockTypes[type] || type;
 };
 
+// Mantiene la exportación por defecto para compatibilidad con código existente
 export default EnhancedBlockContainer;
