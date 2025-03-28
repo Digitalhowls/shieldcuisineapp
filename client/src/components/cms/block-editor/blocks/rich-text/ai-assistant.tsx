@@ -10,11 +10,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Loader2, Sparkles } from 'lucide-react';
+import { Loader2, Sparkles, ListChecks, Utensils, FileText, Store, FileQuestion } from 'lucide-react';
 import { generateContent as generateOpenAIContent } from '@/lib/openai-service';
-// Removemos la importación que no vamos a utilizar
 import { Slider } from '@/components/ui/slider';
 import { Switch } from '@/components/ui/switch';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 /**
  * Propiedades del componente de asistente de IA
@@ -34,6 +34,52 @@ interface GenerationSettings {
   temperatura: number;
   longitud: 'corta' | 'media' | 'larga';
 }
+
+/**
+ * Plantillas predefinidas para facilitar la generación de contenido
+ */
+interface ContentTemplate {
+  icon: React.ReactNode;
+  name: string;
+  prompt: string;
+  description: string;
+}
+
+/**
+ * Plantillas de contenido para restaurantes y seguridad alimentaria
+ */
+const contentTemplates: ContentTemplate[] = [
+  {
+    icon: <ListChecks className="h-4 w-4" />,
+    name: "APPCC",
+    prompt: "Genera una explicación detallada sobre la implementación de sistemas APPCC en restaurantes, incluyendo los 7 principios y consejos prácticos.",
+    description: "Explicación de APPCC para restaurantes"
+  },
+  {
+    icon: <Utensils className="h-4 w-4" />,
+    name: "Carta/Menú",
+    prompt: "Crea una descripción atractiva de 5 platos para un restaurante especializado en cocina mediterránea, destacando ingredientes locales y de temporada.",
+    description: "Descripción de platos para carta o menú"
+  },
+  {
+    icon: <FileText className="h-4 w-4" />,
+    name: "Sobre Nosotros",
+    prompt: "Escribe un texto para la sección 'Sobre Nosotros' de un restaurante familiar con 20 años de tradición, destacando valores, filosofía y compromiso con la calidad.",
+    description: "Historia y valores del restaurante"
+  },
+  {
+    icon: <Store className="h-4 w-4" />,
+    name: "Promoción",
+    prompt: "Genera un texto promocional persuasivo para un nuevo servicio de catering especializado en eventos corporativos, destacando la calidad, personalización y seguridad alimentaria.",
+    description: "Texto promocional para servicios o productos"
+  },
+  {
+    icon: <FileQuestion className="h-4 w-4" />,
+    name: "FAQ",
+    prompt: "Crea una lista de 7 preguntas frecuentes con sus respuestas sobre alérgenos, restricciones dietéticas y políticas de seguridad alimentaria para un restaurante.",
+    description: "Preguntas y respuestas frecuentes"
+  }
+];
 
 /**
  * Componente de asistente de IA para el editor de texto enriquecido
@@ -101,17 +147,99 @@ export function AiAssistant({ onContentGenerated, initialPrompt = "" }: AiAssist
   return (
     <Card className="w-full">
       <CardContent className="p-4 space-y-4">
-        <div className="space-y-2">
-          <Label htmlFor="ai-prompt">¿Qué contenido deseas generar?</Label>
-          <Textarea
-            id="ai-prompt"
-            placeholder="Ej: Genera un párrafo sobre la importancia de la seguridad alimentaria en restaurantes"
-            value={prompt}
-            onChange={(e) => setPrompt(e.target.value)}
-            rows={3}
-            className="resize-none"
-          />
-        </div>
+        <Tabs defaultValue="prompt" className="w-full">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="prompt">Texto libre</TabsTrigger>
+            <TabsTrigger value="templates">Plantillas</TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="prompt" className="space-y-4 pt-4">
+            <div className="space-y-2">
+              <div className="flex justify-between items-center">
+                <Label htmlFor="ai-prompt">¿Qué contenido deseas generar?</Label>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={() => setPrompt("")}
+                  className="h-6 text-xs"
+                  disabled={!prompt}
+                >
+                  Limpiar
+                </Button>
+              </div>
+              <Textarea
+                id="ai-prompt"
+                placeholder="Ej: Genera un párrafo sobre la importancia de la seguridad alimentaria en restaurantes"
+                value={prompt}
+                onChange={(e) => setPrompt(e.target.value)}
+                rows={3}
+                className="resize-none"
+              />
+              
+              <div className="space-y-2 pt-1">
+                <Label className="text-xs text-muted-foreground">Sugerencias rápidas:</Label>
+                <div className="flex flex-wrap gap-1.5">
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="h-7 text-xs" 
+                    onClick={() => setPrompt("Genera un párrafo sobre las medidas APPCC en cocinas profesionales.")}
+                  >
+                    APPCC
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="h-7 text-xs" 
+                    onClick={() => setPrompt("Crea un texto promocional para un restaurante especializado en comida mediterránea fresca y saludable.")}
+                  >
+                    Promoción
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="h-7 text-xs" 
+                    onClick={() => setPrompt("Escribe una descripción para la sección 'Sobre Nosotros' de un restaurante familiar.")}
+                  >
+                    Sobre Nosotros
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="h-7 text-xs" 
+                    onClick={() => setPrompt("Genera un texto sobre los alérgenos e información nutricional para clientes.")}
+                  >
+                    Alérgenos
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </TabsContent>
+          
+          <TabsContent value="templates" className="space-y-3 pt-3">
+            <p className="text-sm text-muted-foreground">Selecciona una plantilla para generar contenido específico:</p>
+            <div className="grid gap-2">
+              {contentTemplates.map((template, index) => (
+                <Button
+                  key={index}
+                  variant="outline"
+                  className="h-auto py-2 px-3 justify-start"
+                  onClick={() => setPrompt(template.prompt)}
+                >
+                  <div className="flex items-start gap-2 text-left">
+                    <div className="mt-0.5 p-1 bg-primary/10 rounded-md">
+                      {template.icon}
+                    </div>
+                    <div>
+                      <p className="font-medium text-sm">{template.name}</p>
+                      <p className="text-xs text-muted-foreground">{template.description}</p>
+                    </div>
+                  </div>
+                </Button>
+              ))}
+            </div>
+          </TabsContent>
+        </Tabs>
 
         <div className="flex items-center gap-2 mb-2">
           <div className="bg-muted/50 p-2 rounded-md flex items-center gap-2 text-xs text-muted-foreground">
