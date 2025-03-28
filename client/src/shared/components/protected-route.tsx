@@ -48,14 +48,8 @@ export function ProtectedRoute({
       );
     }
     
-    // Si el usuario está en una ruta de cliente pero es admin, redirigir al dashboard de admin
-    if (path.startsWith('/client') && user.role === 'admin') {
-      return (
-        <Route path={path}>
-          <Redirect to="/admin/dashboard" />
-        </Route>
-      );
-    }
+    // Ya no redirigimos a los administradores fuera de la interfaz de cliente
+    // porque ahora pueden acceder a ambas interfaces
   }
 
   // Si el usuario tiene un rol permitido para esta ruta, mostrar el componente

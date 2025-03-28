@@ -55,12 +55,12 @@ function AppRouter() {
       <ProtectedRoute 
         path="/client" 
         component={ClientModule}
-        allowedRoles={['company_admin', 'location_manager', 'area_supervisor', 'employee']}
+        allowedRoles={['admin', 'company_admin', 'location_manager', 'area_supervisor', 'employee']}
       />
       <ProtectedRoute 
         path="/client/:rest*" 
         component={ClientModule}
-        allowedRoles={['company_admin', 'location_manager', 'area_supervisor', 'employee']}
+        allowedRoles={['admin', 'company_admin', 'location_manager', 'area_supervisor', 'employee']}
       />
 
       {/* Rutas protegidas antiguas (temporal, se migrarán a la nueva estructura) */}
