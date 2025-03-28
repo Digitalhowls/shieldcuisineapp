@@ -178,6 +178,15 @@ export default function AdminModule() {
           <div className="p-4 border-b">
             <h2 className="text-xl font-bold">ShieldCuisine</h2>
             <p className="text-sm text-muted-foreground mt-1">Panel de Administración</p>
+            <a 
+              href="/client/dashboard" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="mt-3 inline-flex items-center text-sm text-primary hover:underline font-medium"
+            >
+              <Globe className="h-4 w-4 mr-1" />
+              Abrir interfaz de cliente
+            </a>
           </div>
 
           {/* Navegación principal */}
@@ -310,7 +319,17 @@ export default function AdminModule() {
             </h1>
           </div>
           
-          <div>
+          <div className="flex items-center space-x-3">
+            <a 
+              href="/client/dashboard" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="inline-flex items-center text-sm text-primary hover:underline mr-4"
+            >
+              <Globe className="h-4 w-4 mr-1" />
+              <span className="hidden sm:inline">Portal Cliente</span>
+            </a>
+            
             <Button variant="ghost" size="icon" className="relative">
               <Bell className="h-5 w-5" />
               <span className="absolute top-0 right-0 h-2 w-2 rounded-full bg-red-500"></span>
