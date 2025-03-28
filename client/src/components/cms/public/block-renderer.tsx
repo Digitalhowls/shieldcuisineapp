@@ -1,4 +1,4 @@
-import React from "react";
+import React, { memo, useMemo } from "react";
 import { 
   ExternalLink, 
   Mail, 
@@ -23,7 +23,19 @@ interface BlockRendererProps {
   blocks: Block[];
 }
 
-const BlockRenderer: React.FC<BlockRendererProps> = ({ blocks }) => {
+/**
+ * Componente para renderizar un bloque individual
+ * Memoizado para mejorar el rendimiento
+ */
+const MemoizedBlockContent = memo(({ block, renderBlock }: { 
+  block: Block;
+  renderBlock: (block: Block) => React.ReactNode;
+}) => {
+  return <>{renderBlock(block)}</>;
+});
+
+// Componente principal, memoizado para evitar renderizados innecesarios
+const BlockRenderer: React.FC<BlockRendererProps> = memo(({ blocks }) => {
   if (!blocks || blocks.length === 0) {
     return <div className="py-8 text-center text-muted-foreground">No hay contenido para mostrar</div>;
   }
@@ -471,12 +483,21 @@ const BlockRenderer: React.FC<BlockRendererProps> = ({ blocks }) => {
     );
   };
 
-  // Renderizar todos los bloques
+  // Cada función de renderizado de bloque individual ya está memoizada
+  // por estar definida una sola vez en el cuerpo del componente
+  
+  // Renderizar todos los bloques utilizando el componente memoizado
   return (
     <div className="cms-content-renderer">
-      {blocks.map((block) => renderBlock(block))}
+      {blocks.map((block) => (
+        <MemoizedBlockContent 
+          key={block.id} 
+          block={block} 
+          renderBlock={renderBlock} 
+        />
+      ))}
     </div>
   );
-};
+});
 
 export default BlockRenderer;

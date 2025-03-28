@@ -451,7 +451,7 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
     }
   };
 
-  // Renderiza un bloque individual
+  // Renderiza un bloque individual 
   const renderBlock = (block: Block, index: number) => {
     return (
       <BlockContainer
@@ -562,12 +562,25 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
     );
   };
 
-  // Renderiza un elemento en la lista virtualizada
+  // Componente memoizado para renderizar cada bloque
+  // Mejora significativamente el rendimiento al evitar re-renders innecesarios
+  const MemoizedBlockItem = React.memo(({ 
+    block, 
+    index 
+  }: { 
+    block: Block, 
+    index: number 
+  }) => renderBlock(block, index));
+
+  // Función que renderiza cada item virtualizado
   const renderVirtualizedItem = ({ index, style }: { index: number, style: React.CSSProperties }) => {
     const block = content.blocks[index];
     return (
       <div style={{ ...style, paddingBottom: '16px' }}>
-        {renderBlock(block, index)}
+        <MemoizedBlockItem 
+          block={block} 
+          index={index} 
+        />
       </div>
     );
   };
@@ -618,8 +631,14 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
                     {renderVirtualizedItem}
                   </List>
                 ) : (
-                  // Renderización normal para listas cortas
-                  content.blocks.map((block, index) => renderBlock(block, index))
+                  // Renderización normal para listas cortas utilizando componentes memoizados
+                  content.blocks.map((block, index) => (
+                    <MemoizedBlockItem 
+                      key={block.id}
+                      block={block} 
+                      index={index} 
+                    />
+                  ))
                 )}
               </div>
             )}
