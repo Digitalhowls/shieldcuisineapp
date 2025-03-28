@@ -120,6 +120,28 @@ export default function ClientModule() {
                 onClick={() => setSidebarOpen(false)}
               />
             ))}
+            
+            {/* Enlace a la interfaz de administración (solo para administradores) */}
+            {user && user.role === 'admin' && (
+              <div className="mt-6 pt-6 border-t">
+                <div className="px-3 py-2">
+                  <Button 
+                    variant="secondary" 
+                    className="w-full justify-start border border-primary/20"
+                    asChild
+                  >
+                    <a
+                      href="/admin/dashboard"
+                      className="flex items-center"
+                      onClick={() => setSidebarOpen(false)}
+                    >
+                      <User className="h-4 w-4 mr-2 text-primary" />
+                      <span className="font-medium">Panel Administración</span>
+                    </a>
+                  </Button>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Usuario y logout */}
@@ -131,7 +153,11 @@ export default function ClientModule() {
               <div>
                 <div className="font-medium">{user?.name}</div>
                 <div className="text-xs text-muted-foreground">
-                  {user?.role === "company_admin" ? "Administrador" : "Usuario"}
+                  {user?.role === "admin" 
+                    ? "Administrador del Sistema" 
+                    : user?.role === "company_admin" 
+                      ? "Administrador" 
+                      : "Usuario"}
                 </div>
               </div>
             </div>
@@ -171,7 +197,22 @@ export default function ClientModule() {
             </h1>
           </div>
           
-          <div>
+          <div className="flex items-center space-x-3">
+            {/* Botón para volver a la interfaz de administración (solo visible para administradores) */}
+            {user && user.role === 'admin' && (
+              <Button 
+                variant="secondary" 
+                size="sm"
+                asChild
+                className="mr-2 border border-primary/20"
+              >
+                <a href="/admin/dashboard" className="inline-flex items-center">
+                  <User className="h-4 w-4 mr-1 text-primary" />
+                  <span className="font-medium">Panel Admin</span>
+                </a>
+              </Button>
+            )}
+            
             <Button variant="ghost" size="icon" className="relative">
               <Bell className="h-5 w-5" />
               <span className="absolute top-0 right-0 h-2 w-2 rounded-full bg-red-500"></span>
